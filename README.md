@@ -2,7 +2,7 @@
 
 A single-file, browser-based audit tool for FileMaker Database Design Reports (DDR / SaveAsXML). Drop in a DDR, get an instant structured analysis — no installation, no server, no dependencies.
 
-Developed by [Clockwork Creative Technology](https://www.clockworkct.co.uk) and shared openly with the FileMaker/Claris community.
+Developed by Andrew Kear owner of [Clockwork Creative Technology](https://www.clockworkct.co.uk) and shared openly with the FileMaker/Claris community.
 
 > **This is a prototype.** It is actively developed, has known gaps, and is shared in the spirit of open collaboration rather than as a finished product. Contributions, corrections, and counter-examples are welcomed.
 
@@ -12,7 +12,7 @@ Developed by [Clockwork Creative Technology](https://www.clockworkct.co.uk) and 
 
 There are other DDR analysis tools. What makes this different is intent.
 
-Most solutions in this space are commercial, closed, or both. This one is open — the source is readable, forkable, and designed to be absorbed. Specifically, it is structured so that the HTML file can be uploaded directly to Claude as a skill or project document, allowing Claude to understand your FileMaker solution's structure and assist with development work in context.
+Other solutions in this space are commercial, closed, or both. This one is open the source is readable, forkable, and designed to be absorbed. Specifically, it is structured so that the HTML file can be uploaded directly to Claude as a skill or project document, allowing Claude to understand your FileMaker solution's structure and assist with development work in context.
 
 We believe open sharing and collaboration is how the FileMaker community drives the platform forward. Publishing the analysis logic means everyone can see how it works, correct it when it's wrong, and build on it.
 
@@ -20,7 +20,7 @@ We believe open sharing and collaboration is how the FileMaker community drives 
 
 ## What it analyses
 
-Load a FileMaker DDR XML file (exported via Tools → Save a Copy as XML, or File → Save a Copy As → XML) and the Inspector parses it entirely in your browser. Nothing is uploaded anywhere.
+Load a FileMaker DDR XML file (exported via Tools → Save a Copy as XML) and the Inspector parses it entirely in your browser. Nothing is uploaded anywhere.
 
 **Schema**
 - Base tables, table occurrences, fields — counts, types, storage, validation, auto-entry
