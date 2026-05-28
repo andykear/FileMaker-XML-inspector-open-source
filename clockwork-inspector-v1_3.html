@@ -2860,6 +2860,8 @@ function buildRowListPanel(host, list) {
       unstored:   item.unstored   || '',
       table:      item.table      || '',
       field:      item.field      || '',
+      state:      item.state      || '',
+      triggers:   item.triggers   || '',
       data_type:  item.data_type  || '',
       field_type: item.field_type || '',
       steps:      item.steps      || '',
@@ -2870,6 +2872,7 @@ function buildRowListPanel(host, list) {
   const isEnrichedTable  = rows.length > 0 && list[0] && list[0].fields    !== undefined;
   const isEnrichedScript = rows.length > 0 && list[0] && list[0].steps     !== undefined;
   const isEnrichedField  = rows.length > 0 && list[0] && list[0].data_type !== undefined && list[0].table !== undefined;
+  const isEnrichedLayout = rows.length > 0 && list[0] && list[0].state     !== undefined && list[0].triggers !== undefined;
   const hasAnyNote = rows.some(r => r.note);
   if (isEnrichedTable) {
     renderDenseTable({
@@ -2898,6 +2901,19 @@ function buildRowListPanel(host, list) {
         { key: 'psos',           label: 'PSoS',         width: '7%',  align: 'center', hideIfAllEmpty: true },
         { key: 'error_handling', label: 'Err Handling', width: '10%', align: 'center', hideIfAllEmpty: true },
         { key: 'globals',        label: '$$Globals',    width: '8%',  align: 'center', hideIfAllEmpty: true },
+      ],
+      defaultSort: 'name',
+    });
+  } else if (isEnrichedLayout) {
+    renderDenseTable({
+      containerEl: host,
+      emptyMsg: 'Nothing to show.',
+      rows: rows,
+      columns: [
+        { key: 'name',     label: 'Layout',   width: '45%', mono: true },
+        { key: 'note',     label: 'Base TO',  width: '30%', mono: true, hideIfAllEmpty: true },
+        { key: 'state',    label: 'State',    width: '10%', hideIfAllEmpty: true },
+        { key: 'triggers', label: 'Triggers', width: '8%',  align: 'right', hideIfAllEmpty: true },
       ],
       defaultSort: 'name',
     });
@@ -4053,17 +4069,19 @@ function parseLayouts(doc, root) {
     };
 
     s.detail.all.push({
-      name: curLayoutName,
-      note: [baseToName ? 'TO: ' + baseToName : '', triggerCount > 0 ? triggerCount + ' trigger' + (triggerCount===1?'':'s') : '', isHidden ? 'hidden' : ''].filter(Boolean).join(' · ')
+      name:     curLayoutName,
+      note:     baseToName || '',
+      triggers: triggerCount > 0 ? String(triggerCount) : '',
+      state:    isHidden ? 'hidden' : 'visible',
     });
 
     // FIX 1: Sidebar / Hidden were swapped — hidden="True" means the layout IS hidden
     if (isHidden) {
       s.layouts_hidden++;
-      s.detail.hidden.push({ name: curLayoutName, note: baseToName || '' });
+      s.detail.hidden.push({ name: curLayoutName, note: baseToName || '', triggers: triggerCount > 0 ? String(triggerCount) : '', state: isHidden ? 'hidden' : 'visible' });
     } else {
       s.layouts_in_sidebar++;
-      s.detail.in_sidebar.push({ name: curLayoutName, note: baseToName || '' });
+      s.detail.in_sidebar.push({ name: curLayoutName, note: baseToName || '', triggers: triggerCount > 0 ? String(triggerCount) : '', state: isHidden ? 'hidden' : 'visible' });
     }
 
     const layoutTriggers = qs(layout,':scope > ScriptTriggers');
@@ -4209,10 +4227,10 @@ function parseLayouts(doc, root) {
     // Each list entry includes a note that gives quick context (count of
     // matching objects, portal counts etc.) so the drill-down is useful
     // without needing to click into another level.
-    if (hadNavPart)              s.detail.with_nav_part.push({ name: curLayoutName, note: baseToName || '' });
-    if (hadHeader)               s.detail.with_header.push({ name: curLayoutName, note: baseToName || '' });
-    if (hadFooter)               s.detail.with_footer.push({ name: curLayoutName, note: baseToName || '' });
-    if (hadSubsummary)           s.detail.with_subsummary.push({ name: curLayoutName, note: baseToName || '' });
+    if (hadNavPart)              s.detail.with_nav_part.push({ name: curLayoutName, note: baseToName || '', triggers: triggerCount > 0 ? String(triggerCount) : '', state: isHidden ? 'hidden' : 'visible' });
+    if (hadHeader)               s.detail.with_header.push({ name: curLayoutName, note: baseToName || '', triggers: triggerCount > 0 ? String(triggerCount) : '', state: isHidden ? 'hidden' : 'visible' });
+    if (hadFooter)               s.detail.with_footer.push({ name: curLayoutName, note: baseToName || '', triggers: triggerCount > 0 ? String(triggerCount) : '', state: isHidden ? 'hidden' : 'visible' });
+    if (hadSubsummary)           s.detail.with_subsummary.push({ name: curLayoutName, note: baseToName || '', triggers: triggerCount > 0 ? String(triggerCount) : '', state: isHidden ? 'hidden' : 'visible' });
     if (portalsInLayout > 0)     s.detail.with_portals.push({ name: curLayoutName, note: portalsInLayout + ' portal' + (portalsInLayout===1?'':'s') });
     if (filteredPortals > 0)     s.detail.with_filtered_portals.push({ name: curLayoutName, note: filteredPortals + ' filtered' });
     if (chartCount > 0)          s.detail.with_charts.push({ name: curLayoutName, note: chartCount + ' chart' + (chartCount===1?'':'s') });
@@ -6948,6 +6966,7 @@ function parseUnreferenced(doc, root, allStats) {
   // so we dedup on the cleaned display name, not tagName.
   const unusedStyleNames = [];
   const unusedStyleDetails = []; // [{name, theme}]
+  const allStyleDetails = []; // [{name, theme, used}]
   const themeCat = root.querySelector('ThemeCatalog');
   if (themeCat) {
     const seenDisplayNames = new Set();
@@ -6975,7 +6994,9 @@ function parseUnreferenced(doc, root, allStats) {
         const key = displayName.toLowerCase();
         if (displayName && !seenDisplayNames.has(key)) {
           seenDisplayNames.add(key);
-          if (!usedStyleNames.has(key)) {
+          const isUsed2 = usedStyleNames.has(key);
+          allStyleDetails.push({ name: displayName, theme: themeName, used: isUsed2 ? '✓' : '' });
+          if (!isUsed2) {
             unusedStyleNames.push(displayName);
             unusedStyleDetails.push({ name: displayName, theme: themeName });
           }
@@ -7001,6 +7022,7 @@ function parseUnreferenced(doc, root, allStats) {
     tables:            unreferencedTables.sort(),
     unused_styles:     unusedStyleNames.sort(),
     unused_styles_detail: unusedStyleDetails.sort((a,b)=>a.name.localeCompare(b.name)),
+    all_styles_detail:    allStyleDetails.sort((a,b)=>a.name.localeCompare(b.name)),
     broken,
     confidence:        computeConfidenceTier(allStats),
   };
@@ -7691,11 +7713,10 @@ function renderResults(file, root, s, elapsed) {
   const td = (tf.detail || {});
   const gd = (rg.detail || {});
 
-  tabDefs.push({ id:'tab-tables', label:'Tables &amp; Fields', icon:'⬡', content:
-    section('Tables, Fields &amp; Relationships','⬡',
+  // ── TABLES TAB ────────────────────────────────────────────────────────────
+  tabDefs.push({ id:'tab-tables', label:'Tables', icon:'⬡', content:
+    section('Tables','⬡',
       row('Base Table Count', fmt(tf.table_count), (u.tables && u.tables.length) ? u.tables.length + ' with no references found' : '', 0, null, null, (function() {
-        // Build enriched table list with field count, TO count, unstored pct
-        // Build TO count per base table from relationship graph data
         const toCountByBase = {};
         if (rg && rg.detail && rg.detail.tos_all) {
           for (const to of rg.detail.tos_all) {
@@ -7722,8 +7743,13 @@ function renderResults(file, root, s, elapsed) {
       row('Table Occurrences', fmt(rg.table_occurrence_count), (u.table_occurrences && u.table_occurrences.length) ? u.table_occurrences.length + ' with no references found' : '', 0, null, null, gd.tos_all) +
       row('TOs with Zero Relationships', fmt(rg.to_zero_relationships), pct(rg.to_zero_relationships,rg.table_occurrence_count)+' of TOs',1,ragPct(rg.to_zero_relationships,rg.table_occurrence_count,0.2,0.35), null, gd.tos_zero_relationships) +
       row('Relationship Count', fmt(rg.relationship_count), '', 0, null, 'tab-relationships') +
-      row('TO Colors Used', fmt(rg.to_unique_colors),'colour-coded graph',1) +
-      divider('Fields') +
+      row('TO Colors Used', fmt(rg.to_unique_colors),'colour-coded graph',1)
+    )
+  });
+
+  // ── FIELDS TAB ────────────────────────────────────────────────────────────
+  tabDefs.push({ id:'tab-fields', label:'Fields', icon:'≡', content:
+    section('Fields','≡',
       row('Field Count', fmt(tf.field_count), (u.fields && u.fields.length) ? u.fields.length + ' with no references found' : '', 0, null, (u.fields && u.fields.length) ? 'unref:fields' : null) +
       row('Text', fmt(tf.dt_text), pct(tf.dt_text,tf.field_count)+' of fields',1, null, null, td.fields_text) +
       row('Number', fmt(tf.dt_number), pct(tf.dt_number,tf.field_count)+' of fields',1, null, null, td.fields_number) +
@@ -7755,7 +7781,6 @@ function renderResults(file, root, s, elapsed) {
       row('Cascade Create', fmt(rg.cascade_create),'',1, null, null, gd.cascade_create_rels) +
       row('Cascade Delete', fmt(rg.cascade_delete),'',1,ragVal(rg.cascade_delete,5,15), null, gd.cascade_delete_rels) +
       row('Bidirectional Allow-Create', fmt(rg.bidirectional_create),'',2, null, null, gd.bidirectional_create_rels) +
-      divider('Join Predicates') +
       row('Equal (=)', fmt(rg.pred_equal),'',1) +
       row('Not Equal (≠)', fmt(rg.pred_not_equal),'',1) +
       row('Greater / Less', fmt(rg.pred_greater+rg.pred_less),'',1) +
@@ -7769,8 +7794,6 @@ function renderResults(file, root, s, elapsed) {
   tabDefs.push({ id:'tab-layouts', label:'Layouts', icon:'▦', content:
     section('Layouts','▦',
       row('Layout Count', fmt(lay.layout_count), (u.layouts && u.layouts.length) ? u.layouts.length + ' with no references found' : '', 0, null, null, ld.all) +
-      // Menu-separator layouts (named "-", "--", etc.). Excluded from
-      // the layout_count above so other percentages aren't skewed.
       (lay.layouts_dividers > 0 ? row('Menu Dividers', fmt(lay.layouts_dividers), 'menu separators, excluded from layout count', 1, null, null, ld.dividers) : '') +
       row('Visible in Sidebar', fmt(lay.layouts_in_sidebar), pct(lay.layouts_in_sidebar,lay.layout_count)+' of layouts',1, null, null, ld.in_sidebar) +
       row('Hidden', fmt(lay.layouts_hidden), pct(lay.layouts_hidden,lay.layout_count)+' of layouts',1, null, null, ld.hidden) +
@@ -7780,8 +7803,12 @@ function renderResults(file, root, s, elapsed) {
       row('With Sub-summary', fmt(lay.layouts_with_subsummary), pct(lay.layouts_with_subsummary,lay.layout_count)+' of layouts',1, null, null, ld.with_subsummary) +
       row('With Script Triggers', fmt(lay.script_triggers), pct(lay.script_triggers,lay.layout_count)+' of layouts',1, null, null, ld.with_triggers) +
       row('File-Level Triggers', fmt(lay.file_triggers),'',1) +
-      row('TOs Used in Layouts', fmt(lay.tos_used_in_layouts), pct(lay.tos_used_in_layouts,rg.table_occurrence_count)+' of all TOs',1) +
-      divider('Layout Objects') +
+      row('TOs Used in Layouts', fmt(lay.tos_used_in_layouts), pct(lay.tos_used_in_layouts,rg.table_occurrence_count)+' of all TOs',1)
+    )
+  });
+
+  tabDefs.push({ id:'tab-layout-objects', label:'Layout Objects', icon:'⊡', content:
+    section('Layout Objects','⊡',
       row('Total Objects', fmt(lay.objects_total), avg(lay.objects_total,lay.layout_count)+' per layout avg') +
       row('Fields (Edit Box / Control)', fmt(lay.ot_edit_box), pct(lay.ot_edit_box,lay.objects_total)+' of objects',1) +
       row('Text Labels', fmt(lay.ot_text), pct(lay.ot_text,lay.objects_total)+' of objects',1) +
@@ -7792,21 +7819,28 @@ function renderResults(file, root, s, elapsed) {
       row('With Local CSS Override', fmt(lay.objects_with_local_css), pct(lay.objects_with_local_css,lay.objects_total)+' of objects',1, null, (lay.local_css_objects && lay.local_css_objects.length) ? 'tab-css' : null, ld.with_local_css) +
       row('Overridden CSS Properties', fmt(lay.local_css_node_count), avg(lay.local_css_node_count,lay.objects_with_local_css)+' per overridden object avg',2, null, (lay.local_css_objects && lay.local_css_objects.length) ? 'tab-css' : null) +
       row('Objects Outside Bounds', fmt(lay.objects_outside_bounds), pct(lay.objects_outside_bounds,lay.objects_total)+' of objects',1,ragVal(lay.objects_outside_bounds,20,60)) +
-      divider('Portals') +
+      row('Width Min / Avg / Max', fmt(lay.layout_width_min)+' / '+fmt(lay.layout_width_avg)+' / '+fmt(lay.layout_width_max)+' px') +
+      row('Script Refs from Layouts', fmt(lay.script_refs_from_layouts))
+    )
+  });
+
+  tabDefs.push({ id:'tab-portals', label:'Portals', icon:'⊞', content:
+    section('Portals','⊞',
       row('Portals Total', fmt(lay.portals_total), avg(lay.portals_total,lay.layout_count)+' per layout avg', 0, null, null, ld.with_portals) +
       row('With Filter', fmt(lay.portals_with_filter), pct(lay.portals_with_filter,lay.portals_total)+' of portals',1, null, null, ld.with_filtered_portals) +
       row('Allow Create', fmt(lay.portals_allow_create), pct(lay.portals_allow_create,lay.portals_total)+' of portals',1) +
       row('Allow Delete', fmt(lay.portals_allow_delete), pct(lay.portals_allow_delete,lay.portals_total)+' of portals',1) +
-      row('Layouts with >1 Portal', fmt(lay.layouts_with_multiple_portals), pct(lay.layouts_with_multiple_portals,lay.layout_count)+' of layouts',1, null, null, ld.with_multiple_portals) +
-      divider('Controls') +
+      row('Layouts with >1 Portal', fmt(lay.layouts_with_multiple_portals), pct(lay.layouts_with_multiple_portals,lay.layout_count)+' of layouts',1, null, null, ld.with_multiple_portals)
+    )
+  });
+
+  tabDefs.push({ id:'tab-controls', label:'Controls', icon:'⊟', content:
+    section('Controls','⊟',
       row('Tab Controls', fmt(lay.tab_controls), '', 0, null, null, ld.with_tab_controls) +
       row('Tab Panels', fmt(lay.tab_panels), avg(lay.tab_panels,lay.tab_controls)+' per tab control',1) +
       row('Button Bars', fmt(lay.button_bars), '', 0, null, null, ld.with_button_bars) +
       row('Bar Segments', fmt(lay.button_bar_segments), avg(lay.button_bar_segments,lay.button_bars)+' per bar',1) +
-      row('Popovers', fmt(lay.popovers), fmt(lay.popover_count)+' panels total',1, null, null, ld.with_popovers) +
-      divider('Layout Geometry') +
-      row('Width Min / Avg / Max', fmt(lay.layout_width_min)+' / '+fmt(lay.layout_width_avg)+' / '+fmt(lay.layout_width_max)+' px') +
-      row('Script Refs from Layouts', fmt(lay.script_refs_from_layouts))
+      row('Popovers', fmt(lay.popovers), fmt(lay.popover_count)+' panels total',1, null, null, ld.with_popovers)
     )
   });
 
@@ -7892,16 +7926,13 @@ function renderResults(file, root, s, elapsed) {
         });
       }())) +
       row('Using Global Variables', fmt(scr.scripts_using_globals), pct(scr.scripts_using_globals,scr.script_count)+' of scripts',1) +
-      divider('Complexity') +
       row('Max Length (steps)', fmt(scr.max_length)) +
       row('Max Cyclomatic Complexity', fmt(scr.max_complexity),'',0,ragVal(scr.max_complexity,15,30)) +
       row('Max Nesting Depth', fmt(scr.max_nesting_depth),'',0,ragVal(scr.max_nesting_depth,4,7)) +
-      divider('Step Counts') +
       row('Total Steps', fmt(scr.step_count), avg(scr.step_count,scr.script_count)+' per script avg') +
       row('Active', fmt(scr.steps_active), pct(scr.steps_active,scr.step_count)+' of steps',1) +
       row('Inactive', fmt(scr.steps_inactive), pct(scr.steps_inactive,scr.step_count)+' of steps',1,ragPct(scr.steps_inactive,scr.step_count,0.08,0.2)) +
       row('Comments', fmt(scr.steps_comment), pct(scr.steps_comment,scr.step_count)+' of steps',1) +
-      divider('Step Breakdown') +
       row('Set Variable', fmt(scr.steps_set_variable), pct(scr.steps_set_variable,scr.steps_active)+' of active',1) +
       row('Set Field', fmt(scr.steps_set_field), pct(scr.steps_set_field,scr.steps_active)+' of active',1) +
       row('If / Else If', fmt(scr.steps_if), pct(scr.steps_if,scr.steps_active)+' of active',1) +
@@ -7917,12 +7948,10 @@ function renderResults(file, root, s, elapsed) {
       row('Import / Export', fmt(scr.steps_import+scr.steps_export), pct(scr.steps_import+scr.steps_export,scr.steps_active)+' of active',1) +
       (scr.steps_applescript?row('Perform AppleScript',fmt(scr.steps_applescript),pct(scr.steps_applescript,scr.steps_active)+' of active',1):'') +
       (scr.steps_truncate?row('Truncate Table',fmt(scr.steps_truncate),pct(scr.steps_truncate,scr.steps_active)+' of active',1,'amber'):'') +
-      divider('Script Distribution') +
       row('Empty Scripts', fmt(scr.scripts_empty), pct(scr.scripts_empty,scr.script_count)+' of scripts',1,ragVal(scr.scripts_empty,3,8), null, sd.scripts_empty) +
       row('Large (>50 steps)', fmt(scr.scripts_over_50), pct(scr.scripts_over_50,scr.script_count)+' of scripts',1,ragVal(scr.scripts_over_50,5,10), null, sd.scripts_over_50) +
       row('Very Large (>100 steps)', fmt(scr.scripts_over_100), pct(scr.scripts_over_100,scr.script_count)+' of scripts',2,ragVal(scr.scripts_over_100,3,6), null, sd.scripts_over_100) +
       row('Max Inactive in One Script', fmt(scr.max_inactive_in_script),'',1,ragVal(scr.max_inactive_in_script,10,25)) +
-      divider('Spec-Informed Checks') +
       expandRow('Orphaned Enabled Steps', fmt(scr.orphaned_enabled_steps), 'enabled body inside disabled wrapper',
           scr.orphaned_enabled_steps>=20?'red':scr.orphaned_enabled_steps>=1?'amber':null,
           scr.orphaned_enabled_scripts,
@@ -7968,43 +7997,116 @@ function renderResults(file, root, s, elapsed) {
   // Calculations tab — surfaces stored vs unstored counts and a per-table
   // listing of each. Shown whenever the file has any calculation fields.
   if (tf.calc_fields > 0) {
-    tabDefs.push({ id:'tab-calcs', label:'Calculations', icon:'∑', content:
-      buildCalculationsTab(deep, tf)
-    });
+    tabDefs.push({ id:'tab-calcs', label:'Calculations', icon:'∑', contentEl: (function() {
+    const storedList   = (tf && tf.stored_calc_list)   ? tf.stored_calc_list   : [];
+    const unstoredList = (tf && tf.unstored_calc_list) ? tf.unstored_calc_list : [];
+    const total = storedList.length + unstoredList.length;
+    const wrap = document.createElement('div');
+    if (total === 0) {
+      wrap.innerHTML = '<div class="unref-empty">No calculation fields found in this file.</div>';
+      return wrap;
+    }
+    // Build combined row list — table, field, data_type, storage
+    const calcRows = [
+      ...storedList.map(function(f)   { return { table: f.table, field: f.field, data_type: f.data_type || '', storage: 'Stored'   }; }),
+      ...unstoredList.map(function(f) { return { table: f.table, field: f.field, data_type: f.data_type || '', storage: 'Unstored' }; }),
+    ];
+    wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">∑</span>Calculation Fields — ' + total.toLocaleString() + ' (' + storedList.length.toLocaleString() + ' stored · ' + unstoredList.length.toLocaleString() + ' unstored)</div><div class="calcs-host"></div></div>';
+    const host = wrap.querySelector('.calcs-host');
+    setTimeout(function() {
+      renderDenseTable({
+        containerEl: host,
+        emptyMsg: 'No calculation fields found.',
+        rows: calcRows,
+        columns: [
+          { key: 'table',     label: 'Table',     width: '25%', mono: true },
+          { key: 'field',     label: 'Field',     width: '35%', mono: true },
+          { key: 'data_type', label: 'Data Type', width: '15%' },
+          { key: 'storage',   label: 'Storage',   width: '15%' },
+        ],
+        defaultSort: 'table',
+        noScroll: true,
+      });
+    }, 0);
+    return wrap;
+  })() });
   }
 
   const vld = (vl.detail || {});
-  tabDefs.push({ id:'tab-valuelists', label:'Value Lists', icon:'≡', content:
-    section('Value Lists','≡',
-      row('Value List Count', fmt(vl.value_list_count), (u.value_lists && u.value_lists.length) ? u.value_lists.length + ' with no references found' : '', 0, null, null, vld.all) +
-      row('Static', fmt(vl.static), pct(vl.static,vl.value_list_count)+' of lists',1, null, null, vld.static_list) +
-      row('Dynamic', fmt(vl.dynamic), pct(vl.dynamic,vl.value_list_count)+' of lists',1, null, null, vld.dynamic_list) +
-      row('Dynamic (Related Only)', fmt(vl.dynamic_related_only), pct(vl.dynamic_related_only,vl.value_list_count)+' of lists',2, null, null, vld.dynamic_related_only_list) +
-      row('Remote', vl.remote?fmt(vl.remote):'—', vl.remote?pct(vl.remote,vl.value_list_count)+' of lists':'',1)
-    )
-  });
+  tabDefs.push({ id:'tab-valuelists', label:'Value Lists', icon:'≡', contentEl: (function() {
+    const wrap = document.createElement('div');
+
+    // Summary strip
+    const vlUnrefNote = u.value_lists && u.value_lists.length ? ' · ' + u.value_lists.length + ' unreferenced' : '';
+    wrap.innerHTML = `<div class="section"><div class="section-title"><span class="section-icon">≡</span>All Value Lists — ${fmt(vl.value_list_count)}${vlUnrefNote}</div><div class="vl-browser-host"></div></div>`;
+
+    const vlHost = wrap.querySelector('.vl-browser-host');
+
+    // Build rows from vld.all — already has name (list name) and note (type + item count)
+    // Add a type column for grouping
+    const vlRows = (vld.all || []).map(function(item) {
+      const note = item.note || '';
+      // Determine type from note content
+      let type = 'Static';
+      let detail = note;
+      if (note.startsWith('dynamic')) { type = 'Dynamic'; detail = note.replace(/^dynamic\s*·?\s*/,''); }
+      else if (note.includes('item')) { type = 'Static'; detail = note; }
+      const unreferenced = u.value_lists && u.value_lists.includes(item.name);
+      return {
+        name:   item.name || '',
+        type:   type,
+        detail: detail,
+        unused: unreferenced ? '⚠' : '',
+      };
+    });
+
+    setTimeout(function() {
+      renderDenseTable({
+        containerEl: vlHost,
+        emptyMsg: 'No value lists found.',
+        rows: vlRows,
+        columns: [
+          { key: 'name',   label: 'Name',   width: '40%', mono: true },
+          { key: 'type',   label: 'Type',   width: '12%' },
+          { key: 'detail', label: 'Detail', width: '38%' },
+          { key: 'unused', label: 'Unref',  width: '8%', align: 'center', hideIfAllEmpty: true },
+        ],
+        defaultSort: 'name',
+        noScroll: true,
+      });
+    }, 0);
+    return wrap;
+  })() });
 
   const ad  = (acc.detail || {});
   const psd = (priv.detail || {});
   const epd = (ep.detail || {});
-  tabDefs.push({ id:'tab-security', label:'Security', icon:'🔒', content:
-    section('Accounts &amp; Security','🔒',
+  tabDefs.push({ id:'tab-security', label:'Accounts', icon:'🔒', content:
+    section('Accounts','🔒',
       row('Account Count', fmt(acc.account_count), '', 0, null, null, acc.names_hidden ? [] : ad.all) +
       (acc.names_hidden ? row('⚠ Account names not in DDR', '','DDR was exported without account details — re-export to see account names',1,'amber') : '') +
       row('Active', fmt(acc.active), pct(acc.active,acc.account_count)+' of accounts',1, null, null, acc.names_hidden ? [] : ad.active_list) +
       row('Inactive', fmt(acc.inactive), pct(acc.inactive,acc.account_count)+' of accounts',1, null, null, ad.inactive_list) +
       row('OAuth / External Auth', fmt(acc.oauth), pct(acc.oauth,acc.active)+' of active',2, null, null, ad.oauth_list) +
       row('Full Access', fmt(acc.full_access), pct(acc.full_access,acc.active)+' of active',2,ragVal(acc.full_access,3,8), null, ad.full_access_list) +
-      row('Blank Password', acc.blank_password?fmt(acc.blank_password):'—','',2,acc.blank_password>0?'red':null, null, ad.blank_password_list) +
-      divider('Privilege Sets') +
+      row('Blank Password', acc.blank_password?fmt(acc.blank_password):'—','',2,acc.blank_password>0?'red':null, null, ad.blank_password_list)
+    )
+  });
+
+  tabDefs.push({ id:'tab-privilege-sets', label:'Privilege Sets', icon:'🛡', content:
+    section('Privilege Sets','🛡',
       row('Privilege Set Count', fmt(priv.privilege_set_count), '', 0, null, null, psd.all) +
       row('Allow Print', fmt(priv.allow_print), pct(priv.allow_print,priv.privilege_set_count)+' of sets',1, null, null, psd.allow_print_list) +
       row('Allow Export', fmt(priv.allow_export), pct(priv.allow_export,priv.privilege_set_count)+' of sets',1, null, null, psd.allow_export_list) +
       row('Manage Database', fmt(priv.manage_database), pct(priv.manage_database,priv.privilege_set_count)+' of sets',1,ragVal(priv.manage_database,2,4), null, psd.manage_database_list) +
       row('Disconnect Idle', fmt(priv.disconnect_idle), pct(priv.disconnect_idle,priv.privilege_set_count)+' of sets',1, null, null, psd.disconnect_idle_list) +
       row('Allow Override', fmt(priv.allow_override||0), pct(priv.allow_override||0,priv.privilege_set_count)+' of sets',1, null, null, psd.allow_override_list) +
-      row('Minimal Commands', fmt(priv.commands_minimal), pct(priv.commands_minimal,priv.privilege_set_count)+' of sets',1,ragGood(priv.commands_minimal,priv.privilege_set_count-1), null, psd.commands_minimal_list) +
-      divider('Extended Privileges') +
+      row('Minimal Commands', fmt(priv.commands_minimal), pct(priv.commands_minimal,priv.privilege_set_count)+' of sets',1,ragGood(priv.commands_minimal,priv.privilege_set_count-1), null, psd.commands_minimal_list)
+    )
+  });
+
+  tabDefs.push({ id:'tab-extended-privileges', label:'Extended Privileges', icon:'🔑', content:
+    section('Extended Privileges','🔑',
       row('Extended Privilege Count', fmt(ep.extended_privilege_count||0), '', 0, null, null, epd.all) +
       row('WebDirect',        fmt(ep.webdirect_privilege_sets||0), pct(ep.webdirect_privilege_sets||0,priv.privilege_set_count)+' of sets',1) +
       row('FileMaker Remote', fmt(ep.fmapp_privilege_sets||0),     pct(ep.fmapp_privilege_sets||0,priv.privilege_set_count)+' of sets',1) +
@@ -8018,43 +8120,151 @@ function renderResults(file, root, s, elapsed) {
   const cfd = (cf.detail || {});
   const cmd = (cm.detail || {});
   const plgd = (plg && plg.detail) ? plg.detail : {};
-  tabDefs.push({ id:'tab-globals', label:'Variables &amp; Functions', icon:'ƒ', content:
-    section('Global Variables &amp; Custom Functions','ƒ',
-      row('Unique $$ Variables', fmt(gv.global_variable_count), '', 0, null, null, gvd.all) +
-      row('Inconsistent Case', fmt(gv.inconsistent_case), pct(gv.inconsistent_case,gv.global_variable_count)+' of vars',1,ragVal(gv.inconsistent_case,3,8), null, gvd.inconsistent_case_list) +
-      row('Contact Points', fmt(gv.contact_points), avg(gv.contact_points,gv.global_variable_count)+' per var avg',1) +
+  // ── VARIABLES TAB ───────────────────────────────────────────────────────────
+  tabDefs.push({ id:'tab-variables', label:'Variables', icon:'$$', contentEl: (function() {
+    const wrap = document.createElement('div');
+    const varRows = (gvd.all || []).map(function(v) {
+      const refs = parseInt((v.note || '').replace(/[^0-9]/g,'')) || 0;
+      const isInconsistent = gvd.inconsistent_case_list && gvd.inconsistent_case_list.some(function(e) { return e.name && e.name.toUpperCase() === (v.name||'').toUpperCase(); });
+      return {
+        name:          v.name || '',
+        refs:          refs,
+        inconsistent:  isInconsistent ? '⚠' : '',
+      };
+    });
+    wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">$$</span>Global Variables — ' + (gv.global_variable_count||0).toLocaleString() + '</div><div class="vars-host"></div></div>';
+    const host = wrap.querySelector('.vars-host');
+    setTimeout(function() {
+      renderDenseTable({
+        containerEl: host,
+        emptyMsg: 'No global variables found.',
+        rows: varRows,
+        columns: [
+          { key: 'name',         label: 'Variable',     width: '60%', mono: true },
+          { key: 'refs',         label: 'References',   width: '20%', align: 'right' },
+          { key: 'inconsistent', label: 'Case Issue',   width: '15%', align: 'center', hideIfAllEmpty: true },
+        ],
+        defaultSort: 'refs',
+        noScroll: true,
+      });
+    }, 0);
+    return wrap;
+  })() });
 
-      row('Most Used', gv.top_globals&&gv.top_globals.length?esc(gv.top_globals[0].name):'—', gv.max_global_contacts+' uses',2) +
-      divider('Custom Functions') +
-      row('Function Count', fmt(cf.custom_function_count), '', 0, null, null, cfd.all) +
-      row('Recursive Custom Functions', fmt(cf.cf_recursive), pct(cf.cf_recursive,cf.custom_function_count)+' of functions',1, null, null, cfd.recursive) +
-      row('References in Calcs', fmt(cf.custom_function_references), avg(cf.custom_function_references,cf.custom_function_count)+' per function',1) +
-      row('Max Parameters', fmt(cf.cf_max_params),'',1) +
-      row('Avg Parameters', avg(cf.cf_total_params,cf.custom_function_count),'per function',1) +
-      divider('Plugin Functions') +
-      row('Plugin Function Count', fmt(plg.plugin_function_count || 0), '', 0, null, null, plgd.functions) +
-      row('Plugin References in Calcs', fmt(plg.plugin_function_references || 0), '', 1) +
-      divider('Custom Menus') +
-      row('Menu Sets', fmt(cm.custom_menu_set_count), '', 0, null, null, cmd.sets) +
-      row('Menus', fmt(cm.custom_menu_count), '', 0, null, null, cmd.menus) +
-      row('Modified Built-in', fmt(cm.custom_menus_modified), pct(cm.custom_menus_modified,cm.custom_menu_count)+' of menus',1, null, null, cmd.modified) +
-      row('New Custom', fmt(cm.custom_menus_new), pct(cm.custom_menus_new,cm.custom_menu_count)+' of menus',1, null, null, cmd.new_menus)
-    )
-  });
+  // ── CUSTOM FUNCTIONS TAB ─────────────────────────────────────────────────────
+  tabDefs.push({ id:'tab-custom-functions', label:'Custom Functions', icon:'ƒ', contentEl: (function() {
+    const wrap = document.createElement('div');
+    const cfRows = (cfd.all || []).map(function(f) {
+      const note = f.note || '';
+      const params = parseInt(note.match(/^(\d+)/)?.[1] || '0');
+      const recursive = note.includes('recursive') ? '✓' : '';
+      return { name: f.name || '', params: params, recursive: recursive };
+    });
+    wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">ƒ</span>Custom Functions — ' + (cf.custom_function_count||0).toLocaleString() + '</div><div class="cf-host"></div></div>';
+    const host = wrap.querySelector('.cf-host');
+    setTimeout(function() {
+      renderDenseTable({
+        containerEl: host,
+        emptyMsg: 'No custom functions found.',
+        rows: cfRows,
+        columns: [
+          { key: 'name',      label: 'Function',   width: '65%', mono: true },
+          { key: 'params',    label: 'Parameters', width: '15%', align: 'right' },
+          { key: 'recursive', label: 'Recursive',  width: '12%', align: 'center', hideIfAllEmpty: true },
+        ],
+        defaultSort: 'name',
+        noScroll: true,
+      });
+    }, 0);
+    return wrap;
+  })() });
+
+  // ── PLUGINS TAB ─────────────────────────────────────────────────────────────
+  tabDefs.push({ id:'tab-plugins', label:'Plugins', icon:'⚡', contentEl: (function() {
+    const wrap = document.createElement('div');
+    const plugRows = (plgd.functions || []).map(function(f) {
+      return { name: f.name || '', note: f.note || '' };
+    });
+    const summaryHtml = '<div class="section"><div class="section-title"><span class="section-icon">⚡</span>Plugin Functions — ' + (plg.plugin_function_count||0).toLocaleString() + ' (' + (plg.plugin_function_references||0).toLocaleString() + ' references in calcs)</div><div class="plugin-host"></div></div>';
+    wrap.innerHTML = summaryHtml;
+    const host = wrap.querySelector('.plugin-host');
+    if (plugRows.length > 0) {
+      setTimeout(function() {
+        renderDenseTable({
+          containerEl: host,
+          emptyMsg: 'No plugin functions found.',
+          rows: plugRows,
+          columns: [
+            { key: 'name', label: 'Function', width: '65%', mono: true },
+            { key: 'note', label: 'Detail',               hideIfAllEmpty: true },
+          ],
+          defaultSort: 'name',
+          noScroll: true,
+        });
+      }, 0);
+    } else {
+      host.innerHTML = '<div class="unref-empty">No plugin functions found in this file.</div>';
+    }
+    return wrap;
+  })() });
+
+  // ── CUSTOM MENUS TAB ────────────────────────────────────────────────────────
+  tabDefs.push({ id:'tab-menus', label:'Custom Menus', icon:'☰', contentEl: (function() {
+    const wrap = document.createElement('div');
+    const menuRows = (cmd.menus || []).map(function(m) {
+      const isModified = cmd.modified && cmd.modified.some(function(e) { return e.name === m.name; });
+      const isNew      = cmd.new_menus && cmd.new_menus.some(function(e) { return e.name === m.name; });
+      return {
+        name: m.name || '',
+        type: isNew ? 'New Custom' : isModified ? 'Modified Built-in' : '',
+      };
+    });
+    wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">☰</span>Custom Menus — ' + (cm.custom_menu_count||0).toLocaleString() + ' menus in ' + (cm.custom_menu_set_count||0).toLocaleString() + ' set' + ((cm.custom_menu_set_count||0)===1?'':'s') + '</div><div class="menus-host"></div></div>';
+    const host = wrap.querySelector('.menus-host');
+    if (menuRows.length > 0) {
+      setTimeout(function() {
+        renderDenseTable({
+          containerEl: host,
+          emptyMsg: 'No custom menus found.',
+          rows: menuRows,
+          columns: [
+            { key: 'name', label: 'Menu',   width: '65%', mono: true },
+            { key: 'type', label: 'Type',   width: '25%', hideIfAllEmpty: true },
+          ],
+          defaultSort: 'name',
+          noScroll: true,
+        });
+      }, 0);
+    } else {
+      host.innerHTML = '<div class="unref-empty">No custom menus found.</div>';
+    }
+    return wrap;
+  })() });
 
   const thmd = (thm.detail || {});
-  tabDefs.push({ id:'tab-themes', label:'Themes', icon:'🎨', content:
-    section('Themes &amp; Styling','🎨',
-      row('Themes', fmt(thm.theme_count), '', 0, null, null, thmd.all) +
-      row('Custom Themes', fmt(thm.custom_themes), pct(thm.custom_themes,thm.theme_count)+' of themes',1, null, null, thmd.custom) +
-      (thm.themes_detail||[]).map(t => {
-        const displayName = t.name.length > 45 ? t.name.slice(0, 42) + '…' : t.name;
-        return row(esc(displayName)+(t.custom?' ★':''), fmt(t.styles)+' styles', t.colors+' palette colors',1);
-      }).join('') +
-      row('Total Named Styles', fmt(thm.style_count)) +
-      row('Unused Styles', fmt(unusedStyleCount), pct(unusedStyleCount,thm.style_count)+' of styles',1,ragVal(unusedStyleCount,15,35), unusedStyleCount > 0 ? 'unref:styles' : null)
-    )
-  });
+  tabDefs.push({ id:'tab-themes', label:'Themes', icon:'🎨', contentEl: (function() {
+    const wrap = document.createElement('div');
+    // Summary section
+    const unusedNote = unusedStyleCount > 0 ? ' · ' + unusedStyleCount.toLocaleString() + ' unused' : '';
+    wrap.innerHTML = `<div class="section"><div class="section-title"><span class="section-icon">🎨</span>All Named Styles — ${fmt(thm.style_count)}${unusedNote}</div><div class="style-browser-host"></div></div>`;
+    const styleHost = wrap.querySelector('.style-browser-host');
+    const allStyles = (u && u.all_styles_detail) || [];
+    setTimeout(function() {
+      renderDenseTable({
+        containerEl: styleHost,
+        emptyMsg: 'No styles found.',
+        rows: allStyles,
+        columns: [
+          { key: 'name',  label: 'Style',  width: '65%', mono: true },
+          { key: 'used',  label: 'In Use', width: '10%', align: 'center' },
+        ],
+        defaultSort: 'name',
+        groupBy: 'theme',
+        noScroll: true,
+      });
+    }, 0);
+    return wrap;
+  })() });
 
   const extd = (ext.detail || {});
   // Use the same plg.detail alias for Plugins in File Config
@@ -8173,8 +8383,8 @@ function renderResults(file, root, s, elapsed) {
             emptyMsg: 'No fields found.',
             rows: fieldRows,
             columns: [
-              { key:'table',      label:'Table',      width:'18%', mono:true },
-              { key:'field',      label:'Field',      width:'22%', mono:true },
+              { key:'table',      label:'Table',      width:'20%', mono:true },
+              { key:'field',      label:'Field',      width:'25%', mono:true },
               { key:'type',       label:'Type',       width:'10%' },
               { key:'data_type',  label:'Data Type',  width:'10%' },
               { key:'auto_entry', label:'Auto-Entry',              hideIfAllEmpty:true },
@@ -8264,10 +8474,10 @@ function renderResults(file, root, s, elapsed) {
             emptyMsg: 'No layouts found.',
             rows: layRows,
             columns: [
-              { key:'name',     label:'Layout',   width:'35%', mono:true },
-              { key:'base_to',  label:'Base TO',  width:'25%', mono:true },
+              { key:'name',     label:'Layout',   width:'38%', mono:true },
+              { key:'base_to',  label:'Base TO',  width:'20%', mono:true },
               { key:'state',    label:'State',    width:'10%' },
-              { key:'triggers', label:'Triggers', width:'10%', align:'right', hideIfAllEmpty:true },
+              { key:'triggers', label:'Triggers', width:'8%',  align:'right', hideIfAllEmpty:true },
               { key:'theme',    label:'Theme',                 hideIfAllEmpty:true },
             ],
             defaultSort: 'name',
@@ -8402,23 +8612,22 @@ function renderResults(file, root, s, elapsed) {
       return;
     }
     const tableRows = rows.map(r => ({
-      leftDisplay:  (r.leftTO || '') + (r.leftBase ? ' (' + r.leftBase + ')' : ''),
+      leftBase:     r.leftBase  || r.leftTO  || '',
+      leftTO:       r.leftTO    || '',
       rightDisplay: (r.rightTO || '') + (r.rightBase ? ' (' + r.rightBase + ')' : ''),
       predicates:   r.predicates || '',
-
     }));
-    // Store isDuplicate flag as a hidden column so we can stripe rows after render
     renderDenseTable({
       containerEl: container,
       emptyMsg: 'No relationships found.',
       rows: tableRows,
       columns: [
-        { key:'leftDisplay',  label:'Left TO',    width:'24%' },
-        { key:'rightDisplay', label:'Right TO',   width:'24%' },
-        { key:'predicates',   label:'Join Keys',  width:'44%' },
-
+        { key:'leftBase',     label:'Left Table', width:'18%', mono:true },
+        { key:'leftTO',       label:'Left TO',    width:'20%', mono:true },
+        { key:'rightDisplay', label:'Right TO',   width:'24%', mono:true },
+        { key:'predicates',   label:'Join Keys',  width:'35%' },
       ],
-      defaultSort: 'leftTO',
+      defaultSort: 'leftBase',
     });
 
   })();
@@ -8442,8 +8651,12 @@ function renderResults(file, root, s, elapsed) {
   // Reference: Methodology, About
   const sectionMap = {
     'tab-tables':      'Schema',
+    'tab-fields':      'Schema',
     'tab-relationships': 'Schema',
-    'tab-layouts':     'Schema',
+    'tab-layouts':         'Schema',
+    'tab-layout-objects':  'Schema',
+    'tab-portals':         'Schema',
+    'tab-controls':        'Schema',
     'tab-themes':      'Schema',
     'tab-fpt':              'Schema',
     'tab-field-browser':    'Schema',
@@ -8452,8 +8665,13 @@ function renderResults(file, root, s, elapsed) {
     'tab-scripts':          'Logic',
     'tab-calcs':       'Logic',
     'tab-valuelists':  'Logic',
-    'tab-globals':     'Logic',
-    'tab-security':    'Configuration',
+    'tab-variables':       'Logic',
+    'tab-custom-functions':'Logic',
+    'tab-plugins':         'Logic',
+    'tab-menus':           'Logic',
+    'tab-security':           'Configuration',
+    'tab-privilege-sets':     'Configuration',
+    'tab-extended-privileges':'Configuration',
     'tab-fileconfig':  'Configuration',
     'tab-css':         'Quality',
     'tab-tags':        'Quality',
@@ -8507,10 +8725,15 @@ function renderResults(file, root, s, elapsed) {
   // Then the remaining tabDefs slot into their assigned section
   // Browser tabs are grouped as children of their parent tab
   const browserParentMap = {
-    'tab-field-browser':    'tab-tables',
-    'tab-fpt':              'tab-tables',
+    'tab-field-browser':    'tab-fields',
+    'tab-fpt':              'tab-fields',
     'tab-layout-browser':   'tab-layouts',
+    'tab-layout-objects':   'tab-layouts',
+    'tab-portals':          'tab-layouts',
+    'tab-controls':         'tab-layouts',
     'tab-script-browser':   'tab-scripts',
+    'tab-privilege-sets':   'tab-security',
+    'tab-extended-privileges':'tab-security',
   };
   const parentItems = {}; // id -> item ref for attaching children
 
@@ -8537,6 +8760,17 @@ function renderResults(file, root, s, elapsed) {
     if (parentItems[pid] && parentItems[pid].children && parentItems[pid].children.length) {
       parentItems[pid].defaultOpen = true;
     }
+  });
+
+  // Reorder Schema section: Tables & Fields, Layouts, Relationships, Themes
+  const schemaOrder = ['tab-tables', 'tab-fields', 'tab-layouts', 'tab-layout-objects', 'tab-portals', 'tab-controls', 'tab-relationships', 'tab-themes'];
+  sections['Schema'].sort(function(a, b) {
+    const ai = schemaOrder.indexOf(a.id);
+    const bi = schemaOrder.indexOf(b.id);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
   });
 
   // Render sidebar
