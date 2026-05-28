@@ -2854,16 +2854,22 @@ function buildRowListPanel(host, list) {
   const rows = list.map(item => {
     if (typeof item === 'string') return { name: item, note: '' };
     return {
-      name:     item.name     || '',
-      fields:   item.fields   || '',
-      tos:      item.tos      || '',
-      unstored: item.unstored || '',
-      note:     item.note     || '',
+      name:       item.name       || '',
+      fields:     item.fields     || '',
+      tos:        item.tos        || '',
+      unstored:   item.unstored   || '',
+      table:      item.table      || '',
+      field:      item.field      || '',
+      data_type:  item.data_type  || '',
+      field_type: item.field_type || '',
+      steps:      item.steps      || '',
+      note:       item.note       || '',
     };
   });
   // Detect enriched table rows (have a 'fields' property)
-  const isEnrichedTable  = rows.length > 0 && list[0] && list[0].fields   !== undefined;
-  const isEnrichedScript = rows.length > 0 && list[0] && list[0].steps    !== undefined;
+  const isEnrichedTable  = rows.length > 0 && list[0] && list[0].fields    !== undefined;
+  const isEnrichedScript = rows.length > 0 && list[0] && list[0].steps     !== undefined;
+  const isEnrichedField  = rows.length > 0 && list[0] && list[0].data_type !== undefined && list[0].table !== undefined;
   const hasAnyNote = rows.some(r => r.note);
   if (isEnrichedTable) {
     renderDenseTable({
@@ -2885,11 +2891,29 @@ function buildRowListPanel(host, list) {
       emptyMsg: 'Nothing to show.',
       rows: rows,
       columns: [
-        { key: 'name',  label: 'Script', width: '45%', mono: true },
-        { key: 'steps', label: 'Steps',  width: '12%', align: 'right' },
-        { key: 'note',  label: 'Flags',               hideIfAllEmpty: true },
+        { key: 'name',           label: 'Script',       width: '38%', mono: true },
+        { key: 'steps',          label: 'Steps',        width: '8%',  align: 'right' },
+        { key: 'full_access',    label: 'Full Access',  width: '9%',  align: 'center', hideIfAllEmpty: true },
+        { key: 'loops',          label: 'Loops',        width: '7%',  align: 'center', hideIfAllEmpty: true },
+        { key: 'psos',           label: 'PSoS',         width: '7%',  align: 'center', hideIfAllEmpty: true },
+        { key: 'error_handling', label: 'Err Handling', width: '10%', align: 'center', hideIfAllEmpty: true },
+        { key: 'globals',        label: '$$Globals',    width: '8%',  align: 'center', hideIfAllEmpty: true },
       ],
       defaultSort: 'name',
+    });
+  } else if (isEnrichedField) {
+    renderDenseTable({
+      containerEl: host,
+      emptyMsg: 'Nothing to show.',
+      rows: rows,
+      columns: [
+        { key: 'table',      label: 'Table',      width: '30%', mono: true },
+        { key: 'field',      label: 'Field',      width: '35%', mono: true },
+        { key: 'data_type',  label: 'Data Type',  width: '12%' },
+        { key: 'field_type', label: 'Field Type',              hideIfAllEmpty: true },
+        { key: 'note',       label: 'Detail',                  hideIfAllEmpty: true },
+      ],
+      defaultSort: 'table',
     });
   } else {
     renderDenseTable({
@@ -3542,7 +3566,7 @@ function parseTablesAndFields(doc, root) {
         else if (dt === 'TimeStamp') s.field_type_timestamp++;
         else if (dt === 'Binary') s.field_type_container++;
       }
-      const fieldEntry = { name: qualified };
+      const fieldEntry = { name: qualified, table: tableName, field: fieldName, data_type: dt, field_type: ft };
 
       // Initialise the field info entry — additional fields populated
       // through the rest of this iteration as discoveries are made.
@@ -3577,14 +3601,14 @@ function parseTablesAndFields(doc, root) {
         if (parseInt(attr(stor,'maxRepetitions')||'1')>1) {
           const reps = parseInt(attr(stor,'maxRepetitions')||'1');
           s.repeating_fields++;
-          s.detail.fields_repeating.push({ name: qualified, note: reps + ' reps' });
+          s.detail.fields_repeating.push({ name: qualified, table: tableName, field: fieldName, data_type: dt, field_type: ft, note: reps + ' reps' });
           s.field_info[qualified].is_repeating = true;
           s.field_info[qualified].reps = reps;
         }
         const idx = attr(stor,'index')||'';
         if (idx && idx!=='None' && idx!=='none') {
           s.indexed_fields++;
-          s.detail.fields_indexed.push({ name: qualified, note: idx });
+          s.detail.fields_indexed.push({ name: qualified, table: tableName, field: fieldName, data_type: dt, field_type: ft, note: idx });
           s.field_info[qualified].is_indexed = true;
           s.field_info[qualified].index = idx;
         }
@@ -3620,7 +3644,7 @@ function parseTablesAndFields(doc, root) {
         }
         if (attr(ae,'prohibitModification')==='True') s.prohibit_modification++;
         if (aeKind) {
-          s.detail.fields_auto_entry.push({ name: qualified, note: aeKind });
+          s.detail.fields_auto_entry.push({ name: qualified, table: tableName, field: fieldName, data_type: dt, field_type: ft, note: aeKind });
           if (s.field_info[qualified]) s.field_info[qualified].auto_entry = aeKind;
         }
       }
@@ -3638,7 +3662,7 @@ function parseTablesAndFields(doc, root) {
           if (attr(val,'existing')==='True') rules.push('existing');
           if (qs(val,'Calculation'))         rules.push('calc');
           if (qs(val,'InRange'))             rules.push('range');
-          s.detail.fields_validated.push({ name: qualified, note: rules.join(', ') });
+          s.detail.fields_validated.push({ name: qualified, table: tableName, field: fieldName, data_type: dt, field_type: ft, note: rules.join(', ') });
           if (s.field_info[qualified]) {
             s.field_info[qualified].validated = true;
             s.field_info[qualified].validation_rules = rules.join(', ');
@@ -3649,7 +3673,7 @@ function parseTablesAndFields(doc, root) {
 
       // FIX 5: Stored vs unstored calc — use storeCalculationResults attribute like DDR analyser
       if (ft==='Calculated') {
-        const calcEntry = { table: tableName, field: fieldName, name: qualified };
+        const calcEntry = { table: tableName, field: fieldName, name: qualified, data_type: dt, field_type: ft };
         if (stor) {
           const storeAttr = stor.getAttribute('storeCalculationResults');
           const isGlobal = attr(stor,'global')==='True';
@@ -7812,7 +7836,15 @@ function renderResults(file, root, s, elapsed) {
       row('Full-Access Scripts', fmt(scr.full_access_scripts), pct(scr.full_access_scripts,scr.script_count)+' of scripts',1,ragVal(scr.full_access_scripts,3,8), null, (function() {
         return (sd.scripts_full_access || []).map(function(s2) {
           const info = scr.info && scr.info[s2.name];
-          return { name: s2.name, steps: info ? String(info.step_count) : '—', note: s2.note || '' };
+          return {
+            name:           s2.name,
+            steps:          info ? (info.step_count || 0) : 0,
+            full_access:    info && info.full_access       ? '✓' : '',
+            loops:          info && info.has_loops         ? '✓' : '',
+            psos:           info && info.has_psos          ? '✓' : '',
+            error_handling: info && info.has_error_capture ? '✓' : '',
+            globals:        info && info.uses_globals      ? '✓' : '',
+          };
         });
       }())) +
       row('With Error Handling', fmt(scr.scripts_with_error_handling), pct(scr.scripts_with_error_handling,scr.script_count)+' of scripts',1,
@@ -7820,19 +7852,43 @@ function renderResults(file, root, s, elapsed) {
           null, (function() {
         return (sd.scripts_error_capture || []).map(function(s2) {
           const info = scr.info && scr.info[s2.name];
-          return { name: s2.name, steps: info ? String(info.step_count) : '—', note: s2.note || '' };
+          return {
+            name:           s2.name,
+            steps:          info ? (info.step_count || 0) : 0,
+            full_access:    info && info.full_access       ? '✓' : '',
+            loops:          info && info.has_loops         ? '✓' : '',
+            psos:           info && info.has_psos          ? '✓' : '',
+            error_handling: info && info.has_error_capture ? '✓' : '',
+            globals:        info && info.uses_globals      ? '✓' : '',
+          };
         });
       }())) +
       row('Using PSOS', fmt(scr.scripts_psos), pct(scr.scripts_psos,scr.script_count)+' of scripts',1, null, null, (function() {
         return (sd.scripts_psos || []).map(function(s2) {
           const info = scr.info && scr.info[s2.name];
-          return { name: s2.name, steps: info ? String(info.step_count) : '—', note: s2.note || '' };
+          return {
+            name:           s2.name,
+            steps:          info ? (info.step_count || 0) : 0,
+            full_access:    info && info.full_access       ? '✓' : '',
+            loops:          info && info.has_loops         ? '✓' : '',
+            psos:           info && info.has_psos          ? '✓' : '',
+            error_handling: info && info.has_error_capture ? '✓' : '',
+            globals:        info && info.uses_globals      ? '✓' : '',
+          };
         });
       }())) +
       row('With Loops', fmt(scr.scripts_with_loops), pct(scr.scripts_with_loops,scr.script_count)+' of scripts',1, null, null, (function() {
         return (sd.scripts_with_loops || []).map(function(s2) {
           const info = scr.info && scr.info[s2.name];
-          return { name: s2.name, steps: info ? String(info.step_count) : '—', note: s2.note || '' };
+          return {
+            name:           s2.name,
+            steps:          info ? (info.step_count || 0) : 0,
+            full_access:    info && info.full_access       ? '✓' : '',
+            loops:          info && info.has_loops         ? '✓' : '',
+            psos:           info && info.has_psos          ? '✓' : '',
+            error_handling: info && info.has_error_capture ? '✓' : '',
+            globals:        info && info.uses_globals      ? '✓' : '',
+          };
         });
       }())) +
       row('Using Global Variables', fmt(scr.scripts_using_globals), pct(scr.scripts_using_globals,scr.script_count)+' of scripts',1) +
@@ -8143,11 +8199,11 @@ function renderResults(file, root, s, elapsed) {
       return {
         name:           name,
         steps:          info.step_count || 0,
-        full_access:    info.full_access    ? 'yes' : '',
-        loops:          info.has_loops      ? 'yes' : '',
-        psos:           info.has_psos       ? 'yes' : '',
-        error_handling: info.has_error_capture ? 'yes' : '',
-        globals:        info.uses_globals   ? 'yes' : '',
+        full_access:    info.full_access       ? '✓' : '',
+        loops:          info.has_loops         ? '✓' : '',
+        psos:           info.has_psos          ? '✓' : '',
+        error_handling: info.has_error_capture ? '✓' : '',
+        globals:        info.uses_globals      ? '✓' : '',
       };
     }).filter(function(r) { return !r.name.match(/^-+$/); });
 
@@ -8163,13 +8219,13 @@ function renderResults(file, root, s, elapsed) {
             emptyMsg: 'No scripts found.',
             rows: scrRows,
             columns: [
-              { key:'name',           label:'Script',         width:'40%', mono:true },
-              { key:'steps',          label:'Steps',          width:'8%',  align:'right' },
-              { key:'full_access',    label:'Full Access',                 hideIfAllEmpty:true },
-              { key:'loops',          label:'Loops',                       hideIfAllEmpty:true },
-              { key:'psos',           label:'PSoS',                        hideIfAllEmpty:true },
-              { key:'error_handling', label:'Error Handling',              hideIfAllEmpty:true },
-              { key:'globals',        label:'$$Globals',                   hideIfAllEmpty:true },
+              { key:'name',           label:'Script',      width:'38%', mono:true },
+              { key:'steps',          label:'Steps',       width:'7%',  align:'right' },
+              { key:'full_access',    label:'Full Access', width:'9%',  align:'center', hideIfAllEmpty:true },
+              { key:'loops',          label:'Loops',       width:'7%',  align:'center', hideIfAllEmpty:true },
+              { key:'psos',           label:'PSoS',        width:'7%',  align:'center', hideIfAllEmpty:true },
+              { key:'error_handling', label:'Err Handling',width:'9%',  align:'center', hideIfAllEmpty:true },
+              { key:'globals',        label:'$$Globals',   width:'8%',  align:'center', hideIfAllEmpty:true },
             ],
             defaultSort: 'name',
             noScroll: true,
@@ -9112,7 +9168,7 @@ function redrawDenseTable(container) {
     function rowCells(r) {
         return state.columns.map(c => {
             const v = r[c.key];
-            const align = c.align === 'right' ? ' style="text-align:right"' : '';
+            const align = c.align === 'right' ? ' style="text-align:right"' : c.align === 'center' ? ' style="text-align:center"' : '';
             let display;
             if (v === true) display = '<span class="dt-flag">●</span>';
             else if (v === false || v === null || v === undefined || v === '') display = '<span class="dt-empty">—</span>';
