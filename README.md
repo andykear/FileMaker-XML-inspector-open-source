@@ -81,6 +81,7 @@ For generating pasteable FileMaker script XML, see the companion [FileMaker XML 
 
 | Version | Notes |
 |---|---|
+| 1.3 | Many UI updates, Dark Mode, Resolve additional details |
 | 1.2 | Relationships tab added — full sortable table with TO and base table display |
 | 1.1 | Initial public prototype |
 
