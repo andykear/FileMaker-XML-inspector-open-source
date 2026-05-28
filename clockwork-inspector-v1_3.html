@@ -1384,6 +1384,8 @@
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
+  .dt-row-clickable { cursor: pointer; }
+  .dt-row-clickable:hover { background: var(--brand-tint) !important; }
   .dt-table-scroll {
     max-height: none;
     overflow-y: visible;
@@ -1615,7 +1617,8 @@
     font-size: 13px;
     color: var(--ink-2);
   }
-  .sidebar-child .sidebar-icon { display: none; }
+  .sidebar-child .sidebar-icon { display: none; width: 0; margin: 0; padding: 0; }
+  .sidebar-child { gap: 4px; }
   .sidebar-children {
     display: none;
     overflow: hidden;
@@ -7714,38 +7717,57 @@ function renderResults(file, root, s, elapsed) {
   const gd = (rg.detail || {});
 
   // ── TABLES TAB ────────────────────────────────────────────────────────────
-  tabDefs.push({ id:'tab-tables', label:'Tables', icon:'⬡', content:
-    section('Tables','⬡',
-      row('Base Table Count', fmt(tf.table_count), (u.tables && u.tables.length) ? u.tables.length + ' with no references found' : '', 0, null, null, (function() {
-        const toCountByBase = {};
-        if (rg && rg.detail && rg.detail.tos_all) {
-          for (const to of rg.detail.tos_all) {
-            const base = (to.note || '').startsWith('→') ? (to.note || '').slice(1).trim() : (to.note || '').trim();
-            if (base) toCountByBase[base] = (toCountByBase[base] || 0) + 1;
-          }
-        }
-        return (tf.tables || []).map(function(t) {
-          const fieldCount = tf.fields_per_table ? (tf.fields_per_table[t.name] || 0) : 0;
-          const toCount = toCountByBase[t.name] || 0;
-          const unstored = tf.unstored_per_table ? (tf.unstored_per_table[t.name] || 0) : 0;
-          const unstoredPct = fieldCount > 0 ? Math.round(unstored / fieldCount * 100) : 0;
-          const isUnreferenced = u.tables && u.tables.includes(t.name);
-          return {
-            name: t.name,
-            fields: fieldCount > 0 ? String(fieldCount) : '—',
-            tos: toCount > 0 ? String(toCount) : '—',
-            unstored: unstoredPct > 0 ? unstoredPct + '%' : '—',
-            note: isUnreferenced ? 'unreferenced' : '',
-          };
-        });
-      })()) +
-      row('With Comments', fmt(tf.tables_with_comments), pct(tf.tables_with_comments,tf.table_count)+' of tables',1, null, null, td.tables_with_comments) +
-      row('Table Occurrences', fmt(rg.table_occurrence_count), (u.table_occurrences && u.table_occurrences.length) ? u.table_occurrences.length + ' with no references found' : '', 0, null, null, gd.tos_all) +
-      row('TOs with Zero Relationships', fmt(rg.to_zero_relationships), pct(rg.to_zero_relationships,rg.table_occurrence_count)+' of TOs',1,ragPct(rg.to_zero_relationships,rg.table_occurrence_count,0.2,0.35), null, gd.tos_zero_relationships) +
-      row('Relationship Count', fmt(rg.relationship_count), '', 0, null, 'tab-relationships') +
-      row('TO Colors Used', fmt(rg.to_unique_colors),'colour-coded graph',1)
-    )
-  });
+  tabDefs.push({ id:'tab-tables', label:'Tables', icon:'⬡', contentEl: (function() {
+    // Build TO count per base table
+    const toCountByBase = {};
+    if (rg && rg.detail && rg.detail.tos_all) {
+      for (const to of rg.detail.tos_all) {
+        const base = (to.note || '').startsWith('→') ? (to.note || '').slice(1).trim() : (to.note || '').trim();
+        if (base) toCountByBase[base] = (toCountByBase[base] || 0) + 1;
+      }
+    }
+    const tableRows = (tf.tables || []).map(function(t) {
+      const fieldCount  = tf.fields_per_table   ? (tf.fields_per_table[t.name]   || 0) : 0;
+      const toCount     = toCountByBase[t.name]  || 0;
+      const unstored    = tf.unstored_per_table  ? (tf.unstored_per_table[t.name] || 0) : 0;
+      const unstoredPct = fieldCount > 0 ? Math.round(unstored / fieldCount * 100) : 0;
+      const isUnref     = u.tables && u.tables.includes(t.name);
+      const hasComment  = tf.table_info && tf.table_info[t.name] && tf.table_info[t.name].comment;
+      return {
+        name:     t.name,
+        fields:   fieldCount  > 0 ? fieldCount  : 0,
+        tos:      toCount     > 0 ? toCount     : 0,
+        unstored: unstoredPct > 0 ? unstoredPct + '%' : '',
+        unref:    isUnref     ? '⚠' : '',
+        comment:  hasComment  ? '✓' : '',
+      };
+    });
+
+    const unreftNote = u.tables && u.tables.length ? ' · ' + u.tables.length + ' unreferenced' : '';
+    const wrap = document.createElement('div');
+    wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">⬡</span>Tables — ' + tf.table_count + unreftNote + '<span style="margin-left:12px;font-size:11px;color:var(--ink-3);font-weight:400">Click a row to browse its fields</span></div><div class="tables-host"></div></div>';
+    const host = wrap.querySelector('.tables-host');
+
+    setTimeout(function() {
+      renderDenseTable({
+        containerEl: host,
+        emptyMsg: 'No tables found.',
+        rows: tableRows,
+        columns: [
+          { key: 'name',     label: 'Table',    width: '40%', mono: true },
+          { key: 'fields',   label: 'Fields',   width: '10%', align: 'right' },
+          { key: 'tos',      label: 'TOs',      width: '8%',  align: 'right' },
+          { key: 'unstored', label: 'Unstored', width: '10%', align: 'right', hideIfAllEmpty: true },
+          { key: 'comment',  label: 'Comment',  width: '8%',  align: 'center', hideIfAllEmpty: true },
+          { key: 'unref',    label: 'Unref',    width: '8%',  align: 'center', hideIfAllEmpty: true },
+        ],
+        defaultSort: 'name',
+        noScroll: true,
+        onRowClick: function(row) { jumpToFieldBrowser(row.name); },
+      });
+    }, 0);
+    return wrap;
+  })() });
 
   // ── FIELDS TAB ────────────────────────────────────────────────────────────
   tabDefs.push({ id:'tab-fields', label:'Fields', icon:'≡', content:
@@ -8121,7 +8143,7 @@ function renderResults(file, root, s, elapsed) {
   const cmd = (cm.detail || {});
   const plgd = (plg && plg.detail) ? plg.detail : {};
   // ── VARIABLES TAB ───────────────────────────────────────────────────────────
-  tabDefs.push({ id:'tab-variables', label:'Variables', icon:'$$', contentEl: (function() {
+  tabDefs.push({ id:'tab-variables', label:'Variables', icon:'⊹', contentEl: (function() {
     const wrap = document.createElement('div');
     const varRows = (gvd.all || []).map(function(v) {
       const refs = parseInt((v.note || '').replace(/[^0-9]/g,'')) || 0;
@@ -9350,6 +9372,7 @@ function renderDenseTable(opts) {
         sortDir: 'asc',
         filter: '',
         noScroll: opts.noScroll || false,
+        onRowClick: opts.onRowClick || null,
     };
 
     redrawDenseTable(container);
@@ -9430,7 +9453,7 @@ function redrawDenseTable(container) {
         }
     } else {
         for (const r of rows) {
-            bodyHtml += `<tr class="dt-row">${rowCells(r)}</tr>`;
+            bodyHtml += `<tr class="dt-row${state.onRowClick ? ' dt-row-clickable' : ''}" data-row-idx="${rows.indexOf(r)}">${rowCells(r)}</tr>`;
         }
     }
 
@@ -9455,6 +9478,16 @@ function redrawDenseTable(container) {
           </table>
         </div>
       </div>`;
+
+    // Wire up row click handler if provided
+    if (state.onRowClick) {
+        container.querySelectorAll('.dt-row-clickable').forEach(function(tr) {
+            const idx = parseInt(tr.getAttribute('data-row-idx'));
+            if (!isNaN(idx) && rows[idx]) {
+                tr.addEventListener('click', function() { state.onRowClick(rows[idx]); });
+            }
+        });
+    }
 }
 
 // Click handler — toggle sort direction if same column, else switch column
@@ -9468,6 +9501,24 @@ function sortDenseTable(wrap, key) {
 }
 
 // Input handler — re-render with new filter term
+// Jump to Field Browser tab and filter to a specific table
+function jumpToFieldBrowser(tableName) {
+    // Switch to the field browser tab
+    jumpToTab('tab-field-browser');
+    // Wait for tab to render, then set filter
+    setTimeout(function() {
+        const pane = document.getElementById('tab-field-browser');
+        if (!pane) return;
+        const wrap = pane.querySelector('.dt-wrap');
+        if (!wrap) return;
+        const input = wrap.querySelector('.dt-filter-input');
+        if (input) {
+            input.value = tableName;
+            filterDenseTable(wrap, tableName);
+        }
+    }, 50);
+}
+
 function filterDenseTable(wrap, value) {
     const container = wrap.parentNode;
     const state = container._denseTable;
