@@ -74,7 +74,7 @@ For generating pasteable FileMaker script XML, see the companion [FileMaker XML 
 - Relationship duplicate detection is not yet implemented — planned for a future version once the definition is nailed down.
 - Layout object analysis covers common object types; some edge cases (web viewer configurations, complex button bar scripts) are partially parsed.
 - Windows and cross-platform DDR variations have not been systematically tested.
-- The UI is still a little disorganised as I'm consentrating on resolving new metrics it is improving with each release though.
+- The UI is still a little disorganised as I'm concentrating on resolving new metrics it is improving with each release though.
 
 ---
 
