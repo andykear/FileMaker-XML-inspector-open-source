@@ -53,7 +53,7 @@ Load a FileMaker DDR XML file (exported via Tools → Save a Copy as XML) and th
 
 1. Download `clockwork-inspector-x.html`
 2. Open it in any modern browser
-3. Drag and drop your DDR XML file onto the drop zone
+3. Drag and drop your Save as XML file onto the drop zone
 
 No installation. No server. Runs entirely locally.
 
