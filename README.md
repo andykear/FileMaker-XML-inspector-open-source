@@ -1,6 +1,6 @@
 # Clockwork Inspector for FileMaker
 
-A single-file, browser-based audit tool for FileMaker Database Design Reports (DDR / SaveAsXML). Drop in a DDR, get an instant structured analysis — no installation, no server, no dependencies.
+A single-file, browser-based audit tool for FileMaker Save as XML abalysis. Get an instant structured analysis — no installation, no server, no dependencies.
 
 Developed by Andrew Kear owner of [Clockwork Creative Technology](https://www.clockworkct.co.uk) and shared openly with the FileMaker/Claris community.
 
