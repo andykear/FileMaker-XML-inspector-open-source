@@ -81,6 +81,7 @@ For generating pasteable FileMaker script XML, see the companion [FileMaker XML 
 
 | Version | Notes |
 |---|---|
+| 1.5 | Field dependencies, containers section, expanded metrics, better sideways scrolling on dense tables |
 | 1.4 | Major UI overhaul and expanded metric coverage |
 | 1.3 | Many UI updates, Dark Mode, Resolve additional details |
 | 1.2 | Relationships tab added — full sortable table with TO and base table display |
