@@ -10,7 +10,7 @@ Developed by Andrew Kear owner of [Clockwork Creative Technology](https://www.cl
 
 ## Why open source?
 
-There are other DDR analysis tools. What makes this different is intent.
+There are other XML analysis tools. What makes this different is intent.
 
 Other solutions in this space are commercial, closed, or both. This one is open the source is readable, forkable, and designed to be absorbed. Specifically, it is structured so that the HTML file can be uploaded directly to Claude as a skill or project document, allowing Claude to understand your FileMaker solution's structure and assist with development work in context.
 
@@ -20,7 +20,7 @@ We believe open sharing and collaboration is how the FileMaker community drives 
 
 ## What it analyses
 
-Load a FileMaker DDR XML file (exported via Tools → Save a Copy as XML) and the Inspector parses it entirely in your browser. Nothing is uploaded anywhere.
+Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) and the Inspector parses it entirely in your browser. Nothing is uploaded anywhere.
 
 **Schema**
 - Base tables, table occurrences, fields — counts, types, storage, validation, auto-entry
@@ -73,7 +73,7 @@ For generating pasteable FileMaker script XML, see the companion [FileMaker XML 
 - Script step analysis uses a ~200-entry step ID dictionary — steps not in the dictionary report as `unknown`. The dictionary is updated as new steps are confirmed.
 - Relationship duplicate detection is not yet implemented — planned for a future version once the definition is nailed down.
 - Layout object analysis covers common object types; some edge cases (web viewer configurations, complex button bar scripts) are partially parsed.
-- Windows and cross-platform DDR variations have not been systematically tested.
+- Windows and cross-platform XML variations have not been systematically tested.
 - 
 ---
 
