@@ -97,4 +97,4 @@ For generating pasteable FileMaker script XML, see the companion [FileMaker XML 
 
 ## Contributing
 
-Found a parsing error? A step ID that's wrong? A DDR structure we don't handle? Open an issue or PR. The analysis logic improves through real-world DDR testing — that's how it was built.
+Found a parsing error? A step ID that's wrong? A XML structure we don't handle? Open an issue or PR. Open an issue or PR and Andrew will investigate.
