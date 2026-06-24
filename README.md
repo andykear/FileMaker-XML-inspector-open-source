@@ -1,10 +1,13 @@
 # Clockwork Inspector for FileMaker
 
+[![Stars](https://img.shields.io/github/stars/andykear/FileMaker-XML-inspector-open-source?style=social)](https://github.com/andykear/FileMaker-XML-inspector-open-source)
+[![License](https://img.shields.io/badge/license-CC%20BY%204.0-green)](https://creativecommons.org/licenses/by/4.0/)
+
 A single-file, browser-based audit tool for FileMaker Save as XML analysis. Get an instant structured analysis — no installation, no server, no dependencies.
 
 Developed by Andrew Kear, owner of [Clockwork Creative Technology](https://www.clockworkct.co.uk), and shared openly with the FileMaker/Claris community.
 
-> **A working tool, actively developed.** It is used in real consultancy work and handles production files, though some areas are still being refined and edge cases remain (documented below). Shared openly — contributions, corrections, and counter-examples are welcomed.
+> **A working tool, actively developed.** It is used in real consultancy work and handles production files, though some areas are still being refined and edge cases remain (documented below). Share feedback via [GitHub Issues](https://github.com/andykear/FileMaker-XML-inspector-open-source/issues).
 
 ---
 
@@ -12,9 +15,9 @@ Developed by Andrew Kear, owner of [Clockwork Creative Technology](https://www.c
 
 There are other XML analysis tools. What makes this different is intent.
 
-Other solutions in this space are commercial, closed, or both. This one is open — the source is readable, forkable, and designed to be absorbed. Specifically, it is structured so that the HTML file can be uploaded directly to Claude as a skill or project document, allowing Claude to understand your FileMaker solution's structure and assist with development work in context.
+Other solutions in this space are commercial, closed, or both. This one is open — the source is readable, forkable, and designed to be absorbed. Specifically, it is structured so that the HTML file can be modified, extended, or embedded in your own workflows.
 
-Open sharing and collaboration is how the FileMaker community drives the platform forward. Publishing the analysis logic means everyone can see how it works, correct it when it's wrong, and build on it.
+Open sharing and collaboration is how the FileMaker community drives the platform forward. Publishing the analysis logic means everyone can see how it works, correct it when it's wrong, and build on it. That's how it was built in the first place — through community round-trip testing and feedback.
 
 ---
 
@@ -53,13 +56,13 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 
 ## New in v2.0
 
-**Comparison mode.** Load two Save as XML files and diff them side by side. A three-pane view (categories → changed items → detail) shows what was added, removed, and modified across schema, scripts, fields, layouts, accounts, and more. Modified scripts show a line-level step diff with deleted steps struck through in place; modified calculation fields show a line-level diff of the calc body. Removed objects that had references in the earlier version are flagged so you can see what a deletion would break.
+**Comparison mode.** Load two Save as XML files and diff them side by side. A three-pane view (categories → changed items → detail) shows what was added, removed, and modified across schema, scripts, layouts, relationships, and fields. Export diffs as Markdown or JSON for reports and version control.
 
 **Split-catalog support (FileMaker 2026).** Drop a FileMaker 2026 multi-file Save as XML folder and the Inspector stitches the fragments back into a single in-memory structure for analysis.
 
-**Mermaid diagram export.** Generate copy-ready Mermaid.js syntax for script call trees and relationship structures, with options to abbreviate long table-occurrence names and limit to entry points. Paste the result into any Mermaid renderer or Markdown viewer to draw the graph.
+**Mermaid diagram export.** Generate copy-ready Mermaid.js syntax for script call trees and relationship structures, with options to abbreviate long table-occurrence names and limit to entry points only. Perfect for documentation and architecture diagrams.
 
-**Field tag pills.** Field type, storage, global, validation, and index status now render as scannable coloured chips in the unreferenced-fields view and the diff detail panel, rather than plain table text.
+**Field tag pills.** Field type, storage, global, validation, and index status now render as scannable coloured chips in the unreferenced-fields view and the diff detail panel, rather than plain text.
 
 **Impact analysis.** Trace where a field, script, or other object is used across the solution before changing or removing it, so you can see what a change would touch.
 
@@ -79,13 +82,17 @@ No installation. No server. Runs entirely locally.
 
 ## Using with Claude
 
-The Inspector complements AI-assisted FileMaker development. Upload the HTML file to a Claude Project or as a skill — Claude can then reason about your solution's structure, cross-reference scripts against schema, and assist with refactoring work informed by what the Inspector surfaces. The Mermaid exports and structured summaries are a compact way to give an LLM the shape of a solution without pasting raw multi-megabyte XML.
+The Inspector complements AI-assisted FileMaker development. Upload the HTML file to a Claude Project or as a skill — Claude can then reason about your solution's structure, cross-reference scripts and layouts, and help you identify gaps or opportunities for improvement.
 
 It pairs with three companion Claude skills for generating paste-ready FileMaker XML:
 
 - [FileMaker Script XML Skill](https://github.com/andykear/FileMaker-XMLsnippet-Claude-Skill) — script steps for the Script Workspace
 - [FileMaker Layout XML Skill](https://github.com/andykear/FileMaker-XMLsnippet-Layout-Claude-Skill) — layout objects for Layout mode
 - [FileMaker Field Definitions XML Skill](https://github.com/andykear/FileMaker-XML-field-definitions) — field definitions for Manage Database
+
+Plus a security tool:
+
+- [FileMaker XML Scrubber](https://github.com/andykear/FileMaker-XML-scrubber) — redacts credentials before sharing XML with AI tools
 
 ---
 
@@ -104,7 +111,7 @@ It pairs with three companion Claude skills for generating paste-ready FileMaker
 
 | Version | Notes |
 |---|---|
-| 2.0 | Comparison mode: diff two files with script step and field calculation diffs, plus Markdown/JSON diff export; FileMaker 2026 split-catalog folder support; interactive script call-graph view; impact analysis; Mermaid export for call graphs and relationships; field tag pills; tiered unreferenced-field confidence; self-reference fix in unreferenced-field detection |
+| 2.0 | Comparison mode: diff two files with script step and field calculation diffs, plus Markdown/JSON diff export; FileMaker 2026 split-catalog folder support; interactive script call-graph visualization; impact analysis; field tag pills |
 | 1.5 | Field dependencies, containers section, expanded metrics, better sideways scrolling on dense tables |
 | 1.4 | Major UI overhaul and expanded metric coverage |
 | 1.3 | Many UI updates, Dark Mode, resolve additional details |
