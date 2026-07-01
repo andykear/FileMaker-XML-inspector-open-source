@@ -56,7 +56,7 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 
 ## New in v2.1
 
-**Full visual redesign.** The interface has been rebuilt around the Clockwork brand: the real ring-and-tick mark, the brand navy and green, and a consistent card and colour system throughout. Navy carries headings and identity, green marks anything interactive, and grey is reserved for inert data, so the report reads as a precise instrument rather than a wall of equal-weight boxes. Zero-value metrics now recede instead of competing for attention, and the export actions are collected into a single menu in both the single-file and comparison views.
+** UI improvements
 
 **Handles invalid characters in the source XML.** Some exports carry an invisible control character (often left in a field name, comment, or calculation) that makes the document invalid XML and previously stopped it parsing at all. The Inspector now strips these illegal characters before parsing and shows a notice telling you how many were removed, so the file analyses and you know it needs fixing at source.
 
