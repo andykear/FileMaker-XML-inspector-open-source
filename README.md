@@ -56,7 +56,7 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 
 ## New in v2.1
 
-** UI improvements
+UI improvements
 
 **Handles invalid characters in the source XML.** Some exports carry an invisible control character (often left in a field name, comment, or calculation) that makes the document invalid XML and previously stopped it parsing at all. The Inspector now strips these illegal characters before parsing and shows a notice telling you how many were removed, so the file analyses and you know it needs fixing at source.
 
