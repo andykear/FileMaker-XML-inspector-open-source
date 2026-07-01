@@ -54,6 +54,16 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 
 ---
 
+## New in v2.1
+
+**Full visual redesign.** The interface has been rebuilt around the Clockwork brand: the real ring-and-tick mark, the brand navy and green, and a consistent card and colour system throughout. Navy carries headings and identity, green marks anything interactive, and grey is reserved for inert data, so the report reads as a precise instrument rather than a wall of equal-weight boxes. Zero-value metrics now recede instead of competing for attention, and the export actions are collected into a single menu in both the single-file and comparison views.
+
+**Handles invalid characters in the source XML.** Some exports carry an invisible control character (often left in a field name, comment, or calculation) that makes the document invalid XML and previously stopped it parsing at all. The Inspector now strips these illegal characters before parsing and shows a notice telling you how many were removed, so the file analyses and you know it needs fixing at source.
+
+**Mermaid relationship labels are now quoted.** Relationship labels that begin with an underscore (common with FileMaker key fields such as `_kp_` and `_ks_`) previously broke the Mermaid erDiagram parser. Labels are now quoted, so they render correctly and keep the real field names intact. Thanks to [albizum](https://github.com/albizum) for the report.
+
+---
+
 ## New in v2.0
 
 **Comparison mode.** Load two Save as XML files and diff them side by side. A three-pane view (categories → changed items → detail) shows what was added, removed, and modified across schema, scripts, layouts, relationships, and fields. Export diffs as Markdown or JSON for reports and version control.
@@ -83,6 +93,8 @@ No installation. No server. Runs entirely locally.
 ## Using with Claude
 
 The Inspector complements AI-assisted FileMaker development. Upload the HTML file to a Claude Project or as a skill — Claude can then reason about your solution's structure, cross-reference scripts and layouts, and help you identify gaps or opportunities for improvement.
+
+---
 
 ## Companion repos
 
@@ -115,6 +127,7 @@ Five open-source resources for the FileMaker/Claris community:
 
 | Version | Notes |
 |---|---|
+| 2.1 | Minor UI improvements, handles illegal XML control characters in the source (strips and reports them) so affected files parse; quoted Mermaid relationship labels (fixes leading-underscore key fields) |
 | 2.0 | Comparison mode: diff two files with script step and field calculation diffs, plus Markdown/JSON diff export; FileMaker 2026 split-catalog folder support; interactive script call-graph visualization; impact analysis; field tag pills |
 | 1.5 | Field dependencies, containers section, expanded metrics, better sideways scrolling on dense tables |
 | 1.4 | Major UI overhaul and expanded metric coverage |

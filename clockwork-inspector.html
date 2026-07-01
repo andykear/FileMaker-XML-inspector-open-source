@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Clockwork Inspector for FileMaker — v2.0
+  Clockwork Inspector for FileMaker — v2.1
   Single-file, browser-based audit tool for FileMaker Save as XML analysis.
   Runs entirely client-side. Nothing is uploaded.
   Developed by Andrew Kear, Clockwork Creative Technology (clockworkct.co.uk).
@@ -12,6 +12,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Clockwork Inspector for FileMaker</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTcwMCAxNzAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHJvbGU9ImltZyIgYXJpYS1sYWJlbD0iQ2xvY2t3b3JrIj48ZGVmcz48Y2xpcFBhdGggaWQ9ImN3Y2xpcCI+PHBhdGggdHJhbnNmb3JtPSJtYXRyaXgoMSwwLDAsLTEsMCwxNzAwKSIgZD0iTTAgMTcwMEgxNzAwVjBIMFoiLz48L2NsaXBQYXRoPjwvZGVmcz48ZyBpbmtzY2FwZTpncm91cG1vZGU9ImxheWVyIiBpbmtzY2FwZTpsYWJlbD0iTGF5ZXIgMSI+PGcgY2xpcC1wYXRoPSJ1cmwoI2N3Y2xpcCkiPjxwYXRoIHRyYW5zZm9ybT0ibWF0cml4KDEsMCwwLC0xLDEzNTYuNDYxOCw0OTYuNjIwMTMpIiBkPSJNMCAwLTQwNi4xNzUtNDc2LjA1NkMtNDMzLjc3OS01MDguNDEtNDgyLjMzLTUxMi4zOTctNTE0Ljg0My00ODQuOThMLTU2Ni42NzMtNDQxLjI3M0MtNTk5LjMxOS00MTMuNzQzLTYwMy40NjctMzY0Ljk2MS01NzUuOTM3LTMzMi4zMTVMLTE2Ny4wMTUgMTUyLjYwOEMtMTM3LjEzNiAxODguMDQtODMuMDEyIDE4OS40MDctNTEuMzg0IDE1NS41MjdMLTIuMzAyIDEwMi45NTNDMjQuNTMgNzQuMjEyIDI1LjUyMSAyOS45MTEgMCAwIiBmaWxsPSIjNDlhZjVlIi8+PHBhdGggdHJhbnNmb3JtPSJtYXRyaXgoMSwwLDAsLTEsODU0LjE1MDksMTA2MC42NDUzKSIgZD0iTTAgMC0yNzYuNTI1IDIzMi4wOTNDLTI4My42MDggMjM4LjAzNy0yODQuNTMgMjQ4LjU5Ny0yNzguNTg2IDI1NS42OEwtMTU3LjM5MyA0MDAuMDc0Qy0xNTEuNDQ5IDQwNy4xNTYtMTQwLjg4OSA0MDguMDc5LTEzMy44MDYgNDAyLjEzNUwxNDIuNzE5IDE3MC4wNDJDMTQ5LjgwMiAxNjQuMDk4IDE1MC43MjQgMTUzLjUzNyAxNDQuNzggMTQ2LjQ1NUwyMy41ODcgMi4wNjFDMTcuNjQzLTUuMDIyIDcuMDgyLTUuOTQ0IDAgMCIgZmlsbD0iIzQ5YWY1ZSIvPjxwYXRoIHRyYW5zZm9ybT0ibWF0cml4KDEsMCwwLC0xLDE0MTUuNDY5OSw4NTQuNzgzOSkiIHN0cm9rZS13aWR0aD0iMjIwLjU0NyIgc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMmY0NDk1IiBkPSJNMCAwQzAtMzExLjY0OC0yNTIuNjQtNTY0LjI4OC01NjQuMjg4LTU2NC4yODgtODc1LjkzNi01NjQuMjg4LTExMjguNTc2LTMxMS42NDgtMTEyOC41NzYgMC0xMTI4LjU3NiAzMTEuNjQ4LTg3NS45MzYgNTY0LjI4OC01NjQuMjg4IDU2NC4yODgiLz48cGF0aCB0cmFuc2Zvcm09Im1hdHJpeCgxLDAsMCwtMSwxNDE1LjQ2OTksODU0Ljc4MzkpIiBzdHJva2Utd2lkdGg9IjIyMC41NDciIHN0cm9rZS1saW5lY2FwPSJidXR0IiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIHN0cm9rZS1saW5lam9pbj0ibWl0ZXIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzM5NDk5OSIgZD0iTTAgMEMwLTMxMS42NDgtMjUyLjY0LTU2NC4yODgtNTY0LjI4OC01NjQuMjg4LTg3NS45MzYtNTY0LjI4OC0xMTI4LjU3Ni0zMTEuNjQ4LTExMjguNTc2IDAtMTEyOC41NzYgMzExLjY0OC04NzUuOTM2IDU2NC4yODgtNTY0LjI4OCA1NjQuMjg4Ii8+PC9nPjwvZz48L3N2Zz4=">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -36,13 +37,22 @@
     --line-soft:   #eaecf0;
     --line-strong: #d0d5dd;
 
-    /* Brand — Clockwork green */
-    --brand:       #3aaa6d;
-    --brand-deep:  #2d8a57;
-    --brand-bright:#58c789;
-    --brand-tint:  #ecf7f1;
-    --brand-soft:  #d3eddf;
-    --brand-glow:  rgba(58,170,109,0.18);
+    /* Brand — Clockwork green (true brand value #49AF5E) */
+    --brand:       #49af5e;
+    --brand-deep:  #3d9850;
+    --brand-bright:#5cc270;
+    --brand-tint:  #eaf7ee;
+    --brand-soft:  #cfeed8;
+    --brand-glow:  rgba(73,175,94,0.18);
+
+    /* Brand — Clockwork navy (true brand value #394999) */
+    --navy:        #394999;
+    --navy-deep:   #2e3b7d;
+    --navy-bright: #5060b8;
+    --navy-tint:   #eef0f8;
+    --navy-soft:   #d4d9ee;
+    /* heading colour: navy in light, lightened in dark (set in dark block) */
+    --heading:     var(--navy);
 
     /* RAG */
     --good:      #16a05f;  --good-tint: #e7f6ee;  --good-bd: #b8e2c8;
@@ -128,13 +138,40 @@
     -webkit-backdrop-filter: blur(12px) saturate(160%);
     position: sticky; top: 0; z-index: 100;
   }
-  .header-logo { display: flex; align-items: center; gap: 12px; }
-  .header-logo svg { flex-shrink: 0; }
+  .header-logo { display: flex; align-items: center; gap: 11px; }
+  .header-logo svg, .header-logo .cw-mark { flex-shrink: 0; }
   header h1 {
     font-size: 15px; font-weight: 600;
     letter-spacing: -0.015em; line-height: 1;
     color: var(--ink);
   }
+  /* Wordmark: "Clockwork" in brand navy, product word in ink — mirrors
+     the email-signature / horizontal lockup treatment. */
+  header h1 .wm-clockwork { color: var(--navy); font-weight: 700; }
+
+  /* Export dropdown menu (collapses MD/CSV/JSON/Print/HTML) */
+  .header-menu { position: relative; display: inline-flex; }
+  .header-menu-btn::after { content: " \25BE"; color: var(--ink-4); font-size: 10px; }
+  .header-menu-panel {
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: 200;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-md); box-shadow: var(--shadow-lg);
+    padding: 5px; min-width: 168px; display: none;
+  }
+  .header-menu.open .header-menu-panel { display: block; }
+  .header-menu-item {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    padding: 8px 11px; font-size: 12.5px; color: var(--ink-2);
+    background: none; border: 0; border-radius: var(--r-sm);
+    cursor: pointer; font-family: inherit; text-align: left;
+  }
+  .header-menu-item:hover { background: var(--surface-hover); color: var(--ink); }
+  .header-menu-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--ink-4);
+    padding: 7px 11px 4px;
+  }
+  .header-menu-sep { height: 1px; background: var(--line-soft); margin: 4px 0; }
   .version {
     font-family: var(--font-mono); font-size: 10px; font-weight: 500;
     color: var(--ink-3); margin-left: 8px;
@@ -166,7 +203,7 @@
     font-size: 12px;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 7px;
+    border-radius: var(--r-sm);
     color: var(--ink-2);
     cursor: pointer;
     font-family: inherit;
@@ -180,13 +217,13 @@
     color: var(--ink);
   }
   .header-btn-primary {
-    background: var(--brand-deep);
+    background: var(--navy);
     color: #fff;
-    border-color: var(--brand-deep);
+    border-color: var(--navy);
   }
   .header-btn-primary:hover {
-    background: var(--brand);
-    border-color: var(--brand);
+    background: var(--navy-deep);
+    border-color: var(--navy-deep);
     color: #fff;
   }
   .header-btn-sep {
@@ -383,10 +420,18 @@
     animation: fadeIn 0.35s var(--ease-out) 0.1s both;
   }
   .overview-label {
-    font-size: 11px; font-weight: 500;
-    text-transform: uppercase; letter-spacing: 0.08em;
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
     color: var(--ink-3); margin-bottom: 12px;
     font-family: var(--font-sans);
+    display: flex; align-items: center; gap: 9px;
+  }
+  /* Green signature bar — echoes the vertical divider in the Clockwork
+     email signature / brand lockup. Used as the marker for section heads. */
+  .overview-label::before {
+    content: ''; width: 3px; height: 14px;
+    background: var(--brand); border-radius: 2px;
+    flex-shrink: 0;
   }
   .overview-grid {
     display: grid;
@@ -419,17 +464,29 @@
   }
   .stat-card:hover::before { transform: scaleY(1); }
   .stat-card .label {
-    font-size: 11px; color: var(--ink-3);
-    font-weight: 500; letter-spacing: -0.005em;
-    margin-bottom: 8px;
+    font-size: 10px; color: var(--ink-4);
+    font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 7px;
     font-family: var(--font-sans);
   }
   .stat-card .value {
-    font-family: var(--font-mono); font-size: 24px;
-    font-weight: 500; color: var(--ink);
-    line-height: 1; letter-spacing: -0.03em;
+    font-family: var(--font-mono); font-size: 23px;
+    font-weight: 600; color: var(--ink);
+    line-height: 1; letter-spacing: -0.02em;
     font-feature-settings: 'tnum';
   }
+  /* Headline schema counts carry navy to anchor the grid */
+  .stat-card.key .value { color: var(--navy); }
+  /* Zero-value cards recede so the eye lands on real counts */
+  .stat-card.zero {
+    background: var(--surface-soft);
+    border-color: var(--line-soft);
+    box-shadow: none;
+  }
+  .stat-card.zero .value { color: var(--ink-5); font-weight: 500; }
+  .stat-card.zero .label { color: var(--ink-5); }
+  .stat-card.zero::before { display: none; }
 
   /* Clickable stat card */
   .stat-card[data-jump] { cursor: pointer; transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease), border-color 0.15s var(--ease); }
@@ -1530,7 +1587,7 @@
   @media print {
     body { background: #fff; color: #000; }
     header { background: #f5f5f5; backdrop-filter: none; }
-    .report-actions, .btn { display: none !important; }
+    .header-actions, .header-btn, .theme-toggle-btn { display: none !important; }
     #drop-screen, #loading-screen { display: none !important; }
     #report-screen { display: block !important; }
     .sidebar { display: none !important; }
@@ -1542,7 +1599,7 @@
     .stat-card, .section { background: #fff; border: 1px solid #ddd; break-inside: avoid; box-shadow: none; }
     .section-title { background: #f5f5f5; color: #333; }
     table.stats td { color: #000; }
-    table.stats td.val { color: #2d8a57; }
+    table.stats td.val { color: #3d9850; }
     .unref-tabs { display: none !important; }
     .unref-pane { display: block !important; }
     .filter-row, .search-row, .sort-row, .health-actions { display: none !important; }
@@ -1650,7 +1707,7 @@
     font-variant-numeric: tabular-nums;
     background: rgba(0,0,0,0.05);
     padding: 1px 7px;
-    border-radius: 9px;
+    border-radius: var(--r-full);
     line-height: 1.4;
     flex-shrink: 0;
   }
@@ -1822,6 +1879,12 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin-bottom: 14px;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .obs-panel-head::before {
+    content: ''; width: 3px; height: 14px;
+    background: var(--brand); border-radius: 2px;
+    flex-shrink: 0;
   }
   .obs-panel-sub {
     font-weight: 400;
@@ -2119,6 +2182,16 @@
     --warn:      #f5a623;  --warn-tint: #2c1f06;  --warn-bd: #5c3d0a;
     --bad:       #f87171;  --bad-tint:  #2d0e0e;  --bad-bd:  #5c1f1f;
     --info:      #60a5fa;  --info-tint: #0c1f3d;  --info-bd: #1e3a6e;
+
+    /* Brand in dark: green reads fine as-is; navy must lift for legibility
+       on near-black. Headings use the lifted periwinkle, not raw navy. */
+    --navy:        #7b8ad6;
+    --navy-deep:   #5060b8;
+    --navy-bright: #98a5e2;
+    --navy-tint:   #1a2238;
+    --navy-soft:   #2a3358;
+    --heading:     #aab4e8;
+    --brand-tint:  #0f2a1a;
   }
 
   /* Dark-mode header: the base header background is a hardcoded translucent
@@ -2628,17 +2701,9 @@
 
 <header>
   <div class="header-logo">
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <circle cx="14" cy="14" r="13" stroke="#3aaa6d" stroke-width="1.5" opacity="0.4"/>
-      <circle cx="14" cy="14" r="8" stroke="#3aaa6d" stroke-width="1.5"/>
-      <circle cx="14" cy="14" r="2.5" fill="#3aaa6d"/>
-      <line x1="14" y1="6" x2="14" y2="1" stroke="#3aaa6d" stroke-width="1.5" stroke-linecap="round"/>
-      <line x1="14" y1="27" x2="14" y2="22" stroke="#3aaa6d" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
-      <line x1="6" y1="14" x2="1" y2="14" stroke="#3aaa6d" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
-      <line x1="27" y1="14" x2="22" y2="14" stroke="#3aaa6d" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
-    </svg>
+    <svg class="cw-mark" width="30" height="30" viewBox="0 0 1700 1700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Clockwork"><defs><clipPath id="cwclip"><path transform="matrix(1,0,0,-1,0,1700)" d="M0 1700H1700V0H0Z"/></clipPath></defs><g inkscape:groupmode="layer" inkscape:label="Layer 1"><g clip-path="url(#cwclip)"><path transform="matrix(1,0,0,-1,1356.4618,496.62013)" d="M0 0-406.175-476.056C-433.779-508.41-482.33-512.397-514.843-484.98L-566.673-441.273C-599.319-413.743-603.467-364.961-575.937-332.315L-167.015 152.608C-137.136 188.04-83.012 189.407-51.384 155.527L-2.302 102.953C24.53 74.212 25.521 29.911 0 0" fill="#49af5e"/><path transform="matrix(1,0,0,-1,854.1509,1060.6453)" d="M0 0-276.525 232.093C-283.608 238.037-284.53 248.597-278.586 255.68L-157.393 400.074C-151.449 407.156-140.889 408.079-133.806 402.135L142.719 170.042C149.802 164.098 150.724 153.537 144.78 146.455L23.587 2.061C17.643-5.022 7.082-5.944 0 0" fill="#49af5e"/><path transform="matrix(1,0,0,-1,1415.4699,854.7839)" stroke-width="220.547" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#2f4495" d="M0 0C0-311.648-252.64-564.288-564.288-564.288-875.936-564.288-1128.576-311.648-1128.576 0-1128.576 311.648-875.936 564.288-564.288 564.288"/><path transform="matrix(1,0,0,-1,1415.4699,854.7839)" stroke-width="220.547" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#394999" d="M0 0C0-311.648-252.64-564.288-564.288-564.288-875.936-564.288-1128.576-311.648-1128.576 0-1128.576 311.648-875.936 564.288-564.288 564.288"/></g></g></svg>
     <div>
-      <h1>Clockwork Inspector <span class="version">v2.0</span></h1>
+      <h1><span class="wm-clockwork">Clockwork</span> Inspector <span class="version">v2.1</span></h1>
       <div class="header-sub">Static analysis for FileMaker Save-as-XML</div>
     </div>
   </div>
@@ -2647,13 +2712,20 @@
     <span class="header-btn-sep"></span>
     <button class="header-btn" onclick="showDiffScreen()" id="diff-mode-btn" title="Compare two XML files">⇄ Compare</button>
     <span class="header-btn-sep"></span>
-    <div id="file-actions" style="display:none;align-items:center;gap:6px;display:none">
-      <button class="header-btn" onclick="exportMarkdown()" title="Export findings as Markdown">⬇ MD</button>
-    <button class="header-btn" onclick="exportCSV()" title="Export unreferenced lists as CSV">⬇ CSV</button>
-    <button class="header-btn" onclick="exportJSON()" title="Export findings as JSON">⬇ JSON</button>
-    <span class="header-btn-sep"></span>
-    <button class="header-btn" onclick="window.print()" title="Print report">⎙ Print</button>
-    <button class="header-btn" onclick="downloadHTML()" title="Download report as HTML">⬇ HTML</button>
+    <div id="file-actions" style="display:none;align-items:center;gap:6px">
+      <div class="header-menu" id="export-menu">
+        <button class="header-btn header-menu-btn" onclick="toggleExportMenu(event)" title="Export report">Export</button>
+        <div class="header-menu-panel">
+          <div class="header-menu-label">Data</div>
+          <button class="header-menu-item" onclick="exportMarkdown();closeExportMenu()">Markdown (.md)</button>
+          <button class="header-menu-item" onclick="exportCSV();closeExportMenu()">CSV (unreferenced)</button>
+          <button class="header-menu-item" onclick="exportJSON();closeExportMenu()">JSON (findings)</button>
+          <div class="header-menu-sep"></div>
+          <div class="header-menu-label">Report</div>
+          <button class="header-menu-item" onclick="downloadHTML();closeExportMenu()">Download HTML</button>
+          <button class="header-menu-item" onclick="window.print();closeExportMenu()">Print&hellip;</button>
+        </div>
+      </div>
     </div>
     <span class="header-btn-sep" id="newfile-sep" style="display:none"></span>
     <button class="header-btn header-btn-primary" id="newfile-btn" onclick="resetUI()" style="display:none">↩ New File</button>
@@ -2679,7 +2751,7 @@
     </button>
     <input type="file" id="file-input" accept=".xml" multiple>
   </div>
-  <div class="hint">UTF-16 · UTF-8 · FileMaker Save-as-XML · FM26 split catalogs · v2.0 · All analysis runs locally in your browser</div>
+  <div class="hint">UTF-16 · UTF-8 · FileMaker Save-as-XML · FM26 split catalogs · v2.1 · All analysis runs locally in your browser</div>
 </div>
 
 <div id="loading-screen">
@@ -2748,8 +2820,14 @@
       <div class="diff-subtitle" id="diff-result-subtitle"></div>
     </div>
     <div class="diff-actions">
-      <button class="header-btn" onclick="exportDiffMarkdown()" title="Export diff as Markdown">⬇ MD</button>
-      <button class="header-btn" onclick="exportDiffJSON()" title="Export diff as JSON">⬇ JSON</button>
+      <div class="header-menu" id="diff-export-menu">
+        <button class="header-btn header-menu-btn" onclick="toggleDiffExportMenu(event)" title="Export comparison">Export</button>
+        <div class="header-menu-panel">
+          <div class="header-menu-label">Comparison</div>
+          <button class="header-menu-item" onclick="exportDiffMarkdown();closeDiffExportMenu()">Markdown (.md)</button>
+          <button class="header-menu-item" onclick="exportDiffJSON();closeDiffExportMenu()">JSON (diff)</button>
+        </div>
+      </div>
       <span class="header-btn-sep"></span>
       <button class="header-btn" onclick="showDiffScreen()">↩ New comparison</button>
       <button class="header-btn header-btn-primary" onclick="showSingleScreen()">↩ Single file</button>
@@ -3730,11 +3808,20 @@ function mermaidGenerate(type) {
     }
 
     const lineCount = text.split('\n').length;
+    // Size the box to the content rather than a fixed short default — a
+    // 260px box only shows ~14 lines, which meant any real-world export
+    // (a relationship graph or call tree from a production file routinely
+    // runs to dozens or hundreds of lines) was mostly hidden behind a
+    // scrollbar on load. Grow with the line count, capped so a huge
+    // export doesn't take over the page; resize:vertical still lets the
+    // user drag it taller manually beyond the cap.
+    const lineHeightPx = 17;
+    const boxHeight = Math.min(620, Math.max(260, lineCount * lineHeightPx + 28));
     host.innerHTML =
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
         '<span style="font-size:12px;color:var(--ink-3)">' + lineCount + ' lines · paste into any Mermaid renderer</span>' +
         '</div>' +
-        '<textarea id="mermaid-output" readonly style="width:100%;min-height:260px;font-family:var(--font-mono);font-size:11.5px;background:var(--surface-mute);border:1px solid var(--line);border-radius:6px;padding:12px;resize:vertical;color:var(--ink-2)">' +
+        '<textarea id="mermaid-output" readonly style="width:100%;height:' + boxHeight + 'px;font-family:var(--font-mono);font-size:11.5px;background:var(--surface-mute);border:1px solid var(--line);border-radius:6px;padding:12px;resize:vertical;color:var(--ink-2)">' +
         esc(text) + '</textarea>';
 }
 
@@ -3794,12 +3881,20 @@ function mermaidRelFromXML(root, abbrev) {
         const type = jp ? (jp.getAttribute('type') || 'Equal') : 'Equal';
         const connector = '||--o{';
 
-        // Try to get a relationship label from predicate fields
+        // Try to get a relationship label from predicate fields.
+        // Mermaid's erDiagram parser treats an unquoted label beginning
+        // with certain characters (e.g. a leading underscore) as a syntax
+        // error, and also won't accept '=' or spaces unquoted. Quoting the
+        // label is the robust fix: it preserves the real field names
+        // (FileMaker key fields like _kp_/_ks_ stay readable) and sidesteps
+        // every reserved-character case. Any embedded double-quote is
+        // swapped for a single quote so the wrapper stays balanced.
         const lf = jp ? jp.querySelector('LeftField FieldReference') : null;
         const rf = jp ? jp.querySelector('RightField FieldReference') : null;
         const lField = lf ? (lf.getAttribute('name') || '') : '';
         const rField = rf ? (rf.getAttribute('name') || '') : '';
-        const label  = (lField && rField) ? (lField + '=' + rField).replace(/[^A-Za-z0-9_=]/g, '_') : 'rel';
+        const rawLabel = (lField && rField) ? (lField + '=' + rField) : 'rel';
+        const label = '"' + rawLabel.replace(/"/g, "'") + '"';
 
         lines.push('  ' + lName + ' ' + connector + ' ' + rName + ' : ' + label);
     }
@@ -3965,6 +4060,12 @@ function resetUI() {
   document.getElementById('report-screen').style.display = 'none';
   document.getElementById('diff-screen').style.display = 'none';
   document.getElementById('diff-result-screen').style.display = 'none';
+  // Clear any leftover error message from a previous bad drop, otherwise
+  // it would silently reappear next time the drop screen is shown.
+  const staleError = document.querySelector('#drop-zone .parse-error');
+  if (staleError) staleError.remove();
+  const staleChooser = document.querySelector('#drop-zone .db-chooser');
+  if (staleChooser) staleChooser.remove();
   // Hide header action buttons when no report is loaded
   const fileActions = document.getElementById('file-actions');
   if (fileActions) fileActions.style.display = 'none';
@@ -4389,9 +4490,38 @@ async function readFileHead(file, bytes) {
   return await blob.text();
 }
 
+// Shows a friendly inline message in the drop zone (reuses the same box
+// style as the parse-error catch handler below) without throwing or using
+// alert(). Used both for genuine parse failures and for "nothing usable
+// was dropped" cases that previously failed silently.
+function showDropZoneError(message) {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('drop-screen').style.display = '';
+  const dz = document.getElementById('drop-zone');
+  const existing = dz.querySelector('.parse-error');
+  if (existing) existing.remove();
+  const errBox = document.createElement('div');
+  errBox.className = 'parse-error';
+  errBox.style.cssText = 'margin-top:16px;padding:10px 14px;background:var(--bad-tint);border:1px solid var(--bad-bd);border-radius:var(--r-sm);color:var(--bad);font-size:12.5px;max-width:520px;text-align:left;';
+  errBox.textContent = message;
+  dz.appendChild(errBox);
+}
+
 async function handleFiles(files) {
+  const droppedCount = files.length;
   files = files.filter(f => /\.xml$/i.test(f.name));
-  if (!files.length) return;
+  if (!files.length) {
+    // Previously a silent no-op — dropping the wrong file (or a folder
+    // with no .xml inside) gave no feedback at all. Tell the user instead.
+    if (droppedCount > 0) {
+      showDropZoneError(
+        droppedCount === 1
+          ? 'That file doesn\u2019t look like a Save as XML export (expected a .xml file). Export via File \u203a Save a Copy As\u2026 \u203a XML and try again.'
+          : 'No .xml files found in that drop. Export via File \u203a Save a Copy As\u2026 \u203a XML and try again.'
+      );
+    }
+    return;
+  }
   if (files.length === 1) {
     // Could still be ONE catalog of a split export — prepareInput detects
     // that and carries a partial-export manifest through.
@@ -4646,6 +4776,24 @@ async function diffLoadSlot(file, slot) {
     }
 }
 
+// ── XML 1.0 illegal-character sanitiser ─────────────────────
+// Some FileMaker exports carry stray C0 control characters (often an
+// invisible char left in a field comment or calculation), which makes
+// the document strictly invalid XML — DOMParser rejects it before any
+// analysis can run. XML 1.0 §2.2 permits only Tab (x09), LF (x0A),
+// CR (x0D) and codepoints from x20 up. We strip the rest and also drop
+// the discouraged C1 range (x7F–x9F), preserving all legitimate text.
+// Returns the cleaned text plus a count so the caller can flag it.
+function stripIllegalXMLChars(text) {
+    if (!text) return { text: text, removedCount: 0 };
+    let removedCount = 0;
+    const cleaned = text.replace(
+        /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g,
+        function () { removedCount++; return ''; }
+    );
+    return { text: cleaned, removedCount: removedCount };
+}
+
 // ── Shared parse pipeline ───────────────────────────────────
 // Extracts the parse+CDATA-repair+analyse steps from handleFile so
 // both the single-file and diff paths use identical logic.
@@ -4655,7 +4803,12 @@ async function parseXMLToStats(fileOrFiles) {
     // export), or a pre-grouped {env, files} object. prepareInput merges
     // split sets into one synthetic document.
     const prepared = await prepareInput(fileOrFiles);
-    const text = prepared.text;
+    // Strip illegal XML 1.0 control characters up front. These come through
+    // in some exports (e.g. an invisible char after a field name) and make
+    // the document invalid before the CDATA recovery ladder can run.
+    const sanitised = stripIllegalXMLChars(prepared.text);
+    const text = sanitised.text;
+    const illegalCharsRemoved = sanitised.removedCount;
     const file = prepared.displayFile;
     const parser = new DOMParser();
     let doc = parser.parseFromString(text, 'application/xml');
@@ -4716,7 +4869,7 @@ async function parseXMLToStats(fileOrFiles) {
     }
 
     const stats = await analyse(doc, root);
-    return { file, fileName: file.name, root, stats, manifest: prepared.manifest };
+    return { file, fileName: file.name, root, stats, manifest: prepared.manifest, illegalCharsRemoved: illegalCharsRemoved };
 }
 
 // ── Diff computation ────────────────────────────────────────
@@ -6326,7 +6479,13 @@ async function handleFile(file, _unused, group) {
     // returns a manifest describing the export modes; for a plain single
     // file it just reads the text and sniffs the envelope.
     const prepared = await prepareInput(group || file);
-    const text = prepared.text;
+    // Strip illegal XML 1.0 control characters before parsing. Some exports
+    // carry an invisible C0 control char (e.g. left in a field name or
+    // comment) that makes the document invalid XML; DOMParser would reject
+    // it before the CDATA recovery passes below ever run.
+    const sanitised = stripIllegalXMLChars(prepared.text);
+    const text = sanitised.text;
+    window.__illegalCharsRemoved = sanitised.removedCount;
     file = prepared.displayFile;
     window.__fm26Manifest = prepared.manifest;
 
@@ -6459,17 +6618,7 @@ async function handleFile(file, _unused, group) {
     const newfileSep = document.getElementById('newfile-sep');
     if (newfileSep) newfileSep.style.display = 'block';
   } catch(err) {
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('drop-screen').style.display = '';
-    // Render the error inside the drop zone rather than alert() — better UX
-    const dz = document.getElementById('drop-zone');
-    const existing = dz.querySelector('.parse-error');
-    if (existing) existing.remove();
-    const errBox = document.createElement('div');
-    errBox.className = 'parse-error';
-    errBox.style.cssText = 'margin-top:16px;padding:10px 14px;background:var(--bad-tint);border:1px solid var(--bad-bd);border-radius:var(--r-sm);color:var(--bad);font-size:12.5px;max-width:520px;text-align:left;';
-    errBox.textContent = err.message;
-    dz.appendChild(errBox);
+    showDropZoneError(err.message);
     console.error(err);
   }
 }
@@ -11306,9 +11455,15 @@ function renderResults(file, root, s, elapsed) {
     {label:'Privilege Sets',    value:priv.privilege_set_count,   tab:'tab-security'},
   ];
   const overviewGridEl = document.getElementById('overview-grid');
-  if (overviewGridEl) overviewGridEl.innerHTML = overviewItems.map(it =>
-    `<div class="stat-card" data-jump="${it.tab}" onclick="jumpToTab('${it.tab}')" title="Jump to ${esc(it.label)} tab"><div class="label">${it.label}</div><div class="value">${fmt(it.value)}</div></div>`
-  ).join('');
+  // Headline schema counts get the navy "key" treatment to anchor the grid.
+  const keyMetrics = new Set(['Tables', 'Fields', 'Relationships']);
+  if (overviewGridEl) overviewGridEl.innerHTML = overviewItems.map(it => {
+    const isZero = !it.value || Number(it.value) === 0;
+    const cls = 'stat-card'
+      + (keyMetrics.has(it.label) && !isZero ? ' key' : '')
+      + (isZero ? ' zero' : '');
+    return `<div class="${cls}" data-jump="${it.tab}" onclick="jumpToTab('${it.tab}')" title="Jump to ${esc(it.label)} tab"><div class="label">${it.label}</div><div class="value">${fmt(it.value)}</div></div>`;
+  }).join('');
 
   // ── Narrative summary (v1.0) ─────────────────────────────
   // Three to five short sentences synthesising the most notable
@@ -11410,7 +11565,19 @@ function renderResults(file, root, s, elapsed) {
            <strong>Note:</strong> the source XML contained ${repairs.toLocaleString()} malformed CDATA section${repairs===1?'':'s'} which were auto-repaired before parsing. This is a known FileMaker export bug — calc bodies containing a literal "]]&gt;" sequence (typically in a comment) are not always escaped properly. The analysis below reflects the repaired XML. Editing the offending calc to remove the "]]&gt;" sequence will produce a clean export.
          </div>`
       : '';
+    // v2.x: If the input contained illegal XML 1.0 control characters (an
+    // invisible char left in a field name, comment or calc), those are
+    // stripped before parsing — otherwise the document is invalid XML and
+    // will not parse at all. Tell the user so they know the source isn't
+    // pristine and can track down the offending character.
+    const illegalChars = (typeof window !== 'undefined' && window.__illegalCharsRemoved) || 0;
+    const illegalNote = illegalChars > 0
+      ? `<div class="overview-summary-repair">
+           <strong>Note:</strong> the source XML contained ${illegalChars.toLocaleString()} invalid character${illegalChars===1?'':'s'} (control character${illegalChars===1?'':'s'} not permitted in XML) which ${illegalChars===1?'was':'were'} removed before parsing. These are usually invisible — often a stray control character left in a field name, comment or calculation. The analysis below reflects the cleaned XML. The export will be invalid until the offending character${illegalChars===1?' is':'s are'} removed at source.
+         </div>`
+      : '';
     summaryHost.innerHTML =
+      illegalNote +
       repairNote +
       '<div class="overview-summary">' +
         '<div class="overview-summary-label">Summary</div>' +
@@ -13912,7 +14079,7 @@ function showFieldDrill(chipEl, drillId) {
     if (fe.calc) {
         // Truncate very long calcs to keep the panel manageable
         const calcDisplay = fe.calc.length > 1000 ? fe.calc.slice(0, 1000) + '\n\n…(truncated, ' + fe.calc.length + ' chars total)' : fe.calc;
-        rows.push('<div class="field-drill-row"><strong>Calculation:</strong><pre style="margin-top:6px;padding:8px;background:#1d1f24;color:#e8e8e8;border-radius:4px;font-size:12px;white-space:pre-wrap;overflow-x:auto;max-height:260px;overflow-y:auto">' + esc(calcDisplay) + '</pre></div>');
+        rows.push('<div class="field-drill-row"><strong>Calculation:</strong><pre style="margin-top:6px;padding:8px;background:#1d1f24;color:#e8e8e8;border-radius:4px;font-size:12px;white-space:pre-wrap;overflow-x:auto;max-height:480px;overflow-y:auto">' + esc(calcDisplay) + '</pre></div>');
     }
     if (rows.length === 1 && !fe.comment && !fe.calc) {
         rows.push('<div class="field-drill-row" style="opacity:0.5">No comment or calculation defined.</div>');
@@ -14193,6 +14360,35 @@ function exportCSV() {
 }
 
 // Export the full stats object as JSON (minus the raw root reference).
+// ── Export dropdown menu ───────────────────────────────────
+function toggleExportMenu(ev) {
+    if (ev) ev.stopPropagation();
+    const menu = document.getElementById('export-menu');
+    if (menu) menu.classList.toggle('open');
+}
+function closeExportMenu() {
+    const menu = document.getElementById('export-menu');
+    if (menu) menu.classList.remove('open');
+}
+function toggleDiffExportMenu(ev) {
+    if (ev) ev.stopPropagation();
+    const menu = document.getElementById('diff-export-menu');
+    if (menu) menu.classList.toggle('open');
+}
+function closeDiffExportMenu() {
+    const menu = document.getElementById('diff-export-menu');
+    if (menu) menu.classList.remove('open');
+}
+// Close any open header menu on an outside click
+document.addEventListener('click', function(e) {
+    ['export-menu', 'diff-export-menu'].forEach(function(id) {
+        const menu = document.getElementById(id);
+        if (menu && menu.classList.contains('open') && !menu.contains(e.target)) {
+            menu.classList.remove('open');
+        }
+    });
+});
+
 function exportJSON() {
     const s = window.__lastStats;
     if (!s) return;
@@ -14242,8 +14438,7 @@ function lsGet(key) {
 function lsSet(key, val) {
     try { localStorage.setItem(key, val); } catch (e) { /* storage unavailable — ignore */ }
 }
-(function initTheme() {
-    const savedTheme = lsGet('cw-inspector-theme');
+(function initTheme() {    const savedTheme = lsGet('cw-inspector-theme');
     let systemDark = false;
     try { systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) {}
     const theme = savedTheme || (systemDark ? 'dark' : 'light');
