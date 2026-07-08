@@ -7,7 +7,7 @@ A single-file, browser-based audit tool for FileMaker Save as XML analysis. Get 
 
 Developed by Andrew Kear, owner of [Clockwork Creative Technology](https://www.clockworkct.co.uk), and shared openly with the FileMaker/Claris community.
 
-> **A working tool, actively developed.** It is used in real consultancy work and handles production files, though some areas are still being refined and edge cases remain (documented below). Share feedback via [GitHub Issues](https://github.com/andykear/FileMaker-XML-inspector-open-source/issues).
+> **A working tool, actively developed.** It is used in actual consultancy work and handles production files, it is being rapidly iterated through real world feedback so check often for new versions.
 
 ---
 
@@ -29,6 +29,7 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 - Base tables, table occurrences, fields — counts, types, storage, validation, auto-entry
 - Relationships — full sortable list with TOs, base tables, and join keys; multi-predicate, sorted, cascade create/delete
 - Layouts — count, visibility, themes, triggers, portal usage, object counts
+- Wireframe — visual preview of any layout drawn from object bounds: part bands, colour-coded objects, clickable tab panels, portal rows, off-layout zone
 
 **Scripts**
 - Script count and step totals
@@ -37,6 +38,11 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 - Orphaned enabled steps inside disabled wrappers
 - Show Custom Dialog anomalies
 - Step ID dictionary — localisation-independent, version-independent
+
+**Reference Explorer**
+- Universal search (⌘K / Ctrl+K) across fields, tables, table occurrences, scripts, layouts, value lists, and custom functions
+- Pick any entity to see its definition (calculation, script steps, value-list contents), everything it uses, and every reference to it — grouped by context, all clickable in both directions with a back stack
+- UUID-based reference matching (no name-collision risk) plus calculation-text references recovered from DDR_INFO on FileMaker 26 exports
 
 **Quality signals**
 - Unreferenced fields, layouts, scripts, value lists, tables, TOs
@@ -51,30 +57,6 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 - Security, accounts, privilege sets
 - File options, minimum FM version
 - Developer tags, activity timestamps
-
----
-
-## New in v2.1
-
-UI improvements
-
-**Handles invalid characters in the source XML.** Some exports carry an invisible control character (often left in a field name, comment, or calculation) that makes the document invalid XML and previously stopped it parsing at all. The Inspector now strips these illegal characters before parsing and shows a notice telling you how many were removed, so the file analyses and you know it needs fixing at source.
-
-**Mermaid relationship labels are now quoted.** Relationship labels that begin with an underscore (common with FileMaker key fields such as `_kp_` and `_ks_`) previously broke the Mermaid erDiagram parser. Labels are now quoted, so they render correctly and keep the real field names intact. Thanks to [albizum](https://github.com/albizum) for the report.
-
----
-
-## New in v2.0
-
-**Comparison mode.** Load two Save as XML files and diff them side by side. A three-pane view (categories → changed items → detail) shows what was added, removed, and modified across schema, scripts, layouts, relationships, and fields. Export diffs as Markdown or JSON for reports and version control.
-
-**Split-catalog support (FileMaker 2026).** Drop a FileMaker 2026 multi-file Save as XML folder and the Inspector stitches the fragments back into a single in-memory structure for analysis.
-
-**Mermaid diagram export.** Generate copy-ready Mermaid.js syntax for script call trees and relationship structures, with options to abbreviate long table-occurrence names and limit to entry points only. Perfect for documentation and architecture diagrams.
-
-**Field tag pills.** Field type, storage, global, validation, and index status now render as scannable coloured chips in the unreferenced-fields view and the diff detail panel, rather than plain text.
-
-**Impact analysis.** Trace where a field, script, or other object is used across the solution before changing or removing it, so you can see what a change would touch.
 
 ---
 
@@ -114,12 +96,13 @@ Five open-source resources for the FileMaker/Claris community:
 
 ## Current limitations (known gaps)
 
-- Verified primarily against FileMaker 2024 / 2025 Save as XML format. Earlier versions may parse with minor differences.
 - Script step analysis uses a step ID dictionary of roughly 200 entries — steps not in the dictionary report as `unknown`. The dictionary is updated as new steps are confirmed.
 - Relationship duplicate detection is not yet implemented — planned once the definition is nailed down.
 - Layout object analysis covers common object types; some edge cases (web viewer configurations, complex button bar scripts) are partially parsed.
 - The comparison diff caps very long script bodies and calculations (around 400 lines) for performance; where a calculation exceeds that, the diff says so rather than silently hiding later changes.
 - Windows and cross-platform XML variations have not been systematically tested.
+- Custom function references are matched by name inside calculation text, so their reference lists are sparser than UUID-matched types.
+- Dynamic references (Evaluate(), GetField() with non-literal arguments, constructed SQL) are invisible to static analysis throughout the tool.
 
 ---
 
@@ -127,6 +110,7 @@ Five open-source resources for the FileMaker/Claris community:
 
 | Version | Notes |
 |---|---|
+| 2.2 | Layout wireframe view. Plus numerous additions kindly contributed by Darrin Southern from CadenceUX - highlight is enhanced Impact Analysis now a clever universal reference explorer. |
 | 2.1 | Minor UI improvements, handles illegal XML control characters in the source (strips and reports them) so affected files parse; quoted Mermaid relationship labels (fixes leading-underscore key fields) |
 | 2.0 | Comparison mode: diff two files with script step and field calculation diffs, plus Markdown/JSON diff export; FileMaker 2026 split-catalog folder support; interactive script call-graph visualization; impact analysis; field tag pills |
 | 1.5 | Field dependencies, containers section, expanded metrics, better sideways scrolling on dense tables |
@@ -145,4 +129,4 @@ Five open-source resources for the FileMaker/Claris community:
 
 ## Contributing
 
-Found a parsing error? A step ID that's wrong? An XML structure the tool doesn't handle? Open an issue or PR and Andrew will investigate.
+We'd love you to get involved. Found something wrong, got a great idea, don't be shy — let's work together.

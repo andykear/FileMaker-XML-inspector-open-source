@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Clockwork Inspector for FileMaker — v2.1
+  Clockwork Inspector for FileMaker — v2.2
   Single-file, browser-based audit tool for FileMaker Save as XML analysis.
   Runs entirely client-side. Nothing is uploaded.
   Developed by Andrew Kear, Clockwork Creative Technology (clockworkct.co.uk).
@@ -897,6 +897,149 @@
   .cg-ext     { background: var(--info-tint); color: var(--info);  border: 1px solid var(--info-bd); }
   .cg-psos    { background: var(--brand-tint); color: var(--brand-deep); border: 1px solid var(--brand-soft); }
   .cg-missing { background: var(--bad-tint);  color: var(--bad);   border: 1px solid var(--bad-bd);  }
+
+  /* ── WIREFRAME ───────────────────────────────────────────────── */
+  /* Toolbar row: layout picker + view toggles + zoom controls */
+  .wf-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 12px 16px 4px 16px;
+  }
+  .wf-select {
+      font: 13px var(--font-sans);
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-sm);
+      padding: 6px 10px;
+      max-width: 340px;
+      min-width: 200px;
+  }
+  .wf-zoom {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+  }
+  /* View toggles: fills / hidden panels / popovers */
+  .wf-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font: 12px var(--font-sans);
+      color: var(--ink-2);
+      cursor: pointer;
+      white-space: nowrap;
+  }
+  .wf-toggle input { accent-color: var(--brand); margin: 0; }
+  .wf-t-panels-n, .wf-t-popovers-n { color: var(--ink-4); }
+  .wf-zoom-btn {
+      font: 12px var(--font-sans);
+      color: var(--ink-2);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-sm);
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: background 0.12s var(--ease);
+  }
+  .wf-zoom-btn:hover { background: var(--surface-soft); }
+  .wf-zoom-val {
+      font: 11px var(--font-mono);
+      color: var(--ink-3);
+      min-width: 42px;
+      text-align: right;
+  }
+  /* Legend: a passive colour key — deliberately muted and dot-based so
+     it can't be mistaken for the interactive toolbar toggles above */
+  .wf-legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px 12px;
+      padding: 4px 16px 10px 16px;
+      font-size: 10.5px;
+      color: var(--ink-4);
+  }
+  .wf-legend-label {
+      font: 600 9.5px var(--font-sans);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--ink-5);
+      margin-right: 2px;
+  }
+  .wf-chip { display: inline-flex; align-items: center; gap: 4px; }
+  .wf-swatch {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+      opacity: 0.85;
+  }
+  /* Scrollable canvas host — the SVG inside can be wider than the pane */
+  .wf-canvas-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      background: var(--surface);
+      margin: 0 16px;
+      max-height: 68vh;
+      min-height: 120px;
+  }
+  .wf-empty {
+      padding: 48px 16px;
+      text-align: center;
+      color: var(--ink-4);
+      font-size: 13px;
+  }
+  .wf-svg { display: block; }
+  .wf-svg text {
+      font-family: var(--font-sans);
+      pointer-events: none;
+      user-select: none;
+  }
+  .wf-obj { cursor: pointer; }
+  .wf-tab { cursor: pointer; }
+  .wf-tab:hover rect { stroke-width: 2px; }
+  .wf-obj:hover .wf-obj-shape { stroke-width: 2px; }
+  .wf-obj.wf-pinned .wf-obj-shape {
+      stroke-width: 2px;
+      stroke-dasharray: none;
+      filter: drop-shadow(0 0 2px var(--brand-glow));
+  }
+  /* Details strip below the canvas: hover preview / pinned detail */
+  .wf-details {
+      margin: 10px 16px 16px 16px;
+      padding: 10px 14px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line-soft);
+      border-radius: var(--r-md);
+      font-size: 12px;
+      color: var(--ink-2);
+      line-height: 1.7;
+      min-height: 42px;
+  }
+  .wf-d-type {
+      display: inline-block;
+      font: 600 10px var(--font-sans);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border: 1px solid;
+      border-radius: var(--r-full);
+      padding: 1px 8px;
+      margin-right: 8px;
+      background: var(--surface);
+  }
+  .wf-link {
+      color: var(--brand-deep);
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-color: var(--brand-soft);
+  }
+  .wf-link:hover { text-decoration-color: var(--brand-deep); }
+  .wf-d-sep { color: var(--ink-5); margin: 0 6px; }
 
   /* ── MAIN TABS ───────────────────────────────────────── */
   .main-tabs-wrap {
@@ -2694,6 +2837,160 @@
   .sview-body.collapsed { display: none; }
   .sview-empty { padding: 10px 16px; font-size: 12px; color: var(--ink-3); font-style: italic; }
 
+  /* ── IMPACT ANALYSIS: UNIVERSAL SEARCH & REFERENCE EXPLORER ──
+     Typeahead dropdown on the Impact Analysis input + the grouped
+     reference output with drill-down links and a back stack.
+     Contributed by Darrin Southern (CadenceUX). */
+  .ux-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .ux-search-dd {
+    /* position: fixed, not absolute — the Impact Analysis section is a
+       .section box (overflow:hidden, for its rounded corners) that's
+       often shorter than the dropdown before a search has run, which
+       clipped the list down to ~1 row. Fixed positioning (top/left set
+       in JS from the input's live rect) escapes any clipping ancestor
+       regardless of section height or page scroll. */
+    position: fixed;
+    width: min(420px, 90vw);
+    max-height: 60vh;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-xl);
+    z-index: 300;
+    padding: 6px;
+  }
+  .ux-dd-group-label {
+    padding: 8px 10px 3px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+  .ux-dd-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--ink);
+  }
+  .ux-dd-row:hover, .ux-dd-row.active { background: var(--surface-hover); }
+  .ux-dd-row .ux-dd-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .ux-dd-row .ux-dd-sub {
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  .ux-dd-empty { padding: 12px; font-size: 12.5px; color: var(--ink-3); }
+  .ux-type-badge {
+    flex: none;
+    min-width: 30px;
+    text-align: center;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    color: var(--surface);
+    background: var(--ink-3);
+  }
+  .ux-type-badge.ux-t-field          { background: var(--cat-teal); }
+  .ux-type-badge.ux-t-table          { background: var(--cat-indigo); }
+  .ux-type-badge.ux-t-to             { background: var(--cat-sky); }
+  .ux-type-badge.ux-t-script         { background: var(--cat-violet); }
+  .ux-type-badge.ux-t-layout         { background: var(--cat-amber); }
+  .ux-type-badge.ux-t-valuelist      { background: var(--cat-rose); }
+  .ux-type-badge.ux-t-customfunction { background: var(--accent2); }
+  .ux-detail-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    flex-wrap: wrap;
+  }
+  .ux-detail-name {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    word-break: break-word;
+  }
+  .ux-detail-meta { padding: 0 0 8px; font-size: 12.5px; color: var(--ink-2); }
+  .ux-detail-meta .ux-meta-row { margin-bottom: 5px; }
+  .ux-ref-group { padding: 4px 0 10px; }
+  .ux-ref-group-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-2);
+    margin: 10px 0 4px;
+  }
+  .ux-ref-table { width: 100%; border-collapse: collapse; }
+  .ux-ref-table td {
+    padding: 4px 10px 4px 0;
+    font-size: 12px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+  .ux-ref-table td.ux-ref-where { font-family: var(--font-mono); width: 55%; }
+  .ux-ref-table td.ux-ref-how   { color: var(--ink-3); }
+  .ux-link { color: var(--brand); cursor: pointer; text-decoration: none; }
+  .ux-link:hover { text-decoration: underline; }
+  .ux-detail-calc {
+    margin-top: 6px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--line-soft);
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  .ux-detail-steps { max-height: 420px; }
+  .ux-collapse-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 4px;
+  }
+  .ux-collapse-arrow {
+    display: inline-flex;
+    width: 12px;
+    flex-shrink: 0;
+    transition: transform .12s var(--ease);
+  }
+  .ux-collapse-arrow.collapsed { transform: rotate(-90deg); }
+  .ux-caveat {
+    margin: 8px 0;
+    padding: 8px 12px;
+    font-size: 11.5px;
+    color: var(--ink-3);
+    background: var(--info-tint);
+    border: 1px solid var(--info-bd);
+    border-radius: 6px;
+  }
   </style>
 
 </head>
@@ -2703,7 +3000,7 @@
   <div class="header-logo">
     <svg class="cw-mark" width="30" height="30" viewBox="0 0 1700 1700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Clockwork"><defs><clipPath id="cwclip"><path transform="matrix(1,0,0,-1,0,1700)" d="M0 1700H1700V0H0Z"/></clipPath></defs><g inkscape:groupmode="layer" inkscape:label="Layer 1"><g clip-path="url(#cwclip)"><path transform="matrix(1,0,0,-1,1356.4618,496.62013)" d="M0 0-406.175-476.056C-433.779-508.41-482.33-512.397-514.843-484.98L-566.673-441.273C-599.319-413.743-603.467-364.961-575.937-332.315L-167.015 152.608C-137.136 188.04-83.012 189.407-51.384 155.527L-2.302 102.953C24.53 74.212 25.521 29.911 0 0" fill="#49af5e"/><path transform="matrix(1,0,0,-1,854.1509,1060.6453)" d="M0 0-276.525 232.093C-283.608 238.037-284.53 248.597-278.586 255.68L-157.393 400.074C-151.449 407.156-140.889 408.079-133.806 402.135L142.719 170.042C149.802 164.098 150.724 153.537 144.78 146.455L23.587 2.061C17.643-5.022 7.082-5.944 0 0" fill="#49af5e"/><path transform="matrix(1,0,0,-1,1415.4699,854.7839)" stroke-width="220.547" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#2f4495" d="M0 0C0-311.648-252.64-564.288-564.288-564.288-875.936-564.288-1128.576-311.648-1128.576 0-1128.576 311.648-875.936 564.288-564.288 564.288"/><path transform="matrix(1,0,0,-1,1415.4699,854.7839)" stroke-width="220.547" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#394999" d="M0 0C0-311.648-252.64-564.288-564.288-564.288-875.936-564.288-1128.576-311.648-1128.576 0-1128.576 311.648-875.936 564.288-564.288 564.288"/></g></g></svg>
     <div>
-      <h1><span class="wm-clockwork">Clockwork</span> Inspector <span class="version">v2.1</span></h1>
+      <h1><span class="wm-clockwork">Clockwork</span> Inspector <span class="version">v2.2</span></h1>
       <div class="header-sub">Static analysis for FileMaker Save-as-XML</div>
     </div>
   </div>
@@ -2751,7 +3048,7 @@
     </button>
     <input type="file" id="file-input" accept=".xml" multiple>
   </div>
-  <div class="hint">UTF-16 · UTF-8 · FileMaker Save-as-XML · FM26 split catalogs · v2.1 · All analysis runs locally in your browser</div>
+  <div class="hint">UTF-16 · UTF-8 · FileMaker Save-as-XML · FM26 split catalogs · v2.2 · All analysis runs locally in your browser</div>
 </div>
 
 <div id="loading-screen">
@@ -3326,6 +3623,900 @@ function findScriptReferences(query) {
   return { matched: targets, references };
 }
 
+// ═══════════════════════════════════════════════════════════
+// IMPACT ANALYSIS: UNIVERSAL SEARCH & REFERENCE EXPLORER
+//
+// Powers the Impact Analysis tab. The impact input gets a ranked
+// typeahead across every named entity (fields, tables, TOs,
+// scripts, layouts, value lists, custom functions); picking a
+// result renders the entity's details plus every reference to it
+// found in the file, grouped by context, into the impact output.
+// Each referencing item is itself a link, so you can drill down
+// through the dependency web; a local back stack walks the drill
+// path in reverse and finally returns to the empty search state.
+//
+// Reference resolution works on UUIDs: definitions carry their
+// UUID as a child element's text, while every *Reference element
+// carries it as an attribute — so collecting attribute matches
+// yields exactly the references and never the definition itself.
+//
+// Contributed by Darrin Southern (CadenceUX).
+// ═══════════════════════════════════════════════════════════
+
+const UX_TYPES = {
+  field:          { label: 'Field',            badge: 'FLD' },
+  table:          { label: 'Table',            badge: 'TBL' },
+  to:             { label: 'Table Occurrence', badge: 'TO'  },
+  script:         { label: 'Script',           badge: 'SCR' },
+  layout:         { label: 'Layout',           badge: 'LAY' },
+  valuelist:      { label: 'Value List',       badge: 'VL'  },
+  customfunction: { label: 'Custom Function',  badge: 'CF'  },
+};
+const UX_TYPE_ORDER = ['field', 'script', 'layout', 'table', 'to', 'valuelist', 'customfunction'];
+
+// ── Search index ──────────────────────────────────────────
+// Flat name list built once per parse from the computed stats.
+// Each entry: t (type id), n (display name), nl (lowercase), sub
+// (secondary text shown right-aligned in the dropdown).
+function buildUniversalSearchIndex(s) {
+  const idx = [];
+  const push = function(t, n, sub) { if (n) idx.push({ t, n, nl: n.toLowerCase(), sub: sub || '' }); };
+  const fi = (s.tables && s.tables.field_info) || {};
+  for (const key of Object.keys(fi)) {
+    const f = fi[key];
+    const bits = [f.data_type || ''];
+    if (f.type && f.type !== 'Normal') bits.push(f.type);
+    if (f.is_global) bits.push('global');
+    push('field', key, bits.filter(Boolean).join(' · '));
+  }
+  for (const t of (s.tables && s.tables.tables) || []) push('table', t.name);
+  const tos = (s.graph && s.graph.detail && s.graph.detail.tos_all) || [];
+  for (const to of tos) {
+    if (typeof to === 'string') push('to', to);
+    else push('to', to.name, to.base_table || to.baseTable || to.base || to.table || '');
+  }
+  const scrInfo = (s.scripts && s.scripts.info) || {};
+  for (const n of Object.keys(scrInfo)) push('script', n, scrInfo[n].folder || '');
+  for (const l of (s.layouts && s.layouts.detail && s.layouts.detail.all) || []) push('layout', l.name);
+  for (const v of (s.valueLists && s.valueLists.vl_names) || []) push('valuelist', v.name);
+  for (const c of (s.customs && s.customs.detail && s.customs.detail.all) || []) push('customfunction', c.name, c.signature || '');
+  window.__uxIndex = idx;
+}
+
+// ── Search dropdown ───────────────────────────────────────
+let __uxSearchTimer = null;
+let __uxResults = [];
+let __uxActiveIdx = -1;
+
+function uxSearchInput() {
+  clearTimeout(__uxSearchTimer);
+  __uxSearchTimer = setTimeout(uxRunSearch, 120);
+}
+
+// Position the fixed-position dropdown under the live input rect —
+// called whenever it's shown or the viewport changes while it's open,
+// so no ancestor's height or scroll offset can clip it.
+function uxPositionDropdown(input, dd) {
+  const r = input.getBoundingClientRect();
+  dd.style.top  = (r.bottom + 6) + 'px';
+  dd.style.left = r.left + 'px';
+}
+
+function uxRunSearch() {
+  const input = document.getElementById('impact-input');
+  const dd    = document.getElementById('ux-search-dd');
+  if (!input || !dd) return;
+  uxPositionDropdown(input, dd);
+  // In a saved report snapshot the search index does not exist —
+  // explain that instead of silently doing nothing
+  if (!window.__uxIndex && window.__savedReport) {
+    const output = document.getElementById('impact-output');
+    if (output) output.innerHTML = savedReportNotice();
+    return;
+  }
+  const q = input.value.trim().toLowerCase();
+  if (!q || !window.__uxIndex) { dd.style.display = 'none'; dd.innerHTML = ''; __uxResults = []; __uxActiveIdx = -1; return; }
+
+  // Rank: exact > prefix > word boundary > substring; shorter names first
+  const scored = [];
+  for (const e of window.__uxIndex) {
+    const i = e.nl.indexOf(q);
+    if (i === -1) continue;
+    let score = 3;
+    if (e.nl === q) score = 0;
+    else if (i === 0) score = 1;
+    else if (!/[a-z0-9]/.test(e.nl[i - 1])) score = 2;
+    scored.push({ e, score });
+  }
+  scored.sort(function(a, b) { return a.score - b.score || a.e.n.length - b.e.n.length || a.e.n.localeCompare(b.e.n); });
+
+  // Group by type in rank order, capped per type and overall
+  const byType = {};
+  __uxResults = [];
+  for (const { e } of scored) {
+    if (__uxResults.length >= 30) break;
+    if (!byType[e.t]) byType[e.t] = [];
+    if (byType[e.t].length >= 10) continue;
+    byType[e.t].push(e);
+    __uxResults.push(e);
+  }
+  __uxActiveIdx = __uxResults.length ? 0 : -1;
+
+  if (!__uxResults.length) {
+    dd.innerHTML = '<div class="ux-dd-empty">No matches for “' + esc(q) + '”</div>';
+    dd.style.display = '';
+    return;
+  }
+  // Re-render grouped, preserving each entry's overall result index
+  const pos = new Map(__uxResults.map(function(e, i) { return [e, i]; }));
+  let html = '';
+  for (const t of UX_TYPE_ORDER) {
+    const group = byType[t];
+    if (!group || !group.length) continue;
+    html += '<div class="ux-dd-group-label">' + esc(UX_TYPES[t].label) + (group.length > 1 ? 's' : '') + '</div>';
+    for (const e of group) {
+      const i = pos.get(e);
+      html += '<div class="ux-dd-row' + (i === __uxActiveIdx ? ' active' : '') + '" data-uxi="' + i + '"' +
+        ' onmousedown="event.preventDefault();uxPick(' + i + ')">' +
+        '<span class="ux-type-badge ux-t-' + t + '">' + UX_TYPES[t].badge + '</span>' +
+        '<span class="ux-dd-name">' + esc(e.n) + '</span>' +
+        (e.sub ? '<span class="ux-dd-sub">' + esc(e.sub) + '</span>' : '') +
+        '</div>';
+    }
+  }
+  dd.innerHTML = html;
+  dd.style.display = '';
+}
+
+function uxSearchKey(ev) {
+  const dd = document.getElementById('ux-search-dd');
+  if (ev.key === 'Escape') {
+    if (dd) { dd.style.display = 'none'; }
+    ev.target.blur();
+    return;
+  }
+  if (!__uxResults.length) return;
+  if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+    ev.preventDefault();
+    const delta = ev.key === 'ArrowDown' ? 1 : -1;
+    __uxActiveIdx = (__uxActiveIdx + delta + __uxResults.length) % __uxResults.length;
+    if (dd) {
+      dd.querySelectorAll('.ux-dd-row').forEach(function(r) {
+        const on = Number(r.getAttribute('data-uxi')) === __uxActiveIdx;
+        r.classList.toggle('active', on);
+        if (on) r.scrollIntoView({ block: 'nearest' });
+      });
+    }
+    return;
+  }
+  if (ev.key === 'Enter' && __uxActiveIdx >= 0) {
+    ev.preventDefault();
+    uxPick(__uxActiveIdx);
+  }
+}
+
+function uxSearchBlur() {
+  // Delay so a mousedown on a result row wins over the blur
+  setTimeout(function() {
+    const dd = document.getElementById('ux-search-dd');
+    if (dd) dd.style.display = 'none';
+  }, 150);
+}
+
+function uxPick(i) {
+  const e = __uxResults[i];
+  if (!e) return;
+  const dd = document.getElementById('ux-search-dd');
+  const input = document.getElementById('impact-input');
+  if (dd) dd.style.display = 'none';
+  if (input) { input.value = e.n; input.blur(); }
+  openEntity(e.t, e.n);
+}
+
+// ⌘K / Ctrl+K jumps to Impact Analysis and focuses the search
+// whenever a report is loaded
+document.addEventListener('keydown', function(ev) {
+  if ((ev.metaKey || ev.ctrlKey) && ev.key && ev.key.toLowerCase() === 'k') {
+    if (!window.__uxIndex) return;
+    ev.preventDefault();
+    jumpToTab('tab-impact');
+    setTimeout(function() {
+      const input = document.getElementById('impact-input');
+      if (input) { input.focus(); input.select(); }
+    }, 60);
+  }
+});
+
+// Keep the fixed-position dropdown anchored under the input if the
+// page scrolls or the window resizes while it's open (e.g. the
+// #content pane scrolling behind an open dropdown).
+function uxRepositionIfOpen() {
+  const dd = document.getElementById('ux-search-dd');
+  if (!dd || dd.style.display === 'none') return;
+  const input = document.getElementById('impact-input');
+  if (input) uxPositionDropdown(input, dd);
+}
+document.addEventListener('scroll', uxRepositionIfOpen, true);
+window.addEventListener('resize', uxRepositionIfOpen);
+
+// ── Navigation stack ──────────────────────────────────────
+// Drill path through the explorer, rendered inside the Impact
+// Analysis output. Backing out of the last entry restores the
+// empty search prompt.
+function uxResetNav() {
+  window.__uxNavStack = [];
+  window.__uxUuidMap = null;
+  window.__uxDefMap = null;
+  window.__uxChunkOwnerMap = null;
+}
+
+function uxImpactPlaceholder() {
+  return '<div class="unref-empty">Start typing above and pick an item to see everything that references it.</div>';
+}
+
+function openEntity(type, name) {
+  if (!window.__uxNavStack) window.__uxNavStack = [];
+  window.__uxNavStack.push({ type, name });
+  // Drill links can be clicked from a stale render; make sure the
+  // Impact Analysis tab is the visible pane before drawing into it
+  const impactPane = document.getElementById('tab-impact');
+  if (!impactPane || !impactPane.classList.contains('active')) jumpToTab('tab-impact');
+  uxRenderDetail(type, name);
+}
+
+function uxGoBack() {
+  const st = window.__uxNavStack || [];
+  st.pop();
+  if (st.length) {
+    const top = st[st.length - 1];
+    uxRenderDetail(top.type, top.name);
+  } else {
+    const output = document.getElementById('impact-output');
+    if (output) output.innerHTML = uxImpactPlaceholder();
+    const input = document.getElementById('impact-input');
+    if (input) { input.value = ''; input.focus(); }
+  }
+}
+
+// ── UUID reference engine ─────────────────────────────────
+// One pass over the parsed DOM builds uuid → [reference elements].
+// Built lazily on first drill-down and cached until the next parse;
+// on a 70 MB file the pass takes well under a second and every
+// subsequent lookup is a Map hit.
+function uxUuidMap() {
+  let m = window.__uxUuidMap;
+  if (m) return m;
+  m = new Map();
+  // Companion maps built in the same pass: definition UUID (child
+  // element text) → definition element, used to resolve DDR_INFO
+  // chunk-list owners back to the object whose calculation the chunk
+  // text belongs to; and owner UUID → its chunk-list elements (tags
+  // of the form _<uuid>_<n>), used to read a calculation's own
+  // outbound references ("Elements used").
+  const defs = new Map();
+  const chunks = new Map();
+  const chunkTag = /^_([0-9A-Fa-f][0-9A-Fa-f-]{34}[0-9A-Fa-f])_/;
+  const root = window.__lastRoot;
+  if (root) {
+    const all = root.getElementsByTagName('*');
+    for (let i = 0; i < all.length; i++) {
+      const el = all[i];
+      if (el.tagName === 'UUID' && el.parentNode) {
+        defs.set((el.textContent || '').trim().toUpperCase(), el.parentNode);
+        continue;
+      }
+      const cm = chunkTag.exec(el.tagName);
+      if (cm) {
+        const owner = cm[1].toUpperCase();
+        let carr = chunks.get(owner);
+        if (!carr) { carr = []; chunks.set(owner, carr); }
+        carr.push(el);
+      }
+      const u = el.getAttribute('UUID');
+      if (!u) continue;
+      let arr = m.get(u);
+      if (!arr) { arr = []; m.set(u, arr); }
+      arr.push(el);
+    }
+  }
+  window.__uxUuidMap = m;
+  window.__uxDefMap = defs;
+  window.__uxChunkOwnerMap = chunks;
+  return m;
+}
+
+// Describe the object that owns a definition element — used to name
+// the host of a DDR_INFO calculation chunk (field calc, layout object
+// hide/format calc, script step calc, …).
+function uxDescribeOwner(defEl) {
+  let n = defEl;
+  while (n && n.nodeType === 1) {
+    const tag = n.tagName;
+    if (tag === 'Field' && n.getAttribute('fieldtype')) {
+      let fc = n.parentNode;
+      while (fc && fc.tagName !== 'FieldCatalog') fc = fc.parentNode;
+      const btr = fc ? fc.querySelector(':scope > BaseTableReference') : null;
+      const fq = (btr ? (btr.getAttribute('name') || '') + '::' : '') + (n.getAttribute('name') || '');
+      return { where: fq, how: 'field calculation', link: { type: 'field', name: fq } };
+    }
+    if (tag === 'Layout') {
+      const ln = n.getAttribute('name') || '';
+      return { where: ln, how: 'layout object calculation', link: ln ? { type: 'layout', name: ln } : null };
+    }
+    if (tag === 'Script' && n.parentNode && n.parentNode.tagName === 'StepsForScripts') {
+      const idRef = n.querySelector(':scope > ScriptReference');
+      const sn = idRef ? (idRef.getAttribute('name') || '') : '';
+      return { where: sn || '(script)', how: 'script step calculation', link: sn ? { type: 'script', name: sn } : null };
+    }
+    if (tag === 'ValueList') {
+      const vn = n.getAttribute('name') || '';
+      return { where: vn, how: 'value list calculation', link: vn ? { type: 'valuelist', name: vn } : null };
+    }
+    if (tag === 'TableOccurrence') {
+      const tn = n.getAttribute('name') || '';
+      return { where: tn, how: 'occurrence calculation', link: tn ? { type: 'to', name: tn } : null };
+    }
+    if (tag === 'CustomFunction') {
+      const cn = n.getAttribute('name') || '';
+      return { where: cn, how: 'custom function', link: cn ? { type: 'customfunction', name: cn } : null };
+    }
+    if (tag === 'Relationship') {
+      return { where: '(relationship predicate)', how: 'calculation', link: null };
+    }
+    n = n.parentNode;
+  }
+  return null;
+}
+
+// Map a *Reference element to a navigable entity. Field references
+// are table-qualified through the definition map when possible.
+// Non-entity references (language, font, theme, …) return null.
+function uxRefElementToEntity(el) {
+  const tag = el.tagName;
+  const name = el.getAttribute('name') || '';
+  if (!name) return null;
+  if (tag === 'FieldReference') {
+    const def = (window.__uxDefMap || new Map()).get((el.getAttribute('UUID') || '').toUpperCase());
+    if (def) {
+      const own = uxDescribeOwner(def);
+      if (own && own.link) return { type: own.link.type, name: own.link.name };
+    }
+    return { type: 'field', name };
+  }
+  const map = {
+    TableOccurrenceReference: 'to', BaseTableReference: 'table', ScriptReference: 'script',
+    LayoutReference: 'layout', ValueListReference: 'valuelist', CustomFunctionReference: 'customfunction',
+  };
+  const t = map[tag];
+  return t ? { type: t, name } : null;
+}
+
+// Everything this entity's definition and calculation(s) reference —
+// the outbound side of the reference graph. Structural references come
+// from the definition element's own subtree (auto-enter, validation,
+// value list sources, layout objects, script steps); calculation-text
+// references come from the DDR_INFO chunk lists keyed by this entity's
+// UUID. Deduped by UUID, structural context wins.
+function uxFindElementsUsed(type, def) {
+  if (!def || !def.el) return [];
+  uxUuidMap();
+  const seen = new Map();
+  const collect = function(scope, via) {
+    if (!scope) return;
+    for (const el of scope.querySelectorAll('[UUID]')) {
+      const u = (el.getAttribute('UUID') || '').toUpperCase();
+      if (!u || u === (def.uuid || '').toUpperCase() || seen.has(u)) continue;
+      const entry = uxRefElementToEntity(el);
+      if (entry) seen.set(u, { ...entry, via });
+    }
+  };
+  const chunkMap = window.__uxChunkOwnerMap || new Map();
+  const collectChunksOf = function(uuid) {
+    for (const cl of chunkMap.get((uuid || '').toUpperCase()) || []) collect(cl, 'calculation');
+  };
+  // Structural references inside the definition itself
+  collect(def.el, 'definition');
+  // Scripts define their steps in a separate StepsForScripts wrapper —
+  // include it, plus the chunk lists of every step inside it, so a
+  // script's step calculations contribute too
+  if (type === 'script' && def.uuid) {
+    for (const idRef of (window.__uxUuidMap.get(def.uuid) || [])) {
+      if (idRef.tagName !== 'ScriptReference') continue;
+      const p = idRef.parentNode;
+      if (p && p.tagName === 'Script' && p.parentNode && p.parentNode.tagName === 'StepsForScripts') {
+        collect(p, 'script steps');
+        for (const u of p.getElementsByTagName('UUID')) collectChunksOf((u.textContent || '').trim());
+        break;
+      }
+    }
+  }
+  // This entity's own calculation text chunks
+  collectChunksOf(def.uuid);
+  return [...seen.values()];
+}
+
+// Locate an entity's definition element and read its UUID (child
+// element text on definitions, unlike the attribute on references).
+function uxFindDefinition(type, name) {
+  const root = window.__lastRoot;
+  if (!root) return null;
+  const uuidOf = function(el) {
+    const u = el.querySelector(':scope > UUID');
+    return u ? (u.textContent || '').trim() : '';
+  };
+  if (type === 'field') {
+    const ix  = name.indexOf('::');
+    const tbl = ix === -1 ? '' : name.slice(0, ix);
+    const fld = ix === -1 ? name : name.slice(ix + 2);
+    for (const fc of root.querySelectorAll('FieldCatalog')) {
+      const btr = fc.querySelector(':scope > BaseTableReference');
+      if (!btr || (btr.getAttribute('name') || '') !== tbl) continue;
+      for (const f of fc.getElementsByTagName('Field')) {
+        if ((f.getAttribute('name') || '') === fld && f.getAttribute('fieldtype')) {
+          return { el: f, uuid: uuidOf(f) };
+        }
+      }
+    }
+    return null;
+  }
+  const catalogTag = {
+    script: 'ScriptCatalog', layout: 'LayoutCatalog', table: 'BaseTableCatalog',
+    to: 'TableOccurrenceCatalog', valuelist: 'ValueListCatalog', customfunction: 'CustomFunctionsCatalog',
+  }[type];
+  const defTag = {
+    script: 'Script', layout: 'Layout', table: 'BaseTable',
+    to: 'TableOccurrence', valuelist: 'ValueList', customfunction: 'CustomFunction',
+  }[type];
+  if (!catalogTag) return null;
+  for (const cat of root.querySelectorAll(catalogTag)) {
+    for (const el of cat.getElementsByTagName(defTag)) {
+      if ((el.getAttribute('isFolder') || '') === 'True') continue;
+      if ((el.getAttribute('name') || '') !== name) continue;
+      return { el, uuid: uuidOf(el) };
+    }
+  }
+  return null;
+}
+
+function uxFindReferences(uuid) {
+  if (!uuid) return [];
+  const els = uxUuidMap().get(uuid) || [];
+  const refs = [];
+  for (const el of els) {
+    const c = uxClassifyRef(el);
+    if (c) refs.push(c);
+  }
+  return refs;
+}
+
+// Classify a reference element by its ancestor context. Returns
+// { ctx, where, how, link } — ctx groups the output, where names
+// the containing object (clickable when link is set), how adds
+// the local detail (step name, trigger event, object type…).
+function uxClassifyRef(el) {
+  const anc = {};
+  let boundary = '';
+  const BOUNDARIES = new Set([
+    'StepsForScripts', 'ScriptCatalog', 'LayoutCatalog', 'FieldCatalog',
+    'RelationshipCatalog', 'ValueListCatalog', 'TableOccurrenceCatalog',
+    'CustomMenuSetCatalog', 'CustomMenuCatalog', 'CustomFunctionsCatalog',
+    'AccountsCatalog', 'PrivilegeSetsCatalog', 'ExtendedPrivilegesCatalog',
+    'Metadata', 'ThemeCatalog', 'BaseTableCatalog', 'ExternalDataSourceCatalog',
+    'BaseDirectoryCatalog', 'DDR_INFO',
+  ]);
+  let n = el.parentNode, depth = 0;
+  while (n && n.nodeType === 1 && depth < 40) {
+    if (!(n.tagName in anc)) anc[n.tagName] = n;
+    if (BOUNDARIES.has(n.tagName)) { boundary = n.tagName; break; }
+    n = n.parentNode;
+    depth++;
+  }
+  const nameOf = function(e) { return e ? (e.getAttribute('name') || '') : ''; };
+
+  if (boundary === 'StepsForScripts') {
+    // Host script wrapper: the Script child of StepsForScripts; its own
+    // :scope > ScriptReference is the identity ref, not a usage
+    let host = anc.Script;
+    while (host && !(host.tagName === 'Script' && host.parentNode.tagName === 'StepsForScripts')) host = host.parentNode;
+    if (host && el.parentNode === host && el.tagName === 'ScriptReference') return null;
+    const idRef = host ? host.querySelector(':scope > ScriptReference') : null;
+    const hostName = nameOf(idRef);
+    const stepName = nameOf(anc.Step);
+    return { ctx: 'Scripts', where: hostName || '(unnamed script)', how: stepName ? 'step: ' + stepName : '',
+             link: hostName ? { type: 'script', name: hostName } : null };
+  }
+  if (boundary === 'LayoutCatalog') {
+    const layoutName = nameOf(anc.Layout);
+    const bits = [];
+    if (anc.LayoutObject) bits.push((anc.LayoutObject.getAttribute('type') || 'object'));
+    if (anc.ScriptTrigger) bits.push('trigger: ' + (anc.ScriptTrigger.getAttribute('event') || ''));
+    if (anc.Part) bits.push('part: ' + (anc.Part.getAttribute('type') || ''));
+    if (!bits.length && el.tagName === 'TableOccurrenceReference' && el.parentNode === anc.Layout) bits.push('layout table context');
+    return { ctx: 'Layouts', where: layoutName || '(unnamed layout)', how: bits.join(' · '),
+             link: layoutName ? { type: 'layout', name: layoutName } : null };
+  }
+  if (boundary === 'FieldCatalog') {
+    const fieldEl = anc.Field;
+    const btr = anc.FieldCatalog ? anc.FieldCatalog.querySelector(':scope > BaseTableReference') : null;
+    const fq = (nameOf(btr) ? nameOf(btr) + '::' : '') + nameOf(fieldEl);
+    const bits = [];
+    if (anc.AutoEnter)  bits.push('auto-enter');
+    if (anc.Validation) bits.push('validation');
+    if (anc.LookUp || anc.Lookup) bits.push('lookup');
+    if (!bits.length && anc.Calculation) bits.push('calculation');
+    return { ctx: 'Field definitions', where: fq || '(field)', how: bits.join(' · '),
+             link: fieldEl ? { type: 'field', name: fq } : null };
+  }
+  if (boundary === 'RelationshipCatalog') {
+    const rel = anc.Relationship;
+    let where = '(relationship)';
+    let whereHtml = null;
+    if (rel) {
+      const toNames = [];
+      for (const tr of rel.querySelectorAll('TableOccurrenceReference')) {
+        const tn = nameOf(tr);
+        if (tn && toNames.indexOf(tn) === -1) toNames.push(tn);
+        if (toNames.length === 2) break;
+      }
+      if (toNames.length) {
+        where = toNames.join(' ⟷ ');
+        // Two navigable TOs per row, not one — build both links directly
+        // rather than using the single-link field the other groups use
+        whereHtml = toNames.map(function(n) { return uxLinkHtml('to', n); }).join(' ⟷ ');
+      }
+    }
+    return { ctx: 'Relationships', where, whereHtml, how: '', link: null };
+  }
+  if (boundary === 'ValueListCatalog') {
+    const vl = nameOf(anc.ValueList);
+    return { ctx: 'Value lists', where: vl || '(value list)', how: 'source',
+             link: vl ? { type: 'valuelist', name: vl } : null };
+  }
+  if (boundary === 'TableOccurrenceCatalog') {
+    const to = nameOf(anc.TableOccurrence);
+    return { ctx: 'Table occurrences', where: to || '(occurrence)', how: 'source table',
+             link: to ? { type: 'to', name: to } : null };
+  }
+  if (boundary === 'CustomMenuSetCatalog' || boundary === 'CustomMenuCatalog') {
+    const m = anc.CustomMenu || anc.CustomMenuSet;
+    return { ctx: 'Custom menus', where: nameOf(m) || '(menu)', how: '', link: null };
+  }
+  if (boundary === 'CustomFunctionsCatalog') {
+    const cf = nameOf(anc.CustomFunction);
+    return { ctx: 'Custom functions', where: cf || '(function)', how: 'calculation',
+             link: cf ? { type: 'customfunction', name: cf } : null };
+  }
+  if (boundary === 'AccountsCatalog' || boundary === 'PrivilegeSetsCatalog' || boundary === 'ExtendedPrivilegesCatalog') {
+    const a = anc.Account || anc.PrivilegeSet || anc.ExtendedPrivilege;
+    return { ctx: 'Security', where: nameOf(a) || boundary.replace('Catalog', ''), how: '', link: null };
+  }
+  if (boundary === 'Metadata') {
+    return { ctx: 'File options', where: el.parentNode ? el.parentNode.tagName : 'Metadata', how: '', link: null };
+  }
+  if (boundary === 'ThemeCatalog') {
+    return { ctx: 'Themes', where: nameOf(anc.Theme) || '(theme)', how: '', link: null };
+  }
+  if (boundary === 'BaseTableCatalog') {
+    const bt = nameOf(anc.BaseTable);
+    return { ctx: 'Tables', where: bt || '(table)', how: '', link: bt ? { type: 'table', name: bt } : null };
+  }
+  if (boundary === 'ScriptCatalog') {
+    // Inside a script *definition* entry (folder tree) — identity, not usage
+    return null;
+  }
+  if (boundary === 'DDR_INFO') {
+    // FM26 pre-rendered calculation text. Chunk lists are keyed by an
+    // element tag of the form _<ownerUUID>_<n>; resolving the owner UUID
+    // names the object whose calculation formula mentions this entity —
+    // the only element-level trace of calc-text references.
+    for (const tag of Object.keys(anc)) {
+      const m = /^_([0-9A-Fa-f][0-9A-Fa-f-]{34}[0-9A-Fa-f])_/.exec(tag);
+      if (!m) continue;
+      const def = (window.__uxDefMap || new Map()).get(m[1].toUpperCase());
+      const own = def ? uxDescribeOwner(def) : null;
+      if (own) return { ctx: 'Calculation text', where: own.where, how: own.how, link: own.link };
+      break;
+    }
+    return { ctx: 'Calculation text', where: '(unresolved owner)', how: '', link: null };
+  }
+  return { ctx: 'Other', where: el.parentNode ? el.parentNode.tagName : '?', how: '', link: null };
+}
+
+// ── Detail pane rendering ─────────────────────────────────
+let __uxLinkReg = [];
+function uxLinkHtml(type, name, label) {
+  const i = __uxLinkReg.push({ type, name }) - 1;
+  return '<a class="ux-link" onclick="uxLink(' + i + ')">' + esc(label || name) + '</a>';
+}
+function uxLink(i) {
+  const l = __uxLinkReg[i];
+  if (l) openEntity(l.type, l.name);
+}
+
+// The detail header's own name — clickable like every other name in
+// the pane, but re-renders in place via uxRenderDetail rather than
+// openEntity, since it's already the top of the nav stack: pushing a
+// duplicate frame would make Back need an extra click to go anywhere.
+// Uses the same registry-index pattern as uxLinkHtml (not an inline
+// onclick with the raw name) so names containing quotes can't break
+// the generated markup.
+function uxHeaderNameHtml(type, name) {
+  const i = __uxLinkReg.push({ type, name }) - 1;
+  return '<a class="ux-link" onclick="uxHeaderLink(' + i + ')">' + esc(name) + '</a>';
+}
+function uxHeaderLink(i) {
+  const l = __uxLinkReg[i];
+  if (l) uxRenderDetail(l.type, l.name);
+}
+
+// Collapse/expand toggle for the body-content blocks (calculation,
+// script steps, custom values, …) — same rotate-arrow pattern as the
+// sidebar's disclosure triangle. Defaults to expanded; clicking the
+// header hides the content div immediately after it and flips the
+// arrow, so long step lists or long calc bodies can be tucked away.
+function uxToggleCollapse(headerEl) {
+  const content = headerEl.nextElementSibling;
+  if (!content) return;
+  const collapsing = content.style.display !== 'none';
+  content.style.display = collapsing ? 'none' : '';
+  const arrow = headerEl.querySelector('.ux-collapse-arrow');
+  if (arrow) arrow.classList.toggle('collapsed', collapsing);
+}
+
+// Wraps a body-content block (a label + a content div) with the
+// collapsible header, used for every long "show the actual data"
+// block in the detail view: field/custom-function calculation,
+// script steps, value-list custom values.
+function uxCollapsibleBlock(label, innerHtml, extraClass) {
+  return '<div class="ux-meta-row">' +
+    '<div class="ux-collapse-header" onclick="uxToggleCollapse(this)">' +
+    '<span class="ux-collapse-arrow">▾</span><strong>' + label + '</strong>' +
+    '</div>' +
+    '<div class="ux-detail-calc' + (extraClass ? ' ' + extraClass : '') + '">' + innerHtml + '</div>' +
+    '</div>';
+}
+
+// Renders a script's step body the way a calculation's formula is
+// rendered — a monospace block, positioned the same place in the
+// layout (right after the summary bits, before callers/callees).
+// Reuses extractScriptSteps/extractStepText (built for the diff
+// viewer) rather than re-deriving HR text from scratch. Adds a
+// lightweight indent tracker on top, matching Script Workspace's
+// visual nesting, since the shared HR text is flat.
+function uxRenderScriptSteps(name) {
+  const steps = extractScriptSteps(window.__lastRoot, name);
+  if (!steps || !steps.length) return '';
+  const MAX = 400;
+  let depth = 0;
+  const lines = steps.slice(0, MAX).map(function(st) {
+    const bare = st.text.replace(/^\/\/\s?/, '');
+    const isElse = /^(Else\b|Else If \[)/.test(bare);
+    const isEnd  = /^(End If\b|End Loop\b)/.test(bare);
+    const isOpen = /^(If \[|Loop\b)/.test(bare);
+    if (isEnd) depth = Math.max(depth - 1, 0);
+    const lineDepth = isElse ? Math.max(depth - 1, 0) : depth;
+    const rendered = '  '.repeat(lineDepth) + st.text;
+    if (isOpen) depth++;
+    return { text: rendered, enabled: st.enabled };
+  });
+  const body = lines.map(function(l) {
+    return '<span style="display:block' + (l.enabled ? '' : ';opacity:.55') + '">' + esc(l.text) + '</span>';
+  }).join('');
+  const more = steps.length > MAX
+    ? '<span style="display:block;opacity:.6">…(+' + (steps.length - MAX) + ' more steps — open in Script Workspace for the full body)</span>'
+    : '';
+  return uxCollapsibleBlock('Script steps (' + steps.length + '):', body + more, 'ux-detail-steps');
+}
+
+// Type-specific metadata rows for the top of the detail output.
+// usedCount suppresses the calc_deps "Calc uses" fallback row when the
+// Elements used section will show the same information with links.
+function uxDetailMeta(type, name, def, usedCount) {
+  const s = window.__lastStats || {};
+  const rows = [];
+  if (type === 'field') {
+    const fi = ((s.tables || {}).field_info || {})[name];
+    if (fi && typeof buildFieldPills === 'function') rows.push(buildFieldPills(fi));
+    if (fi && fi.comment) rows.push('<div class="ux-meta-row"><strong>Comment:</strong> <em>' + esc(fi.comment) + '</em></div>');
+    const calcEl = def && def.el ? def.el.querySelector(':scope > Calculation') : null;
+    if (calcEl) {
+      // The Calculation element also holds reference and DDRREF children;
+      // the formula itself is the Text CDATA child
+      const textEl = calcEl.querySelector(':scope > Text');
+      const calc = ((textEl || calcEl).textContent || '').trim();
+      if (calc) {
+        const shown = calc.length > 1200 ? calc.slice(0, 1200) + '\n…(truncated, ' + calc.length + ' chars)' : calc;
+        rows.push(uxCollapsibleBlock('Calculation:', esc(shown)));
+      }
+    }
+    // Calc-chain summary from the dependency table, with drill links
+    const dep = (((s.unrefs || {}).calc_deps) || []).find(function(r) { return r.name === name; });
+    if (dep) {
+      const linkList = function(csv) {
+        return csv.split(', ').filter(Boolean).map(function(f) {
+          return f.includes('::') ? uxLinkHtml('field', f) : esc(f);
+        }).join(', ');
+      };
+      if (dep.uses_count && !usedCount) rows.push('<div class="ux-meta-row"><strong>Calc uses:</strong> ' + linkList(dep.uses) + '</div>');
+      if (dep.used_by_count) rows.push('<div class="ux-meta-row"><strong>Used by calcs:</strong> ' + linkList(dep.used_by) + '</div>');
+    }
+  }
+  if (type === 'script') {
+    const info = (((s.scripts || {}).info) || {})[name];
+    if (info) {
+      const bits = [];
+      if (info.folder) bits.push('folder: ' + esc(info.folder));
+      if (info.step_count != null) bits.push(info.step_count + ' steps');
+      if (info.complexity != null) bits.push('complexity ' + info.complexity);
+      if (info.full_access) bits.push('runs with full access');
+      if (bits.length) rows.push('<div class="ux-meta-row">' + bits.join(' · ') + '</div>');
+    }
+    const stepsHtml = uxRenderScriptSteps(name);
+    if (stepsHtml) rows.push(stepsHtml);
+    const cg  = (s.scripts || {}).call_graph || {};
+    const rev = (s.scripts || {}).call_graph_rev || {};
+    const callers = [...new Set((rev[name] || []).map(function(e) { return e.callerName; }))];
+    const callees = [...new Set((cg[name]  || []).map(function(e) { return e.calleeName; }))];
+    if (callers.length) rows.push('<div class="ux-meta-row"><strong>Called by:</strong> ' +
+      callers.map(function(c) { return uxLinkHtml('script', c); }).join(', ') + '</div>');
+    if (callees.length) rows.push('<div class="ux-meta-row"><strong>Calls:</strong> ' +
+      callees.map(function(c) { return uxLinkHtml('script', c); }).join(', ') + '</div>');
+  }
+  if (type === 'customfunction') {
+    const cf = ((((s.customs || {}).detail) || {}).all || []).find(function(c) { return c.name === name; });
+    if (cf && cf.signature) rows.push('<div class="ux-meta-row" style="font-family:var(--font-mono)">' + esc(cf.signature) + '</div>');
+    // Same Calculation > Text extraction as a field's calc — custom
+    // functions carry their formula the same way
+    const calcEl = def && def.el ? def.el.querySelector(':scope > Calculation') : null;
+    if (calcEl) {
+      const textEl = calcEl.querySelector(':scope > Text');
+      const calc = ((textEl || calcEl).textContent || '').trim();
+      if (calc) {
+        const shown = calc.length > 1200 ? calc.slice(0, 1200) + '\n…(truncated, ' + calc.length + ' chars)' : calc;
+        rows.push(uxCollapsibleBlock('Calculation:', esc(shown)));
+      }
+    }
+  }
+  if (type === 'valuelist') {
+    const el = def && def.el;
+    const srcEl = el ? el.querySelector(':scope > Source') : null;
+    const src = srcEl ? srcEl.getAttribute('value') : '';
+    if (src === 'Custom') {
+      const textEl = el.querySelector(':scope > CustomValues > Text');
+      const raw = textEl ? (textEl.textContent || '').trim() : '';
+      const values = raw ? raw.split(/\r\n|\r|\n/) : [];
+      if (values.length) rows.push(uxCollapsibleBlock('Custom values (' + values.length + '):', esc(values.join('\n'))));
+    } else if (src === 'FromField') {
+      const fieldEl   = el.querySelector(':scope > Field');
+      const primary   = fieldEl ? fieldEl.querySelector(':scope > PrimaryField > FieldReference') : null;
+      const primaryTo = primary ? primary.querySelector('TableOccurrenceReference') : null;
+      const primaryName = primary
+        ? (primaryTo ? (primaryTo.getAttribute('name') || '') + '::' : '') + (primary.getAttribute('name') || '')
+        : '';
+      const showRelated = fieldEl ? fieldEl.querySelector(':scope > ShowRelated') : null;
+      const relatedOn   = showRelated ? showRelated.getAttribute('value') === 'True' : false;
+      const relatedTo   = relatedOn ? showRelated.querySelector('TableOccurrenceReference') : null;
+      const bits = [];
+      if (primaryName) bits.push('field: ' + uxLinkHtml('field', primaryName));
+      if (relatedTo) bits.push('shows related values via: ' + uxLinkHtml('to', relatedTo.getAttribute('name') || ''));
+      if (bits.length) rows.push('<div class="ux-meta-row">' + bits.join(' · ') + '</div>');
+    } else if (src === 'External') {
+      const dsRef = el.querySelector(':scope > External > DataSourceReference');
+      const vlRef = el.querySelector(':scope > External > ValueListReference');
+      const bits = [];
+      if (dsRef) bits.push('external file: ' + esc(dsRef.getAttribute('name') || ''));
+      if (vlRef) bits.push('value list: ' + esc(vlRef.getAttribute('name') || ''));
+      if (bits.length) rows.push('<div class="ux-meta-row">' + bits.join(' · ') + '</div>');
+    }
+  }
+  if (type === 'table') {
+    const fpt = ((s.tables || {}).fields_per_table || {})[name];
+    if (fpt != null) rows.push('<div class="ux-meta-row">' + fpt + ' fields</div>');
+    const tos = (((s.graph || {}).detail || {}).tos_all || []).filter(function(t) {
+      const base = t.base_table || t.baseTable || t.base || t.table || '';
+      return base === name;
+    });
+    if (tos.length) rows.push('<div class="ux-meta-row"><strong>Occurrences:</strong> ' +
+      tos.map(function(t) { return uxLinkHtml('to', t.name); }).join(', ') + '</div>');
+  }
+  return rows.join('');
+}
+
+function uxRenderDetail(type, name) {
+  const output = document.getElementById('impact-output');
+  if (!output) return;
+  // Keep the search field in sync with whatever's actually on screen —
+  // drilling through a reference link (or going Back) changes what's
+  // displayed without the user retyping anything, so the box would
+  // otherwise be left showing a stale query.
+  const input = document.getElementById('impact-input');
+  if (input) input.value = name;
+  __uxLinkReg = [];
+  const T = UX_TYPES[type] || { label: type, badge: '?' };
+  const def  = uxFindDefinition(type, name);
+  const refs = def ? uxFindReferences(def.uuid) : [];
+  const used = def ? uxFindElementsUsed(type, def) : [];
+
+  // Group by context; collapse duplicate rows into a ×N count
+  const groups = new Map();
+  for (const r of refs) {
+    const key = r.ctx;
+    if (!groups.has(key)) groups.set(key, new Map());
+    const rowKey = r.where + ' ' + r.how;
+    const g = groups.get(key);
+    const existing = g.get(rowKey);
+    if (existing) existing.count++;
+    else g.set(rowKey, { ...r, count: 1 });
+  }
+
+  let html =
+    '<div class="ux-detail-head">' +
+    '<button class="header-btn" onclick="uxGoBack()">‹ Back</button>' +
+    '<span class="ux-type-badge ux-t-' + esc(type) + '">' + T.badge + '</span>' +
+    '<span class="ux-detail-name">' + uxHeaderNameHtml(type, name) + '</span>' +
+    '</div>';
+
+  const meta = uxDetailMeta(type, name, def, used.length);
+  if (meta) html += '<div class="ux-detail-meta">' + meta + '</div>';
+
+  // Outbound dependencies — what this entity's definition and
+  // calculation(s) reference — shown between the details above and
+  // the inbound references below
+  if (used.length) {
+    const order = {};
+    UX_TYPE_ORDER.forEach(function(t, i) { order[t] = i; });
+    used.sort(function(a, b) {
+      const oa = order[a.type] !== undefined ? order[a.type] : 99;
+      const ob = order[b.type] !== undefined ? order[b.type] : 99;
+      return oa - ob || a.name.localeCompare(b.name);
+    });
+    html += '<div class="section-title" style="padding-top:6px"><span class="section-icon">⇠</span>Elements used (' + used.length + ')</div>' +
+      '<div class="ux-ref-group"><table class="ux-ref-table">';
+    const ucap = 200;
+    used.slice(0, ucap).forEach(function(u) {
+      const badge = (UX_TYPES[u.type] || { badge: '?' }).badge;
+      html += '<tr><td class="ux-ref-where"><span class="ux-type-badge ux-t-' + esc(u.type) + '">' + badge + '</span> ' +
+        uxLinkHtml(u.type, u.name) + '</td><td class="ux-ref-how">' + esc(u.via || '') + '</td></tr>';
+    });
+    html += '</table>';
+    if (used.length > ucap) html += '<div class="ux-detail-meta">+ ' + (used.length - ucap) + ' more</div>';
+    html += '</div>';
+  }
+
+  if (!def) {
+    html += '<div class="ux-detail-meta">Definition not found in the parsed XML — the name may be ambiguous or the entity was removed.</div>';
+  } else if (!def.uuid) {
+    html += '<div class="ux-detail-meta">This entity’s definition carries no UUID, so references cannot be resolved for it.</div>';
+  } else {
+    html += '<div class="section-title" style="padding-top:6px"><span class="section-icon">⇢</span>References (' + refs.length + ')</div>';
+    if (!groups.size) {
+      html += '<div class="ux-detail-meta">No references found anywhere in the file.</div>';
+    }
+    for (const [ctx, rowsMap] of groups) {
+      const rows = [...rowsMap.values()];
+      html += '<div class="ux-ref-group"><div class="ux-ref-group-title">' + esc(ctx) + ' (' + rows.length + ')</div>' +
+        '<table class="ux-ref-table">';
+      const cap = 200;
+      rows.slice(0, cap).forEach(function(r) {
+        const whereHtml = r.whereHtml ? r.whereHtml : (r.link ? uxLinkHtml(r.link.type, r.link.name, r.where) : esc(r.where));
+        const countSuffix = r.count > 1 ? ' <span style="color:var(--ink-4)">×' + r.count + '</span>' : '';
+        html += '<tr><td class="ux-ref-where">' + whereHtml + countSuffix + '</td><td class="ux-ref-how">' + esc(r.how || '') + '</td></tr>';
+      });
+      html += '</table>';
+      if (rows.length > cap) html += '<div class="ux-detail-meta">+ ' + (rows.length - cap) + ' more in this group</div>';
+      html += '</div>';
+    }
+  }
+
+  html += '<div class="ux-caveat">Static analysis only — dynamic references (Evaluate(), GetField() with non-literal arguments, constructed SQL) cannot be traced' +
+    (type === 'customfunction' ? '; custom functions are called by name inside calculation text, so only UUID-carrying references appear here — see the function’s parse-time reference count on the Custom Functions pane' : '') +
+    '. Confirm against the running file before acting.</div>';
+
+  output.innerHTML = html;
+  const content = document.getElementById('content');
+  if (content) content.scrollTop = 0;
+}
+
 // ── v1.6: SCRIPT CALL GRAPH RENDERER ────────────────────────
 // Renders a collapsible tree starting from a given root script name.
 // scriptName  - the script to render as the root node
@@ -3406,14 +4597,9 @@ function cgJumpToFind(evt, scriptName) {
     const sidebarItem = document.querySelector('.sidebar-item[data-target="tab-impact"]');
     if (sidebarItem) sidebarItem.click();
     setTimeout(function() {
-        const inp  = document.getElementById('impact-input');
-        const type = document.getElementById('impact-type');
-        if (type) type.value = 'script';
-        if (inp) {
-            inp.value = scriptName;
-            inp.dispatchEvent(new Event('input'));
-            inp.focus();
-        }
+        const inp = document.getElementById('impact-input');
+        if (inp) inp.value = scriptName;
+        openEntity('script', scriptName);
     }, 80);
 }
 
@@ -3610,23 +4796,19 @@ function cgCollapseAll() {
 // "What breaks if I delete this?" — query the dependency engine.
 function buildImpactTab(stats) {
     const wrap = document.createElement('div');
-    const u    = stats.unrefs;
-    const scr  = stats.scripts;
 
     wrap.innerHTML =
         '<div class="section">' +
         '<div class="section-title"><span class="section-icon">⚡</span>Impact Analysis</div>' +
-        '<div style="padding:10px 22px 6px;font-size:12.5px;color:var(--ink-2)">Enter a script or field (Table::Field) name to see what references it and what would break if it were removed.</div>' +
+        '<div style="padding:10px 22px 6px;font-size:12.5px;color:var(--ink-2)">Search any field, table, occurrence, script, layout, value list or custom function (⌘K / Ctrl+K), pick it from the list, then follow the references — every referencing item is a link, and Back retraces the drill path.</div>' +
         '<div style="padding:0 22px 14px;display:flex;gap:8px;align-items:center;">' +
-        '<input id="impact-input" class="find-script-input" style="max-width:380px;flex:1" placeholder="e.g. Update Customer Record  or  Customer::Status" oninput="runImpactAnalysis()" autocomplete="off" />' +
-        '<select id="impact-type" class="find-script-input" style="width:120px" onchange="runImpactAnalysis()">' +
-        '<option value="auto">Auto-detect</option>' +
-        '<option value="script">Script</option>' +
-        '<option value="field">Field</option>' +
-        '</select>' +
+        '<div class="ux-search-wrap" style="flex:1;max-width:420px">' +
+        '<input id="impact-input" class="find-script-input" style="width:100%" placeholder="e.g. Update Customer Record  or  Customer::Status" oninput="uxSearchInput()" onkeydown="uxSearchKey(event)" onfocus="uxSearchInput()" onblur="uxSearchBlur()" autocomplete="off" spellcheck="false" />' +
+        '<div id="ux-search-dd" class="ux-search-dd" style="display:none"></div>' +
+        '</div>' +
         '</div>' +
         '<div id="impact-output" style="padding:0 22px 16px;font-size:12.5px;min-height:60px;">' +
-        '<div class="unref-empty">Enter a name above to see impact.</div>' +
+        uxImpactPlaceholder() +
         '</div>' +
         '</div>';
 
@@ -3636,129 +4818,6 @@ function buildImpactTab(stats) {
     return wrap;
 }
 
-// Run impact analysis and render output
-function runImpactAnalysis() {
-    const input  = document.getElementById('impact-input');
-    const type   = document.getElementById('impact-type');
-    const output = document.getElementById('impact-output');
-    if (!input || !output) return;
-    // In a saved report snapshot the analysis state does not exist —
-    // explain that instead of silently doing nothing
-    if (!window.__impactStats) {
-        if (window.__savedReport) output.innerHTML = savedReportNotice();
-        return;
-    }
-
-    const q     = (input.value || '').trim();
-    const mode  = type ? (type.value || 'auto') : 'auto';
-    if (!q) { output.innerHTML = '<div class="unref-empty">Enter a name above to see impact.</div>'; return; }
-
-    const stats  = window.__impactStats;
-    const u      = stats.unrefs;
-    const scr    = stats.scripts;
-
-    let html = '';
-    const qLower = q.toLowerCase();
-    const isFieldQuery = mode === 'field' || (mode === 'auto' && q.includes('::'));
-
-    // ── Script impact ──────────────────────────────────────
-    if (mode === 'script' || (mode === 'auto' && !isFieldQuery)) {
-        // Find matching script names
-        const allScriptNames = Object.keys(scr.info || {});
-        const matched = allScriptNames.filter(function(n) { return n.toLowerCase().includes(qLower); });
-        if (matched.length > 0) {
-            for (const scriptName of matched.slice(0, 5)) {
-                const callers = (scr.call_graph_rev || {})[scriptName] || [];
-                const info = (scr.info || {})[scriptName] || {};
-                html += '<div style="margin-bottom:14px">' +
-                    '<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--ink)">' + esc(scriptName) + '</div>';
-
-                // Callers
-                if (callers.length > 0) {
-                    html += '<div style="color:var(--bad);font-size:12px;margin-bottom:4px;font-weight:600">⚠ Called by ' + callers.length + ' script' + (callers.length === 1 ? '' : 's') + ' — removing would break:</div>';
-                    html += '<ul style="margin:0 0 6px 18px;padding:0;font-family:var(--font-mono);font-size:11.5px;color:var(--ink-2)">';
-                    for (const c of callers) html += '<li>' + esc(c.callerName) + '</li>';
-                    html += '</ul>';
-                } else {
-                    html += '<div style="color:var(--good);font-size:12px;margin-bottom:4px">✓ Not called by any other script (safe to remove from a call perspective)</div>';
-                }
-
-                // Layout buttons/triggers that call this script
-                const allRefs = findScriptReferences(scriptName);
-                const nonScriptRefs = (allRefs.references || []).filter(function(r) { return r.ctx !== 'Script body'; });
-                if (nonScriptRefs.length > 0) {
-                    const byCtx = {};
-                    for (const r of nonScriptRefs) {
-                        if (!byCtx[r.ctx]) byCtx[r.ctx] = [];
-                        byCtx[r.ctx].push(r.where);
-                    }
-                    html += '<div style="color:var(--warn);font-size:12px;margin-bottom:4px;font-weight:600">⚠ Also referenced from:</div>';
-                    html += '<ul style="margin:0 0 6px 18px;padding:0;font-size:12px;color:var(--ink-2)">';
-                    for (const [ctx, wheres] of Object.entries(byCtx)) {
-                        html += '<li><strong>' + esc(ctx) + '</strong>: ' + wheres.slice(0,5).map(esc).join(', ') + (wheres.length > 5 ? ' + ' + (wheres.length - 5) + ' more' : '') + '</li>';
-                    }
-                    html += '</ul>';
-                }
-
-                // Check if it calls other scripts (downstream impact)
-                const callees = (scr.call_graph || {})[scriptName] || [];
-                if (callees.length > 0) {
-                    const uniqueCallees = [...new Set(callees.map(function(e) { return e.calleeName; }))];
-                    html += '<div style="color:var(--info);font-size:12px;margin-bottom:4px">ℹ Calls ' + uniqueCallees.length + ' other script' + (uniqueCallees.length === 1 ? '' : 's') + ': ' +
-                        uniqueCallees.slice(0, 8).map(esc).join(', ') + (uniqueCallees.length > 8 ? '…' : '') + '</div>';
-                }
-
-                html += '</div>';
-            }
-            if (matched.length > 5) html += '<div style="color:var(--ink-3);font-size:12px">' + (matched.length - 5) + ' more matches — refine the search.</div>';
-        }
-    }
-
-    // ── Field impact ───────────────────────────────────────
-    if (isFieldQuery || mode === 'field') {
-        const depRows = u.calc_deps || [];
-        const qParts  = q.split('::');
-        const qTable  = qParts.length > 1 ? qParts[0].toLowerCase() : '';
-        const qField  = qParts.length > 1 ? qParts[1].toLowerCase() : qParts[0].toLowerCase();
-        const matched = depRows.filter(function(r) {
-            const nameL = (r.name || '').toLowerCase();
-            return nameL.includes(qLower) || (qTable ? (r.table.toLowerCase().includes(qTable) && r.field.toLowerCase().includes(qField)) : r.field.toLowerCase().includes(qField));
-        });
-        if (matched.length > 0) {
-            for (const row of matched.slice(0, 5)) {
-                html += '<div style="margin-bottom:14px">' +
-                    '<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--ink);font-family:var(--font-mono)">' + esc(row.name) + '</div>';
-                if (row.used_by_count > 0) {
-                    html += '<div style="color:var(--bad);font-size:12px;font-weight:600;margin-bottom:3px">⚠ Used by ' + row.used_by_count + ' field calc' + (row.used_by_count === 1 ? '' : 's') + ': <span style="font-family:var(--font-mono);font-weight:400">' + esc(row.used_by || '') + '</span></div>';
-                }
-                if (row.script_count > 0) {
-                    html += '<div style="color:var(--warn);font-size:12px;margin-bottom:3px">⚠ Referenced in ' + row.script_count + ' script' + (row.script_count === 1 ? '' : 's') + ': ' + esc(row.scripts || '') + '</div>';
-                }
-                if (row.layout_count > 0) {
-                    html += '<div style="color:var(--info);font-size:12px;margin-bottom:3px">ℹ Placed on ' + row.layout_count + ' layout' + (row.layout_count === 1 ? '' : 's') + '</div>';
-                }
-                if (row.rel_count > 0) {
-                    html += '<div style="color:var(--info);font-size:12px;margin-bottom:3px">ℹ Used in ' + row.rel_count + ' relationship' + (row.rel_count === 1 ? '' : 's') + '</div>';
-                }
-                if (row.uses_count > 0) {
-                    html += '<div style="color:var(--ink-3);font-size:12px;margin-bottom:3px">ℹ Calc uses: <span style="font-family:var(--font-mono)">' + esc(row.uses || '') + '</span></div>';
-                }
-                if (row.used_by_count === 0 && row.script_count === 0 && row.layout_count === 0 && row.rel_count === 0) {
-                    html += '<div style="color:var(--good);font-size:12px">✓ No structural dependencies found — appears safe to remove</div>';
-                }
-                html += '</div>';
-            }
-        } else if (isFieldQuery) {
-            html += '<div class="unref-empty">No field dependency data found for "' + esc(q) + '". If the field exists, it may have no structural dependencies recorded.</div>';
-        }
-    }
-
-    if (!html) {
-        html = '<div class="unref-empty">No match found for "' + esc(q) + '". Try a different spelling or switch the type selector.</div>';
-    }
-
-    output.innerHTML = html;
-}
 
 // ── v1.6: MERMAID EXPORT ──────────────────────────────────────
 // Generates Mermaid diagram text for relationships and/or script call tree.
@@ -4055,6 +5114,12 @@ function resetUI() {
   window.__fieldDrillRegistry = null;
   window.__diffFiles = null;
   window.__lastDiff = null;
+  window.__uxIndex = null;
+  window.__uxUuidMap = null;
+  window.__uxDefMap = null;
+  window.__uxChunkOwnerMap = null;
+  window.__uxNavStack = [];
+  __uxLinkReg = [];
   document.getElementById('drop-screen').style.display = '';
   document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('report-screen').style.display = 'none';
@@ -5072,8 +6137,16 @@ function extractStepText(step) {
 
         // ── Comments / whitespace ────────────────────────────
         case 89: {
-            const c = (step.textContent || '').trim().replace(/\s+/g, ' ');
-            return '# ' + (c.slice(0, 100) || '');
+            // Fix (2026-07-06): the comment text lives specifically at
+            // ParameterValues > Parameter[type=Comment] > Comment. Reading
+            // step.textContent instead pulls in every descendant text node
+            // — UUID, Options, and the DDRREF chunk key — which surfaced
+            // as garbage whenever the DDR-rendered text for this step was
+            // itself an empty string (falsy, so the DDR-first branch above
+            // fell through to this fallback).
+            const commentEl = step.querySelector('ParameterValues > Parameter[type="Comment"] > Comment');
+            const c = ((commentEl ? commentEl.textContent : '') || '').trim().replace(/\s+/g, ' ');
+            return '# ' + c.slice(0, 100);
         }
 
         // ── Fallback: step name + any calc hint ───────────────
@@ -11257,7 +12330,7 @@ function buildAboutTab(stats) {
     const mailto  = 'mailto:hello@clockworkct.com?subject=Clockwork%20Inspector%20feedback';
     return `<div class="doc-section">
 
-      <p class="doc-lead"><strong>Clockwork Inspector for FileMaker</strong> &middot; version 1.5. A static analysis tool for FileMaker Save-as-XML files. Built and maintained by Clockwork Creative Technology.</p>
+      <p class="doc-lead"><strong>Clockwork Inspector for FileMaker</strong> &middot; version 2.2. A static analysis tool for FileMaker Save-as-XML files. Built and maintained by Clockwork Creative Technology.</p>
 
       <h3>Privacy</h3>
       <div class="doc-good">
@@ -11270,7 +12343,7 @@ function buildAboutTab(stats) {
         <tbody>
           <tr><th>Author</th><td>Andrew Kear</td></tr>
           <tr><th>Organisation</th><td>Clockwork Creative Technology Ltd</td></tr>
-          <tr><th>Inspector version</th><td>1.4</td></tr>
+          <tr><th>Inspector version</th><td>2.2</td></tr>
           <tr><th>Detected source FileMaker version</th><td>${esc(fileVer)}</td></tr>
         </tbody>
       </table>
@@ -11313,12 +12386,825 @@ function buildAboutTab(stats) {
     </div>`;
 }
 
+// ── WIREFRAME ──────────────────────────────────────────────
+// Visual wireframe preview of layouts. Geometry is read lazily from the
+// stashed XML root (window.__lastRoot) when the user picks a layout, so
+// the main parser did not need to retain per-object bounds. Every layout
+// object is drawn as a scaled SVG shape positioned from its <Bounds>,
+// colour-coded by category, with layout parts (Header, Body, Footer…)
+// rendered as horizontal bands behind the objects. Hovering an object
+// shows its details below the canvas; clicking pins the details and
+// exposes drill-through links into Impact Analysis.
+
+// Colour palette per wireframe category. Fills are translucent so
+// stacked and overlapping objects stay readable; strokes echo the
+// category accent colours used elsewhere in the app.
+const WF_CATS = {
+    field:   { fill: 'rgba(21,112,239,0.10)',  stroke: '#1570ef', label: 'Field' },
+    text:    { fill: 'rgba(152,162,179,0.08)', stroke: '#b6bdc9', label: 'Text' },
+    button:  { fill: 'rgba(58,170,109,0.12)',  stroke: '#2d8a57', label: 'Button' },
+    portal:  { fill: 'none',                   stroke: '#7a5af8', label: 'Portal' },
+    panel:   { fill: 'none',                   stroke: '#ee9b3a', label: 'Tab / Slide' },
+    popover: { fill: 'none',                   stroke: '#444ce7', label: 'Popover' },
+    web:     { fill: 'rgba(9,146,152,0.06)',   stroke: '#099298', label: 'Web Viewer' },
+    chart:   { fill: 'rgba(227,27,84,0.08)',   stroke: '#e31b54', label: 'Chart' },
+    shape:   { fill: 'rgba(16,24,40,0.04)',    stroke: '#c8cdd6', label: 'Shape' },
+    group:   { fill: 'none',                   stroke: '#d0d5dd', label: 'Group' },
+    other:   { fill: 'rgba(16,24,40,0.05)',    stroke: '#667085', label: 'Other' },
+};
+
+// Map a LayoutObject's type attribute onto a wireframe category key.
+// Uses loose matching for panel/popover types because the exact type
+// strings vary slightly between FileMaker export versions.
+const wfCategory = (type) => {
+    const lowered = (type || '').toLowerCase();
+    if (['edit box', 'drop-down list', 'pop-up menu', 'checkbox set', 'radio button set', 'drop-down calendar', 'container'].includes(lowered)) return 'field';
+    if (lowered === 'text') return 'text';
+    if (lowered === 'button' || lowered === 'grouped button' || lowered === 'button bar') return 'button';
+    if (lowered === 'portal') return 'portal';
+    if (lowered.includes('popover')) return 'popover';
+    if (lowered.includes('tab') || lowered.includes('slide')) return 'panel';
+    if (lowered === 'web viewer') return 'web';
+    if (lowered === 'chart') return 'chart';
+    if (lowered === 'group') return 'group';
+    if (['line', 'rectangle', 'rounded rectangle', 'oval', 'graphic'].includes(lowered)) return 'shape';
+    return 'other';
+};
+
+// Build the Wireframe tab content element. Called once per parse from
+// renderResults; the actual SVG render is deferred until a layout is
+// chosen (an initial layout is auto-selected shortly after build).
+function buildWireframeTab(lay) {
+    const wrap = document.createElement('div');
+
+    // Collect pickable layouts from the already-parsed layout info map,
+    // skipping menu-divider pseudo layouts (names that are only hyphens).
+    const layoutChoices = Object.entries(lay.info || {})
+        .filter((entry) => !entry[1].is_divider)
+        .map((entry) => ({ name: entry[0], id: entry[1].id, hidden: !!entry[1].hidden }));
+    layoutChoices.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Build the <select> options, grouping hidden layouts separately so
+    // the picker mirrors what a user sees in FileMaker's layout menu.
+    const visibleChoices = layoutChoices.filter((c) => !c.hidden);
+    const hiddenChoices = layoutChoices.filter((c) => c.hidden);
+    const optionHtml = (choices) => {
+        return choices.map((c) => '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>').join('');
+    };
+    let selectHtml = '<option value="">Choose a layout…</option>';
+    if (visibleChoices.length) selectHtml += '<optgroup label="Visible">' + optionHtml(visibleChoices) + '</optgroup>';
+    if (hiddenChoices.length) selectHtml += '<optgroup label="Hidden">' + optionHtml(hiddenChoices) + '</optgroup>';
+
+    // Legend: a passive colour key, one dot per category (group/other
+    // omitted to reduce noise). Styled deliberately differently from
+    // the toolbar's interactive toggles so it doesn't read as controls.
+    let legendHtml = '<span class="wf-legend-label">Key</span>';
+    for (const key of Object.keys(WF_CATS)) {
+        if (key === 'group' || key === 'other') continue;
+        const cat = WF_CATS[key];
+        legendHtml += '<span class="wf-chip"><span class="wf-swatch" style="background:' + cat.stroke + '"></span>' + esc(cat.label) + '</span>';
+    }
+    wrap.innerHTML =
+        '<div class="section">' +
+        '<div class="section-title"><span class="section-icon">⊡</span>Wireframe — ' + fmt(layoutChoices.length) + ' layouts</div>' +
+        '<div class="wf-toolbar">' +
+        '<select class="wf-select">' + selectHtml + '</select>' +
+        '<label class="wf-toggle"><input type="checkbox" class="wf-t-fills" checked> fills</label>' +
+        '<label class="wf-toggle"><input type="checkbox" class="wf-t-panels"> hidden panels<span class="wf-t-panels-n"></span></label>' +
+        '<label class="wf-toggle"><input type="checkbox" class="wf-t-popovers"> popovers<span class="wf-t-popovers-n"></span></label>' +
+        '<div class="wf-zoom">' +
+        '<button class="wf-zoom-btn" data-zoom="out">−</button>' +
+        '<button class="wf-zoom-btn" data-zoom="in">+</button>' +
+        '<button class="wf-zoom-btn" data-zoom="100">100%</button>' +
+        '<button class="wf-zoom-btn" data-zoom="fit">Fit</button>' +
+        '<span class="wf-zoom-val"></span>' +
+        '</div>' +
+        '</div>' +
+        '<div class="wf-legend">' + legendHtml + '</div>' +
+        '<div class="wf-canvas-wrap"><div class="wf-empty">Pick a layout above to draw its wireframe.</div></div>' +
+        '<div class="wf-details">Hover an object for details — click to pin it and get drill-through links.</div>' +
+        '</div>';
+
+    const selectEl = wrap.querySelector('.wf-select');
+    const canvasWrap = wrap.querySelector('.wf-canvas-wrap');
+    const detailsEl = wrap.querySelector('.wf-details');
+    const zoomValEl = wrap.querySelector('.wf-zoom-val');
+
+    // Render state shared by the event handlers below. The registry
+    // holds one entry per drawn object so hover/click handlers can look
+    // objects up by index without re-querying the XML.
+    let registry = [];
+    let pinnedIndex = null;
+    let currentLayoutEl = null;
+    let currentMeta = '';
+    const zoomState = { mode: 'fit', z: 1 };
+    let lastFitScale = 1;
+
+    // Find descendants of a container that belong to it directly — i.e.
+    // not inside a nested LayoutObject. Portals, tab panels, popovers
+    // and groups all nest child objects, so a naive querySelectorAll
+    // would leak a child's Bounds/refs into its container.
+    const ownDescendants = (containerEl, selector) => {
+        const found = [];
+        for (const el of containerEl.querySelectorAll(selector)) {
+            let parent = el.parentElement;
+            let nestedOwner = null;
+            while (parent && parent !== containerEl) {
+                if (parent.tagName === 'LayoutObject') { nestedOwner = parent; break; }
+                parent = parent.parentElement;
+            }
+            if (!nestedOwner) found.push(el);
+        }
+        return found;
+    };
+
+    // Read an element's own <Bounds> (top/left/bottom/right attributes)
+    // into a plain object, or null when absent/unparseable.
+    const readBounds = (el) => {
+        const boundsEls = ownDescendants(el, 'Bounds');
+        if (!boundsEls.length) return null;
+        const b = boundsEls[0];
+        const top = parseFloat(attr(b, 'top'));
+        const left = parseFloat(attr(b, 'left'));
+        const bottom = parseFloat(attr(b, 'bottom'));
+        const right = parseFloat(attr(b, 'right'));
+        if ([top, left, bottom, right].some((v) => isNaN(v))) return null;
+        return { top, left, bottom, right, w: right - left, h: bottom - top };
+    };
+
+    // Resolve the field bound to a field-type object: returns the TO
+    // name and field name from the object's own FieldReference.
+    const readFieldRef = (lo) => {
+        const refs = ownDescendants(lo, 'FieldReference');
+        if (!refs.length) return null;
+        const ref = refs[0];
+        const toRef = ref.querySelector('TableOccurrenceReference');
+        return {
+            to: toRef ? (attr(toRef, 'name') || '') : '',
+            field: attr(ref, 'name') || '',
+        };
+    };
+
+    // Extract display text from a text/button object by joining its own
+    // Data runs (multi-style text is split across several Data elements).
+    const readTextData = (lo) => {
+        const dataEls = ownDescendants(lo, 'Data');
+        return dataEls.map((d) => d.textContent || '').join('').trim();
+    };
+
+    // Name of the script a button runs, when its action is Perform Script.
+    const readButtonScript = (lo) => {
+        const refs = ownDescendants(lo, 'ScriptReference');
+        return refs.length ? (attr(refs[0], 'name') || '') : '';
+    };
+
+    // The related table occurrence a portal points at.
+    const readPortalTO = (lo) => {
+        const portalEl = qs(lo, ':scope > Portal');
+        const tableEl = portalEl ? qs(portalEl, ':scope > Table') : null;
+        return tableEl ? (attr(tableEl, 'name') || '') : '';
+    };
+
+    // Which panel of each tab/slide control is currently shown in the
+    // wireframe. Keyed by the control's XML element; missing = front
+    // panel. Set by clicking the drawn tab strip.
+    const activePanelChoice = new WeakMap();
+
+    // Direct panel children of a tab/slide control, in document order.
+    const directPanels = (controlEl) => {
+        const panels = [];
+        for (const el of controlEl.querySelectorAll('LayoutObject')) {
+            let parent = el.parentElement;
+            let nested = false;
+            while (parent && parent !== controlEl) {
+                if (parent.tagName === 'LayoutObject') { nested = true; break; }
+                parent = parent.parentElement;
+            }
+            if (nested) continue;
+            if (((attr(el, 'type') || '').toLowerCase()).includes('panel')) panels.push(el);
+        }
+        return panels;
+    };
+
+    // A panel's display title: a title calculation (usually a quoted
+    // literal like "Project Info"), else the object name, else its
+    // ordinal so slide-control dots still get a label. The element
+    // carrying the title varies across export versions, so several
+    // candidates are tried.
+    const readPanelTitle = (panelEl, ordinal) => {
+        const titleEls = ownDescendants(panelEl, 'TitleCalc, Title, TabTitle, PanelTitle, TitleCalculation');
+        for (const titleEl of titleEls) {
+            const calcEl = titleEl.querySelector('Calculation') || titleEl;
+            let title = (calcEl.textContent || '').trim();
+            title = title.replace(/^"/, '').replace(/"$/, '').trim();
+            if (title) return title;
+        }
+        const name = (attr(panelEl, 'name') || '').trim();
+        return name || String(ordinal + 1);
+    };
+
+    // FMSaveAsXML stores most bounds in absolute layout coordinates,
+    // but objects nested inside tab/slide/popover panels (and portals
+    // in some versions) are stored relative to their container's
+    // origin. Heuristic: if a child's raw origin doesn't sit inside its
+    // container's absolute box, treat the bounds as container-relative
+    // and translate them into absolute space. Containers whose own
+    // origin is near (0,0) need ~zero translation either way, so the
+    // ambiguous case is harmless.
+    const toAbsolute = (bounds, containerBounds) => {
+        if (!bounds || !containerBounds) return bounds;
+        const startsWithin = bounds.left >= containerBounds.left - 2 &&
+            bounds.top >= containerBounds.top - 2 &&
+            bounds.left <= containerBounds.right + 2 &&
+            bounds.top <= containerBounds.bottom + 2;
+        if (startsWithin) return bounds;
+        return {
+            top: bounds.top + containerBounds.top,
+            left: bounds.left + containerBounds.left,
+            bottom: bounds.bottom + containerBounds.top,
+            right: bounds.right + containerBounds.left,
+            w: bounds.w,
+            h: bounds.h,
+        };
+    };
+
+    // Recursively collect layout objects into the registry, parents
+    // before children so document/paint order puts containers behind
+    // their contents. Depth is kept for container outline styling.
+    //
+    // Suppression: FileMaker only ever shows ONE panel of a tab/slide
+    // control at a time, and popover panels only when opened — but the
+    // XML stores every panel's objects, all stacked on top of each
+    // other. Drawing them all makes complex layouts unreadable, so
+    // panels other than the chosen one (and popover panels) are tagged
+    // and hidden unless the matching toggle is on. The tag is inherited
+    // by everything nested inside.
+    const collectObjects = (containerEl, depth, out, inheritedSuppression, containerBounds) => {
+        const direct = [];
+        for (const el of containerEl.querySelectorAll('LayoutObject')) {
+            let parent = el.parentElement;
+            let nested = false;
+            while (parent && parent !== containerEl) {
+                if (parent.tagName === 'LayoutObject') { nested = true; break; }
+                parent = parent.parentElement;
+            }
+            if (!nested) direct.push(el);
+        }
+        // Is this container a tab/slide control whose direct panel
+        // children stack on top of each other?
+        const containerType = (containerEl.tagName === 'LayoutObject' ? (attr(containerEl, 'type') || '') : '').toLowerCase();
+        const isPanelStack = containerType.includes('tab control') || containerType.includes('slide control');
+        let panelOrdinal = 0;
+        for (const lo of direct) {
+            const type = attr(lo, 'type') || 'Unknown';
+            const cat = wfCategory(type);
+            const lowered = type.toLowerCase();
+            let suppressed = inheritedSuppression || null;
+            // Popover panels: hidden in FileMaker until their button is
+            // clicked, so hide by default here too.
+            if (!suppressed && lowered.includes('popover') && lowered.includes('panel')) suppressed = 'popover';
+            // Stacked panels: keep the chosen panel visible (front by
+            // default, switchable via the drawn tab strip), suppress
+            // the rest.
+            if (!suppressed && isPanelStack && lowered.includes('panel')) {
+                const chosenOrdinal = activePanelChoice.get(containerEl) || 0;
+                if (panelOrdinal !== chosenOrdinal) suppressed = 'panel';
+                panelOrdinal++;
+            }
+            const entry = {
+                el: lo,
+                type,
+                cat,
+                depth,
+                // Normalise possibly container-relative bounds into
+                // absolute layout coordinates before anything uses them.
+                bounds: toAbsolute(readBounds(lo), containerBounds),
+                name: (attr(lo, 'name') || '').trim(),
+                fieldRef: cat === 'field' ? readFieldRef(lo) : null,
+                text: (cat === 'text' || cat === 'button') ? readTextData(lo) : '',
+                script: (cat === 'button' || cat === 'popover') ? readButtonScript(lo) : '',
+                portalTo: cat === 'portal' ? readPortalTO(lo) : '',
+                suppressed,
+                // True when the suppression started AT this object (a
+                // hidden panel itself) rather than being inherited from
+                // a container — used so the toggle counts read as
+                // "N hidden panels", not "N hidden objects".
+                suppressedOwn: suppressed !== (inheritedSuppression || null),
+            };
+            out.push(entry);
+            // Children resolve their coordinates against this object's
+            // absolute bounds (or the inherited container when this
+            // object has no bounds of its own).
+            const childStart = out.length;
+            collectObjects(lo, depth + 1, out, suppressed, entry.bounds || containerBounds);
+            // Portals: remember the lowest direct child edge (in absolute
+            // coordinates) so the renderer can derive the row height for
+            // the dashed row separators.
+            if (cat === 'portal' && entry.bounds) {
+                let maxChildBottom = entry.bounds.top;
+                for (let k = childStart; k < out.length; k++) {
+                    const childBounds = out[k].bounds;
+                    if (out[k].depth !== depth + 1 || !childBounds) continue;
+                    if (childBounds.bottom > maxChildBottom && childBounds.bottom <= entry.bounds.bottom) maxChildBottom = childBounds.bottom;
+                }
+                entry.childMaxBottom = maxChildBottom;
+            }
+        }
+    };
+
+    // View toggles: leaf fills on/off, show suppressed stacked panels,
+    // show popover panels. Complex layouts stack dozens of translucent
+    // objects, so these default to the cleanest view.
+    const viewState = { fills: true, allPanels: false, popovers: false };
+
+    // Whether an entry is hidden under the current view toggles.
+    const isSuppressed = (entry) => {
+        if (entry.suppressed === 'panel' && !viewState.allPanels) return true;
+        if (entry.suppressed === 'popover' && !viewState.popovers) return true;
+        return false;
+    };
+
+    // Work out the horizontal part bands (Header, Body, Footer…). Part
+    // geometry is not stored uniformly across export versions, so this
+    // tries explicit height attributes first, then the part's own
+    // Bounds, and finally derives the band from the objects inside it.
+    const readParts = (layoutEl) => {
+        const bands = [];
+        const partsList = qs(layoutEl, ':scope > PartsList');
+        if (!partsList) return bands;
+        let cursor = 0;
+        for (const part of partsList.children) {
+            if (part.tagName !== 'Part') continue;
+            const def = qs(part, ':scope > Definition');
+            const partType = attr(part, 'type') || (def ? attr(def, 'type') : '') || 'Part';
+            let height = NaN;
+            for (const source of [part, def]) {
+                if (!source) continue;
+                for (const attrName of ['height', 'size', 'Height']) {
+                    const value = parseFloat(attr(source, attrName));
+                    if (!isNaN(value) && value > 0) { height = value; break; }
+                }
+                if (!isNaN(height)) break;
+            }
+            const partBounds = readBounds(part);
+            let top = cursor;
+            let bottom;
+            if (partBounds && partBounds.h > 0) {
+                top = partBounds.top;
+                bottom = partBounds.bottom;
+            } else if (!isNaN(height)) {
+                bottom = top + height;
+            } else {
+                // No stored geometry — extend the band to just below the
+                // lowest object inside this part, with a minimum height
+                // so empty parts stay visible.
+                let maxBottom = top;
+                for (const lo of part.querySelectorAll('LayoutObject')) {
+                    const b = readBounds(lo);
+                    if (b && b.bottom > maxBottom) maxBottom = b.bottom;
+                }
+                bottom = Math.max(maxBottom + 8, top + 28);
+            }
+            bands.push({ type: partType, top, bottom });
+            cursor = bottom;
+        }
+        return bands;
+    };
+
+    // Find the <Layout> element for a layout id in the stashed XML root.
+    const findLayoutEl = (layoutId) => {
+        const root = window.__lastRoot;
+        if (!root) return null;
+        const layoutCat = root.querySelector('LayoutCatalog');
+        if (!layoutCat) return null;
+        for (const layoutEl of layoutCat.querySelectorAll('Layout')) {
+            if (attr(layoutEl, 'isFolder') === 'True') continue;
+            if ((attr(layoutEl, 'id') || '') === String(layoutId)) return layoutEl;
+        }
+        return null;
+    };
+
+    // Resolve a table occurrence name to its base table so field
+    // drill-through links land on the Impact Analysis field entry.
+    const baseTableForTO = (toName) => {
+        const root = window.__lastRoot;
+        if (!root || !toName) return '';
+        const toCat = root.querySelector('TableOccurrenceCatalog');
+        if (!toCat) return '';
+        for (const to of toCat.querySelectorAll('TableOccurrence')) {
+            if ((attr(to, 'name') || '') === toName) {
+                const baseRef = to.querySelector('BaseTableReference');
+                return baseRef ? (attr(baseRef, 'name') || '') : '';
+            }
+        }
+        return '';
+    };
+
+    // Short label drawn inside an object's rectangle.
+    const entryLabel = (entry) => {
+        if (entry.cat === 'field' && entry.fieldRef) return entry.fieldRef.field || entry.name;
+        if (entry.cat === 'portal') return entry.portalTo ? '⊞ ' + entry.portalTo : 'Portal';
+        if (entry.text) return entry.text;
+        if (entry.script) return entry.script;
+        return entry.name || '';
+    };
+
+    // Render the details strip for one entry. asPinned=true adds the
+    // drill-through links (they only make sense once the object is
+    // pinned, otherwise the links vanish as the mouse moves toward them).
+    const detailHtml = (entry, asPinned) => {
+        const cat = WF_CATS[entry.cat] || WF_CATS.other;
+        const bits = [];
+        bits.push('<span class="wf-d-type" style="border-color:' + cat.stroke + ';color:' + cat.stroke + '">' + esc(entry.type) + '</span>');
+        if (entry.name) bits.push('<strong>' + esc(entry.name) + '</strong>');
+        if (entry.bounds) {
+            bits.push(Math.round(entry.bounds.w) + ' × ' + Math.round(entry.bounds.h) +
+                ' pt at (' + Math.round(entry.bounds.left) + ', ' + Math.round(entry.bounds.top) + ')');
+        }
+        if (entry.fieldRef && entry.fieldRef.field) {
+            const qualified = (entry.fieldRef.to ? entry.fieldRef.to + '::' : '') + entry.fieldRef.field;
+            if (asPinned) {
+                bits.push('field <a class="wf-link" data-wf-type="field" data-wf-name="' + esc(qualified) + '">' + esc(qualified) + '</a>');
+            } else {
+                bits.push('field ' + esc(qualified));
+            }
+        }
+        if (entry.script) {
+            if (asPinned) {
+                bits.push('runs <a class="wf-link" data-wf-type="script" data-wf-name="' + esc(entry.script) + '">' + esc(entry.script) + '</a>');
+            } else {
+                bits.push('runs ' + esc(entry.script));
+            }
+        }
+        if (entry.portalTo) {
+            if (asPinned) {
+                bits.push('portal into <a class="wf-link" data-wf-type="to" data-wf-name="' + esc(entry.portalTo) + '">' + esc(entry.portalTo) + '</a>');
+            } else {
+                bits.push('portal into ' + esc(entry.portalTo));
+            }
+        }
+        if (entry.text && entry.cat === 'text') {
+            const snippet = entry.text.length > 120 ? entry.text.slice(0, 120) + '…' : entry.text;
+            bits.push('“' + esc(snippet) + '”');
+        }
+        const hint = asPinned
+            ? ' <span style="color:var(--ink-4)">(click background to unpin)</span>'
+            : '';
+        return bits.join('<span class="wf-d-sep">·</span>') + hint;
+    };
+
+    // Update the details strip from the current pinned/hovered state.
+    const showDetails = (index, asPinned) => {
+        const entry = registry[index];
+        if (!entry) return;
+        detailsEl.innerHTML = detailHtml(entry, asPinned);
+    };
+
+    // Reset the details strip back to the layout-level summary line.
+    const showLayoutMeta = () => {
+        detailsEl.innerHTML = currentMeta || 'Hover an object for details — click to pin it and get drill-through links.';
+    };
+
+    // Draw (or redraw) the SVG for the currently selected layout. Cheap
+    // enough to call on every zoom change: the whole SVG is rebuilt as a
+    // string and swapped in one innerHTML assignment.
+    const render = () => {
+        if (!currentLayoutEl) return;
+        const layoutEl = currentLayoutEl;
+
+        registry = [];
+        collectObjects(layoutEl, 0, registry);
+        const bands = readParts(layoutEl);
+
+        // Canvas extent: prefer the layout's declared width; derive the
+        // height from part bands and object bounds, whichever is lower.
+        const declaredWidth = parseFloat(attr(layoutEl, 'width'));
+        let width = declaredWidth;
+        let maxRight = 0;
+        let maxBottom = 0;
+        let hiddenPanelCount = 0;
+        let hiddenPopoverCount = 0;
+        for (const entry of registry) {
+            if (entry.suppressed === 'panel' && entry.suppressedOwn) hiddenPanelCount++;
+            if (entry.suppressed === 'popover' && entry.suppressedOwn) hiddenPopoverCount++;
+            // Hidden objects don't count toward the canvas extent —
+            // popovers often sit far outside the layout edge and would
+            // otherwise stretch the canvas with empty space.
+            if (isSuppressed(entry)) continue;
+            if (!entry.bounds) continue;
+            if (entry.bounds.right > maxRight) maxRight = entry.bounds.right;
+            if (entry.bounds.bottom > maxBottom) maxBottom = entry.bounds.bottom;
+        }
+        // Surface how much is hidden on the toggle labels themselves.
+        const panelCountEl = wrap.querySelector('.wf-t-panels-n');
+        const popoverCountEl = wrap.querySelector('.wf-t-popovers-n');
+        if (panelCountEl) panelCountEl.textContent = hiddenPanelCount ? ' (' + hiddenPanelCount + ')' : '';
+        if (popoverCountEl) popoverCountEl.textContent = hiddenPopoverCount ? ' (' + hiddenPopoverCount + ')' : '';
+        for (const band of bands) {
+            if (band.bottom > maxBottom) maxBottom = band.bottom;
+        }
+        if (isNaN(width) || width <= 0) width = maxRight + 20;
+        width = Math.max(width, maxRight, 100);
+        const height = Math.max(maxBottom + 12, 80);
+
+        // Scale: fit-to-pane or the manual zoom factor. When the pane is
+        // hidden clientWidth is 0, so fall back to a sensible default.
+        const hostWidth = canvasWrap.clientWidth > 40 ? canvasWrap.clientWidth - 4 : 960;
+        lastFitScale = Math.min(2, Math.max(0.05, hostWidth / width));
+        const scale = zoomState.mode === 'fit' ? lastFitScale : zoomState.z;
+        zoomValEl.textContent = Math.round(scale * 100) + '%';
+
+        // Font sizes are divided by scale so text stays a constant
+        // on-screen size regardless of zoom level.
+        const labelFont = 11 / scale;
+        const partFont = 10 / scale;
+
+        let svg = '<svg class="wf-svg" xmlns="http://www.w3.org/2000/svg" width="' + Math.round(width * scale) +
+            '" height="' + Math.round(height * scale) + '" viewBox="0 0 ' + width + ' ' + height + '">';
+
+        // Part bands: alternating tint + a boundary line + the part name.
+        bands.forEach((band, i) => {
+            const bandHeight = band.bottom - band.top;
+            if (bandHeight <= 0) return;
+            if (i % 2 === 1) {
+                svg += '<rect x="0" y="' + band.top + '" width="' + width + '" height="' + bandHeight + '" fill="rgba(16,24,40,0.025)"/>';
+            }
+            svg += '<line x1="0" y1="' + band.bottom + '" x2="' + width + '" y2="' + band.bottom +
+                '" stroke="#d0d5dd" stroke-width="1" vector-effect="non-scaling-stroke" stroke-dasharray="4 3"/>';
+            svg += '<text x="4" y="' + (band.top + partFont + 2) + '" font-size="' + partFont +
+                '" fill="#98a2b3" letter-spacing="0.5">' + esc(String(band.type).toUpperCase()) + '</text>';
+        });
+
+        // Off-layout zone: objects parked beyond the layout's declared
+        // right edge (a common developer habit) get a shaded backdrop
+        // and a dashed boundary so they read as off-layout — exactly
+        // as they appear past the layout edge in Layout mode.
+        if (!isNaN(declaredWidth) && declaredWidth > 0 && width > declaredWidth + 1) {
+            svg += '<rect x="' + declaredWidth + '" y="0" width="' + (width - declaredWidth) + '" height="' + height + '" fill="rgba(16,24,40,0.035)"/>';
+            svg += '<line x1="' + declaredWidth + '" y1="0" x2="' + declaredWidth + '" y2="' + height +
+                '" stroke="#98a2b3" stroke-width="1" vector-effect="non-scaling-stroke" stroke-dasharray="6 4"/>';
+            svg += '<text x="' + (declaredWidth + 6 / scale) + '" y="' + (13 / scale) + '" font-size="' + partFont +
+                '" fill="#98a2b3" letter-spacing="0.5">OFF LAYOUT</text>';
+        }
+
+        // Objects, in registry order (parents first = painted behind).
+        registry.forEach((entry, index) => {
+            if (isSuppressed(entry)) return;
+            const b = entry.bounds;
+            if (!b || b.w < 0 || b.h < 0) return;
+            const cat = WF_CATS[entry.cat] || WF_CATS.other;
+            const isContainer = ['portal', 'panel', 'popover', 'group'].includes(entry.cat);
+            const dash = isContainer ? ' stroke-dasharray="5 3"' : '';
+            const rx = entry.type === 'Rounded Rectangle' ? 6 : 2;
+            // Leaf fills can be toggled off for a pure outline view.
+            const fillValue = viewState.fills ? cat.fill : 'none';
+
+            svg += '<g class="wf-obj" data-wf-i="' + index + '">';
+            svg += '<title>' + esc(entry.type + (entryLabel(entry) ? ' — ' + entryLabel(entry) : '')) + '</title>';
+
+            if (entry.type === 'Line') {
+                // Lines are stored as a bounding box; draw the diagonal.
+                // Horizontal/vertical lines have a ~zero extent on one
+                // axis so the diagonal degrades to the correct line.
+                svg += '<line class="wf-obj-shape" x1="' + b.left + '" y1="' + b.top + '" x2="' + b.right + '" y2="' + b.bottom +
+                    '" stroke="' + cat.stroke + '" stroke-width="1.5" vector-effect="non-scaling-stroke"/>';
+                // Invisible fat hit area so thin lines stay hoverable
+                svg += '<line x1="' + b.left + '" y1="' + b.top + '" x2="' + b.right + '" y2="' + b.bottom +
+                    '" stroke="transparent" stroke-width="' + (8 / scale) + '"/>';
+            } else if (entry.type === 'Oval') {
+                svg += '<ellipse class="wf-obj-shape" cx="' + (b.left + b.w / 2) + '" cy="' + (b.top + b.h / 2) +
+                    '" rx="' + (b.w / 2) + '" ry="' + (b.h / 2) + '" fill="' + fillValue + '" stroke="' + cat.stroke +
+                    '" stroke-width="1" vector-effect="non-scaling-stroke"/>';
+            } else {
+                svg += '<rect class="wf-obj-shape" x="' + b.left + '" y="' + b.top + '" width="' + Math.max(b.w, 0.5) +
+                    '" height="' + Math.max(b.h, 0.5) + '" rx="' + rx + '" fill="' + fillValue + '" stroke="' + cat.stroke +
+                    '" stroke-width="1" vector-effect="non-scaling-stroke"' + dash + '/>';
+            }
+
+            // Portal row separators: the XML stores only the first row's
+            // objects, so derive the row height from the deepest child
+            // and repeat dashed separators down the portal body.
+            if (entry.cat === 'portal') {
+                const childBottom = entry.childMaxBottom != null ? entry.childMaxBottom : b.top;
+                const rowHeight = childBottom - b.top + 3;
+                if (rowHeight > 9 && rowHeight < b.h) {
+                    for (let y = b.top + rowHeight; y < b.bottom - 2; y += rowHeight) {
+                        svg += '<line x1="' + b.left + '" y1="' + y + '" x2="' + b.right + '" y2="' + y +
+                            '" stroke="' + cat.stroke + '" stroke-width="0.5" vector-effect="non-scaling-stroke" stroke-dasharray="3 3" opacity="0.5"/>';
+                    }
+                }
+            }
+
+            // Tab strip: one clickable tab per panel across the top of
+            // a tab/slide control, mirroring Layout mode. Clicking a
+            // tab switches which stacked panel the wireframe renders.
+            let drewTabStrip = false;
+            const loweredType = entry.type.toLowerCase();
+            if (loweredType.includes('tab control') || loweredType.includes('slide control')) {
+                const panels = directPanels(entry.el);
+                if (panels.length > 1) {
+                    const chosenOrdinal = activePanelChoice.get(entry.el) || 0;
+                    const tabHeight = 15 / scale;
+                    const tabFont = 9.5 / scale;
+                    let tabX = b.left + 2 / scale;
+                    panels.forEach((panelEl, ordinal) => {
+                        const title = readPanelTitle(panelEl, ordinal);
+                        const shown = title.length > 18 ? title.slice(0, 17) + '…' : title;
+                        const tabWidth = (shown.length * 6.2 + 12) / scale;
+                        if (tabX + tabWidth > b.right) return;
+                        const active = viewState.allPanels || ordinal === chosenOrdinal;
+                        svg += '<g class="wf-tab" data-wf-tab-i="' + index + '" data-wf-tab-ord="' + ordinal + '">' +
+                            '<rect x="' + tabX + '" y="' + (b.top + 1 / scale) + '" width="' + tabWidth + '" height="' + tabHeight +
+                            '" rx="2" fill="' + (active ? '#fdf3e2' : '#f3f4f7') + '" stroke="' + (active ? '#ee9b3a' : '#d0d5dd') +
+                            '" stroke-width="1" vector-effect="non-scaling-stroke"/>' +
+                            '<text x="' + (tabX + 6 / scale) + '" y="' + (b.top + 11.5 / scale) + '" font-size="' + tabFont +
+                            '" fill="' + (active ? '#b76e00' : '#667085') + '">' + esc(shown) + '</text></g>';
+                        tabX += tabWidth + 3 / scale;
+                        drewTabStrip = true;
+                    });
+                }
+            }
+
+            // Label: only when the on-screen rectangle has room for it
+            // (and the tab strip isn't already occupying the top edge).
+            const label = entryLabel(entry);
+            const screenW = b.w * scale;
+            const screenH = b.h * scale;
+            if (label && !drewTabStrip && screenW > 28 && screenH > 10 && entry.type !== 'Line') {
+                const maxChars = Math.floor((screenW - 8) / 6.3);
+                if (maxChars >= 3) {
+                    const shown = label.length > maxChars ? label.slice(0, Math.max(1, maxChars - 1)) + '…' : label;
+                    const labelY = isContainer ? b.top + labelFont + 3 : b.top + b.h / 2 + labelFont * 0.35;
+                    svg += '<text x="' + (b.left + 4 / scale) + '" y="' + labelY + '" font-size="' + labelFont +
+                        '" fill="#344054">' + esc(shown) + '</text>';
+                }
+            }
+
+            svg += '</g>';
+        });
+
+        svg += '</svg>';
+        canvasWrap.innerHTML = svg;
+
+        // Re-apply the pinned highlight after the rebuild.
+        if (pinnedIndex != null) {
+            const pinnedGroup = canvasWrap.querySelector('.wf-obj[data-wf-i="' + pinnedIndex + '"]');
+            if (pinnedGroup) pinnedGroup.classList.add('wf-pinned');
+        }
+    };
+
+    // Select a layout by its id, rebuild the summary line and render.
+    const selectLayout = (layoutId) => {
+        pinnedIndex = null;
+        currentLayoutEl = findLayoutEl(layoutId);
+        if (!currentLayoutEl) {
+            canvasWrap.innerHTML = '<div class="wf-empty">Could not find that layout in the loaded file.</div>';
+            currentMeta = '';
+            showLayoutMeta();
+            return;
+        }
+        const layoutName = attr(currentLayoutEl, 'name') || '(unnamed)';
+        const info = (lay.info || {})[layoutName] || {};
+        const parts = readParts(currentLayoutEl).map((band) => band.type).join(', ');
+        const metaBits = ['<strong>' + esc(layoutName) + '</strong>'];
+        if (info.base_to) metaBits.push('base TO <a class="wf-link" data-wf-type="to" data-wf-name="' + esc(info.base_to) + '">' + esc(info.base_to) + '</a>');
+        if (info.theme) metaBits.push('theme ' + esc(info.theme));
+        if (parts) metaBits.push('parts: ' + esc(parts));
+        metaBits.push('<a class="wf-link" data-wf-type="layout" data-wf-name="' + esc(layoutName) + '">impact analysis</a>');
+        currentMeta = metaBits.join('<span class="wf-d-sep">·</span>');
+        showLayoutMeta();
+        render();
+    };
+
+    // ── Event wiring ──────────────────────────────────────
+    selectEl.addEventListener('change', () => {
+        if (selectEl.value) selectLayout(selectEl.value);
+    });
+
+    // Zoom buttons: fit / 100% / step in / step out. Stepping switches
+    // to manual mode starting from whatever scale is currently shown.
+    wrap.querySelector('.wf-zoom').addEventListener('click', (event) => {
+        const button = event.target.closest('.wf-zoom-btn');
+        if (!button) return;
+        const action = button.getAttribute('data-zoom');
+        const currentScale = zoomState.mode === 'fit' ? lastFitScale : zoomState.z;
+        if (action === 'fit') { zoomState.mode = 'fit'; }
+        else if (action === '100') { zoomState.mode = 'manual'; zoomState.z = 1; }
+        else if (action === 'in') { zoomState.mode = 'manual'; zoomState.z = Math.min(4, currentScale * 1.25); }
+        else if (action === 'out') { zoomState.mode = 'manual'; zoomState.z = Math.max(0.05, currentScale * 0.8); }
+        render();
+    });
+
+    // View toggles: fills / stacked panels / popovers. Re-render on any
+    // change; unpin first if the pinned object is about to disappear.
+    for (const pair of [['.wf-t-fills', 'fills'], ['.wf-t-panels', 'allPanels'], ['.wf-t-popovers', 'popovers']]) {
+        const box = wrap.querySelector(pair[0]);
+        if (!box) continue;
+        box.addEventListener('change', () => {
+            viewState[pair[1]] = box.checked;
+            if (pinnedIndex != null && registry[pinnedIndex] && isSuppressed(registry[pinnedIndex])) {
+                pinnedIndex = null;
+                showLayoutMeta();
+            }
+            render();
+        });
+    }
+
+    // Hover: preview details for the object under the cursor unless one
+    // is pinned. Click: pin/unpin so the drill links can be clicked.
+    canvasWrap.addEventListener('mouseover', (event) => {
+        if (pinnedIndex != null) return;
+        const group = event.target.closest('.wf-obj');
+        if (group) showDetails(parseInt(group.getAttribute('data-wf-i')), false);
+    });
+    canvasWrap.addEventListener('mouseleave', () => {
+        if (pinnedIndex == null) showLayoutMeta();
+    });
+    canvasWrap.addEventListener('click', (event) => {
+        // Tab-strip clicks switch the visible panel of that control
+        // instead of pinning the control itself.
+        const tabEl = event.target.closest('.wf-tab');
+        if (tabEl) {
+            const controlEntry = registry[parseInt(tabEl.getAttribute('data-wf-tab-i'))];
+            if (controlEntry) {
+                activePanelChoice.set(controlEntry.el, parseInt(tabEl.getAttribute('data-wf-tab-ord')));
+                pinnedIndex = null;
+                showLayoutMeta();
+                render();
+            }
+            return;
+        }
+        const group = event.target.closest('.wf-obj');
+        const previous = canvasWrap.querySelector('.wf-obj.wf-pinned');
+        if (previous) previous.classList.remove('wf-pinned');
+        if (group) {
+            pinnedIndex = parseInt(group.getAttribute('data-wf-i'));
+            group.classList.add('wf-pinned');
+            showDetails(pinnedIndex, true);
+        } else {
+            pinnedIndex = null;
+            showLayoutMeta();
+        }
+    });
+
+    // Drill-through links in the details strip. Field links arrive as
+    // TO::Field; resolve the TO to its base table first so the Impact
+    // Analysis lookup lands on the field definition.
+    detailsEl.addEventListener('click', (event) => {
+        const link = event.target.closest('.wf-link');
+        if (!link) return;
+        const type = link.getAttribute('data-wf-type');
+        let name = link.getAttribute('data-wf-name') || '';
+        if (type === 'field' && name.includes('::')) {
+            const toName = name.split('::')[0];
+            const fieldName = name.split('::').slice(1).join('::');
+            const baseTable = baseTableForTO(toName);
+            if (baseTable) name = baseTable + '::' + fieldName;
+        }
+        // openEntity is the Reference Explorer's drill entry point —
+        // it switches to the Impact Analysis tab and renders the entity.
+        if (typeof openEntity === 'function') openEntity(type, name);
+    });
+
+    // Re-fit on window resize (only meaningful in fit mode, and only
+    // when this tab has actually rendered something).
+    window.addEventListener('resize', () => {
+        if (!wrap.isConnected || !currentLayoutEl || zoomState.mode !== 'fit') return;
+        render();
+    });
+
+    // The pane is display:none at build time so clientWidth is 0; when
+    // it first becomes visible, re-render so fit-to-width is correct.
+    // A MutationObserver on the pane's class/style is the least invasive
+    // way to catch sidebar navigation without touching the nav code.
+    setTimeout(() => {
+        const pane = wrap.closest('.main-pane');
+        if (!pane) return;
+        const observer = new MutationObserver(() => {
+            if (pane.classList.contains('active') && currentLayoutEl && zoomState.mode === 'fit') render();
+        });
+        observer.observe(pane, { attributes: true, attributeFilter: ['class', 'style'] });
+        // Auto-select the first layout so the tab never opens empty.
+        const firstOption = selectEl.querySelector('optgroup option');
+        if (firstOption) {
+            selectEl.value = firstOption.value;
+            selectLayout(firstOption.value);
+        }
+    }, 0);
+
+    return wrap;
+}
+
 // ── RENDER ─────────────────────────────────────────────────
 function renderResults(file, root, s, elapsed) {
   // Stash the parsed root so post-render tools (e.g. findScriptReferences)
   // can re-query it without needing to re-parse the file.
   window.__lastRoot = root;
   window.__lastStats = s;
+  // Universal search: index the new file and drop any explorer state
+  // left over from a previous one.
+  buildUniversalSearchIndex(s);
+  uxResetNav();
   const tf  = s.tables;
   const rg  = s.graph;
   const lay = s.layouts;
@@ -12324,6 +14210,9 @@ function renderResults(file, root, s, elapsed) {
     return wrap;
   })() });
 
+  // Wireframe — visual layout preview drawn from object Bounds.
+  tabDefs.push({ id:'tab-wireframe', label:'Wireframe', icon:'⊡', contentEl: buildWireframeTab(lay) });
+
   const sd = (scr.detail || {});
   tabDefs.push({ id:'tab-scripts', label:'Scripts', icon:'▶', contentEl: (function() {
     const wrap = document.createElement('div');
@@ -13054,6 +14943,7 @@ function renderResults(file, root, s, elapsed) {
     'tab-layouts':         'Schema',
     'tab-portals':         'Schema',
     'tab-controls':        'Schema',
+    'tab-wireframe':       'Schema',
     'tab-themes':      'Schema',
     'tab-scripts':          'Logic',
     'tab-valuelists':  'Logic',
@@ -13073,7 +14963,9 @@ function renderResults(file, root, s, elapsed) {
     'tab-about':       'Reference',
     // v1.6 new features
     'tab-callgraph':   'Logic',
-    'tab-impact':      'Logic',
+    // Impact Analysis sits with Overview: since the universal-search
+    // rework it's the whole-file entry point, not a Logic-only tool
+    'tab-impact':      'Overview',
     'tab-mermaid':     'Reference',
   };
   // Unref children: each maps to a sub-tab name + a count.
@@ -13125,6 +15017,7 @@ function renderResults(file, root, s, elapsed) {
   const browserParentMap = {
     'tab-portals':               'tab-layouts',
     'tab-controls':              'tab-layouts',
+    'tab-wireframe':             'tab-layouts',
     'tab-privilege-sets':        'tab-security',
     'tab-extended-privileges':   'tab-security',
   };
@@ -13156,7 +15049,7 @@ function renderResults(file, root, s, elapsed) {
   });
 
   // Reorder Schema section: Tables & Fields, Layouts, Relationships, Themes
-  const schemaOrder = ['tab-tables', 'tab-fields', 'tab-field-deps', 'tab-containers', 'tab-layouts', 'tab-portals', 'tab-controls', 'tab-relationships', 'tab-themes'];
+  const schemaOrder = ['tab-tables', 'tab-fields', 'tab-field-deps', 'tab-containers', 'tab-layouts', 'tab-portals', 'tab-controls', 'tab-wireframe', 'tab-relationships', 'tab-themes'];
   sections['Schema'].sort(function(a, b) {
     const ai = schemaOrder.indexOf(a.id);
     const bi = schemaOrder.indexOf(b.id);
@@ -14129,7 +16022,7 @@ function exportMarkdown() {
     const md = [];
     md.push('# ' + fname + ' — Clockwork Inspector report');
     md.push('');
-    md.push('_Generated by Clockwork Inspector for FileMaker v1.5._  ');
+    md.push('_Generated by Clockwork Inspector for FileMaker v2.2._  ');
     md.push('_' + new Date().toISOString().slice(0, 16).replace('T', ' ') + '_');
     md.push('');
     md.push('All findings are observations from static analysis of the FileMaker Save-as-XML file. See the Methodology tab in the report for what each check inspects and what it does not see.');
