@@ -17,7 +17,7 @@ There are other XML analysis tools. What makes this different is intent.
 
 Other solutions in this space are commercial, closed, or both. This one is open — the source is readable, forkable, and designed to be absorbed. Specifically, it is structured so that the HTML file can be modified, extended, or embedded in your own workflows.
 
-Open sharing and collaboration is how the FileMaker community drives the platform forward. Publishing the analysis logic means everyone can see how it works, correct it when it's wrong, and build on it. That's how it was built in the first place — through community round-trip testing and feedback.
+Open sharing and collaboration is how the FileMaker community drives the platform forward. Publishing the analysis logic means everyone can see how it works, correct it when it's wrong, and build on it.
 
 ---
 
