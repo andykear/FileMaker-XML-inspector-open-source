@@ -4969,8 +4969,8 @@ function buildImpactTab(stats) {
 
     wrap.innerHTML =
         '<div class="section">' +
-        '<div class="section-title"><span class="section-icon">⚡</span>Impact Analysis</div>' +
-        '<div style="padding:10px 22px 6px;font-size:12.5px;color:var(--ink-2)">Search any field, table, occurrence, script, layout, value list or custom function (⌘K / Ctrl+K), pick it from the list, then follow the references — every referencing item is a link, and Back retraces the drill path.</div>' +
+        '<div class="section-title"><span class="section-icon">⚡</span>Reference Explorer</div>' +
+        '<div style="padding:10px 22px 6px;font-size:12.5px;color:var(--ink-2)">Universal search and impact analysis. Search any field, table, occurrence, script, layout, value list or custom function (⌘K / Ctrl+K), pick it from the list, then follow the references — every referencing item is a link, and Back retraces the drill path.</div>' +
         '<div style="padding:0 22px 14px;display:flex;gap:8px;align-items:center;">' +
         '<div class="ux-search-wrap" style="flex:1;max-width:420px">' +
         '<input id="impact-input" class="find-script-input" style="width:100%" placeholder="e.g. Update Customer Record  or  Customer::Status" oninput="uxSearchInput()" onkeydown="uxSearchKey(event)" onfocus="uxSearchInput()" onblur="uxSearchBlur()" autocomplete="off" spellcheck="false" />' +
@@ -14182,7 +14182,7 @@ function buildWireframeTab(lay) {
         if (info.base_to) metaBits.push('base TO <a class="wf-link" data-wf-type="to" data-wf-name="' + esc(info.base_to) + '">' + esc(info.base_to) + '</a>');
         if (info.theme) metaBits.push('theme ' + esc(info.theme));
         if (parts) metaBits.push('parts: ' + esc(parts));
-        metaBits.push('<a class="wf-link" data-wf-type="layout" data-wf-name="' + esc(layoutName) + '">impact analysis</a>');
+        metaBits.push('<a class="wf-link" data-wf-type="layout" data-wf-name="' + esc(layoutName) + '">reference explorer</a>');
         currentMeta = metaBits.join('<span class="wf-d-sep">·</span>');
         showLayoutMeta();
         render();
@@ -16007,7 +16007,7 @@ function renderResults(file, root, s, elapsed) {
   tabDefs.splice(tabDefs.length - 2, 0,
     { id: 'tab-callgraph',   label: 'Call Graph',       icon: '⬡', contentEl: buildCallGraphTab(scr) },
     { id: 'tab-relgraph',    label: 'Relationship Graph', icon: '⊞', contentEl: buildRelGraphTab() },
-    { id: 'tab-impact',      label: 'Impact Analysis',  icon: '⚡', contentEl: buildImpactTab(s) },
+    { id: 'tab-impact',      label: 'Reference Explorer', icon: '⚡', contentEl: buildImpactTab(s) },
     { id: 'tab-mermaid',     label: 'Mermaid Export',   icon: '⌗', contentEl: buildMermaidExport(s) }
   );
 
@@ -17607,7 +17607,7 @@ function detectSavedReport() {
     const banner = document.createElement('div');
     banner.id = 'saved-report-banner';
     banner.style.cssText = 'margin:0 0 14px;padding:10px 14px;background:var(--info-tint);border:1px solid var(--info-bd);border-radius:var(--r-sm);color:var(--ink-2);font-size:12.5px;display:flex;align-items:center;gap:10px;';
-    banner.innerHTML = '<span style="flex:1">This is a saved report snapshot. All figures and tables are preserved, but interactive tools (Impact Analysis, Find References, Mermaid export, call graph filtering and row drill-downs) need the original XML — re-analyse the file to use them.</span>' +
+    banner.innerHTML = '<span style="flex:1">This is a saved report snapshot. All figures and tables are preserved, but interactive tools (Reference Explorer, Relationship Graph, Find References, Mermaid export, call graph filtering and row drill-downs) need the original XML — re-analyse the file to use them.</span>' +
         '<button onclick="this.parentNode.remove()" style="background:none;border:none;color:var(--ink-3);cursor:pointer;font-size:15px;line-height:1;padding:2px 6px">×</button>';
     content.insertBefore(banner, content.firstChild);
 }
