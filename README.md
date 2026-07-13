@@ -114,10 +114,10 @@ Five open-source resources for the FileMaker/Claris community:
 | 2.2 | Layout wireframe view. Plus numerous additions kindly contributed by Darrin Southern from CadenceUX - highlight is enhanced Impact Analysis now a clever universal reference explorer. |
 | 2.1 | Minor UI improvements, handles illegal XML control characters in the source (strips and reports them) so affected files parse; quoted Mermaid relationship labels (fixes leading-underscore key fields) |
 | 2.0 | Comparison mode: diff two files with script step and field calculation diffs, plus Markdown/JSON diff export; FileMaker 2026 split-catalog folder support; interactive script call-graph visualization; impact analysis; field tag pills |
-| 1.5 | Field dependencies, containers section, expanded metrics, better sideways scerolling on dense tables |
+| 1.5 | Field dependencies, containers section, expanded metrics, better sideways scrolling on dense tables |
 | 1.4 | Major UI overhaul and expanded metric coverage |
 | 1.3 | Many UI updates, Dark Mode, resolve additional details |
-| 1.2 | Relationships tab added — full sortable table with TO and base table display |
+| 1.2 | Relationships tab added |
 | 1.1 | Initial public prototype |
 
 ---
