@@ -23,13 +23,16 @@ Open sharing and collaboration is how the FileMaker community drives the platfor
 
 ## What it analyses
 
-Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) and the Inspector parses it entirely in your browser. Nothing is uploaded anywhere.
+Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) and the Inspector parses it entirely in your browser. Nothing is uploaded anywhere. Handles UTF-16 and UTF-8 with BOM detection, FileMaker 2026 split-catalog folders, and strips (and reports) illegal XML control characters so affected files still parse.
 
 **Schema**
 - Base tables, table occurrences, fields — counts, types, storage, validation, auto-entry
 - Relationships — full sortable list with TOs, base tables, and join keys; multi-predicate, sorted, cascade create/delete
-- Layouts — count, visibility, themes, triggers, portal usage, object counts
+- Relationship graph — interactive view rendered from the TO geometry stored in the file, so occurrences sit exactly where they sit in Manage Database; zoom, pan, rightward chain tracing, Edit Relationship detail on click
+- Field dependencies and container field usage
+- Layouts — count, visibility, themes, triggers, portal usage, object counts; portals and layout controls in their own sortable tables
 - Wireframe — visual preview of any layout drawn from object bounds: part bands, colour-coded objects, clickable tab panels, portal rows, off-layout zone
+- Themes, including unused theme styles
 
 **Scripts**
 - Script count and step totals
@@ -37,14 +40,31 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 - Unbalanced If/Loop detection
 - Orphaned enabled steps inside disabled wrappers
 - Show Custom Dialog anomalies
+- Script issue detection — swallowed errors, PSoS scripts containing client-only steps, dead Set Variables, unbounded loops, unguarded Allow User Abort, hardcoded file/layout names
 - Step ID dictionary — localisation-independent, version-independent
 
+**Calculations**
+- Function usage tallies across every calculation in the file
+- Unstored calcs using expensive functions; stored calcs referencing globals or related fields (semantic errors FileMaker accepts silently)
+- Calculations over readability thresholds
+- Dynamic reference detection (Evaluate, GetField, merge syntax) — used to suppress false positives in unreferenced analysis
+
+**Catalogs**
+- Value lists — static and dynamic, with resolved source fields and reference counts
+- Custom functions — definitions, bodies, and accurate reference counts
+- Plugin functions — FM 26 aware, with FileMaker's own mistagged Design functions reported separately; dispatcher-style calls such as MBS(...) resolve to the actual function invoked
+- Global variables — from calculation references and Set Variable targets, names with spaces handled correctly
+- Custom menus
+
 **Reference Explorer**
-- Universal search (⌘K / Ctrl+K) across fields, tables, table occurrences, scripts, layouts, value lists, and custom functions
+- Universal search (⌘K / Ctrl+K) across fields, tables, table occurrences, scripts, layouts, value lists, custom functions, plugin functions, and global variables
 - Pick any entity to see its definition (calculation, script steps, value-list contents), everything it uses, and every reference to it — grouped by context, all clickable in both directions with a back stack
-- UUID-based reference matching (no name-collision risk) plus calculation-text references recovered from DDR_INFO on FileMaker 26 exports
+- Every list tab links straight in, and Back returns you to the tab you came from
+- UUID-based reference matching (no name-collision risk) plus calculation-text references recovered from DDR_INFO on FileMaker 26 exports, resolved to the owning field, layout object, script step, or custom function
 
 **Quality signals**
+- Critical issues surfaced at the top of the report with click-to-jump
+- Observations panel — neutral counts across every analysis category
 - Unreferenced fields, layouts, scripts, value lists, tables, TOs
 - Unreferenced fields are tiered by confidence (zero references, calc-only dead chains, calc-only live, relationship keys, other) so you can judge what is genuinely safe to remove
 - Broken references
@@ -53,10 +73,21 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 - Global field density
 - Unstored calculation count
 
+**Comparison**
+- Diff two versions of a solution — schema, scripts, and layouts, with script step and field calculation diffs
+- Export the comparison as Markdown or JSON
+
 **File configuration**
-- Security, accounts, privilege sets
+- Security — accounts, privilege sets, extended privileges, cross-linked in both directions
 - File options, minimum FM version
 - Developer tags, activity timestamps
+- Bit flag decoder (behind the Advanced toggle)
+
+**Reporting**
+- Markdown report export
+- Saved report snapshots — figures and tables preserved for sharing; interactive tools need the original XML
+- Mermaid export for the relationship graph and script call tree
+- Dark mode
 
 ---
 
