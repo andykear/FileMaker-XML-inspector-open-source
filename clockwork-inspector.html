@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Clockwork Inspector for FileMaker — v2.2
+  Clockwork Inspector for FileMaker — v2.3
   Single-file, browser-based audit tool for FileMaker Save as XML analysis.
   Runs entirely client-side. Nothing is uploaded.
   Developed by Andrew Kear, Clockwork Creative Technology (clockworkct.co.uk).
@@ -3000,7 +3000,7 @@
   <div class="header-logo">
     <svg class="cw-mark" width="30" height="30" viewBox="0 0 1700 1700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Clockwork"><defs><clipPath id="cwclip"><path transform="matrix(1,0,0,-1,0,1700)" d="M0 1700H1700V0H0Z"/></clipPath></defs><g inkscape:groupmode="layer" inkscape:label="Layer 1"><g clip-path="url(#cwclip)"><path transform="matrix(1,0,0,-1,1356.4618,496.62013)" d="M0 0-406.175-476.056C-433.779-508.41-482.33-512.397-514.843-484.98L-566.673-441.273C-599.319-413.743-603.467-364.961-575.937-332.315L-167.015 152.608C-137.136 188.04-83.012 189.407-51.384 155.527L-2.302 102.953C24.53 74.212 25.521 29.911 0 0" fill="#49af5e"/><path transform="matrix(1,0,0,-1,854.1509,1060.6453)" d="M0 0-276.525 232.093C-283.608 238.037-284.53 248.597-278.586 255.68L-157.393 400.074C-151.449 407.156-140.889 408.079-133.806 402.135L142.719 170.042C149.802 164.098 150.724 153.537 144.78 146.455L23.587 2.061C17.643-5.022 7.082-5.944 0 0" fill="#49af5e"/><path transform="matrix(1,0,0,-1,1415.4699,854.7839)" stroke-width="220.547" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#2f4495" d="M0 0C0-311.648-252.64-564.288-564.288-564.288-875.936-564.288-1128.576-311.648-1128.576 0-1128.576 311.648-875.936 564.288-564.288 564.288"/><path transform="matrix(1,0,0,-1,1415.4699,854.7839)" stroke-width="220.547" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#394999" d="M0 0C0-311.648-252.64-564.288-564.288-564.288-875.936-564.288-1128.576-311.648-1128.576 0-1128.576 311.648-875.936 564.288-564.288 564.288"/></g></g></svg>
     <div>
-      <h1><span class="wm-clockwork">Clockwork</span> Inspector <span class="version">v2.2</span></h1>
+      <h1><span class="wm-clockwork">Clockwork</span> Inspector <span class="version">v2.3</span></h1>
       <div class="header-sub">Static analysis for FileMaker Save-as-XML</div>
     </div>
   </div>
@@ -3048,7 +3048,7 @@
     </button>
     <input type="file" id="file-input" accept=".xml" multiple>
   </div>
-  <div class="hint">UTF-16 · UTF-8 · FileMaker Save-as-XML · FM26 split catalogs · v2.2 · All analysis runs locally in your browser</div>
+  <div class="hint">UTF-16 · UTF-8 · FileMaker Save-as-XML · FM26 split catalogs · v2.3 · All analysis runs locally in your browser</div>
 </div>
 
 <div id="loading-screen">
@@ -3651,8 +3651,10 @@ const UX_TYPES = {
   layout:         { label: 'Layout',           badge: 'LAY' },
   valuelist:      { label: 'Value List',       badge: 'VL'  },
   customfunction: { label: 'Custom Function',  badge: 'CF'  },
+  pluginfunction: { label: 'Plugin Function',  badge: 'PLG' },
+  globalvariable: { label: 'Global Variable',  badge: '$$'  },
 };
-const UX_TYPE_ORDER = ['field', 'script', 'layout', 'table', 'to', 'valuelist', 'customfunction'];
+const UX_TYPE_ORDER = ['field', 'script', 'layout', 'table', 'to', 'valuelist', 'customfunction', 'pluginfunction', 'globalvariable'];
 
 // ── Search index ──────────────────────────────────────────
 // Flat name list built once per parse from the computed stats.
@@ -3680,6 +3682,8 @@ function buildUniversalSearchIndex(s) {
   for (const l of (s.layouts && s.layouts.detail && s.layouts.detail.all) || []) push('layout', l.name);
   for (const v of (s.valueLists && s.valueLists.vl_names) || []) push('valuelist', v.name);
   for (const c of (s.customs && s.customs.detail && s.customs.detail.all) || []) push('customfunction', c.name, c.signature || '');
+  for (const p of (s.plugins && s.plugins.detail && s.plugins.detail.functions) || []) push('pluginfunction', p.name, p.note || '');
+  for (const v of (s.globals && s.globals.detail && s.globals.detail.all) || []) push('globalvariable', v.name, v.note || '');
   window.__uxIndex = idx;
 }
 
@@ -3848,6 +3852,7 @@ function uxResetNav() {
   window.__uxUuidMap = null;
   window.__uxDefMap = null;
   window.__uxChunkOwnerMap = null;
+  window.__uxReturnTab = null;
 }
 
 function uxImpactPlaceholder() {
@@ -3871,6 +3876,15 @@ function uxGoBack() {
     const top = st[st.length - 1];
     uxRenderDetail(top.type, top.name);
   } else {
+    // Drill path exhausted. If this session started with a jump in from
+    // another tab (Plugins, Call Graph, …) rather than a manual search,
+    // land back on that tab instead of the empty Impact Analysis prompt.
+    const returnTab = window.__uxReturnTab;
+    window.__uxReturnTab = null;
+    if (returnTab) {
+      const sidebarItem = document.querySelector('.sidebar-item[data-target="' + returnTab + '"]');
+      if (sidebarItem) { sidebarItem.click(); return; }
+    }
     const output = document.getElementById('impact-output');
     if (output) output.innerHTML = uxImpactPlaceholder();
     const input = document.getElementById('impact-input');
@@ -3890,12 +3904,21 @@ function uxUuidMap() {
   // Companion maps built in the same pass: definition UUID (child
   // element text) → definition element, used to resolve DDR_INFO
   // chunk-list owners back to the object whose calculation the chunk
-  // text belongs to; and owner UUID → its chunk-list elements (tags
-  // of the form _<uuid>_<n>), used to read a calculation's own
-  // outbound references ("Elements used").
+  // text belongs to; and owner UUID → its chunk-list elements. The tag
+  // is _<uuid> alone when the owner has exactly one formula (a custom
+  // function's single body), _<uuid>_<n> when it has several numbered
+  // slots (a field's calc/auto-enter/validation), and _<uuid>_<label>
+  // when the slots are named rather than numbered — layout objects are
+  // the big case: Hide, Tooltip, Placeholder, ScriptTrigger_4,
+  // Condition_1, ButtonBar, PopoverPanel, TabPanel, Portal, WebViewer,
+  // action, and chart series slots (YSeriesList_0_Value, …) all showed
+  // up as suffixes here across a real export. The suffix has to stay a
+  // fully generic "anything after the first underscore" match — every
+  // owner whose slot name doesn't fit the assumed shape silently shows
+  // as "(unresolved owner)" instead of naming the actual calculation.
   const defs = new Map();
   const chunks = new Map();
-  const chunkTag = /^_([0-9A-Fa-f][0-9A-Fa-f-]{34}[0-9A-Fa-f])_/;
+  const chunkTag = /^_([0-9A-Fa-f][0-9A-Fa-f-]{34}[0-9A-Fa-f])(?:_.+)?$/;
   const root = window.__lastRoot;
   if (root) {
     const all = root.getElementsByTagName('*');
@@ -3930,8 +3953,14 @@ function uxUuidMap() {
 // hide/format calc, script step calc, …).
 function uxDescribeOwner(defEl) {
   let n = defEl;
+  // A DDR_INFO owner UUID for a script-step calculation resolves to the
+  // <Step> element itself (its name attribute is the step type, e.g.
+  // "Show Custom Dialog") — captured on the way up so the Script branch
+  // below can report which step, not just which script.
+  let stepName = '';
   while (n && n.nodeType === 1) {
     const tag = n.tagName;
+    if (tag === 'Step' && !stepName) stepName = n.getAttribute('name') || '';
     if (tag === 'Field' && n.getAttribute('fieldtype')) {
       let fc = n.parentNode;
       while (fc && fc.tagName !== 'FieldCatalog') fc = fc.parentNode;
@@ -3946,7 +3975,8 @@ function uxDescribeOwner(defEl) {
     if (tag === 'Script' && n.parentNode && n.parentNode.tagName === 'StepsForScripts') {
       const idRef = n.querySelector(':scope > ScriptReference');
       const sn = idRef ? (idRef.getAttribute('name') || '') : '';
-      return { where: sn || '(script)', how: 'script step calculation', link: sn ? { type: 'script', name: sn } : null };
+      const how = 'script step calculation' + (stepName ? ' · step: ' + stepName : '');
+      return { where: sn || '(script)', how: how, link: sn ? { type: 'script', name: sn } : null };
     }
     if (tag === 'ValueList') {
       const vn = n.getAttribute('name') || '';
@@ -4089,6 +4119,94 @@ function uxFindReferences(uuid) {
   return refs;
 }
 
+// Plugin functions have no UUID-bearing definition of their own — they're
+// leaf text inside a calculation's DDR_INFO chunk list. `name` here is
+// whatever the Plugins tab row showed, which for a dispatcher-style call
+// (MBS(FunctionName), and the same pattern in some BE_/bBox calls) is the
+// resolved call text — e.g. MBS("Clipboard.GetHTMLText") — not just the
+// bare dispatcher name, since parsePlugins() now rows those up per
+// distinct sub-function. Split back into the function name FileMaker
+// actually tags in the DDR plus the argument list, so only chunks
+// matching that exact call (not every MBS(...) call in the file) are
+// found and classified via uxClassifyRef exactly like a normal reference.
+function uxFindPluginFunctionReferences(name) {
+  const root = window.__lastRoot;
+  if (!root || !name) return [];
+  uxUuidMap(); // ensures __uxDefMap is built for owner resolution
+  const parenIdx = name.indexOf('(');
+  const fnName = parenIdx === -1 ? name : name.slice(0, parenIdx);
+  const wantArgs = parenIdx === -1 ? null : name.slice(parenIdx);
+  const refs = [];
+  for (const chunk of root.querySelectorAll('Chunk[type="PluginFunctionRef"]')) {
+    if (chunk.textContent.trim() !== fnName) continue;
+    if (wantArgs !== null) {
+      const args = extractCalcCallArgs(chunk);
+      if (!args || truncateCallArgs(args) !== wantArgs) continue;
+    }
+    const c = uxClassifyRef(chunk);
+    if (c) refs.push(c);
+  }
+  return refs;
+}
+
+// Global ($$) variables have no UUID-bearing definition either. Two
+// sources, matching the two parseGlobalVars reads it from:
+// 1. Chunk[type="VariableReference"] — every $$ read inside a
+//    calculation formula, tagged by FileMaker's own DDR_INFO chunker.
+// 2. Set Variable step targets — a literal <Name value="..."> attribute
+//    on the step's Parameter, not calc text, so it never appears as a
+//    chunk and has to be matched directly. Leaving this out would make
+//    the drill-down undercount relative to the Variables tab's own list
+//    for any variable that's only ever set, never read in a formula.
+// FileMaker variable names are case-insensitive (parseGlobalVars already
+// groups case variants under one canonical entry), so match
+// case-insensitively here too. uxClassifyRef's DDR_INFO/StepsForScripts
+// branches resolve either kind of element back to its owning script —
+// and, since uxDescribeOwner now also captures the nearest <Step>
+// ancestor, the specific step within that script, not just the script
+// name.
+function uxFindGlobalVariableReferences(name) {
+  const root = window.__lastRoot;
+  if (!root || !name) return [];
+  uxUuidMap();
+  const wantUpper = name.toUpperCase();
+  const refs = [];
+  for (const chunk of root.querySelectorAll('Chunk[type="VariableReference"]')) {
+    if (chunk.textContent.trim().toUpperCase() !== wantUpper) continue;
+    const c = uxClassifyRef(chunk);
+    if (c) refs.push(c);
+  }
+  for (const nameEl of root.querySelectorAll('StepsForScripts Parameter[type="Variable"] > Name[value]')) {
+    if ((nameEl.getAttribute('value') || '').toUpperCase() !== wantUpper) continue;
+    const c = uxClassifyRef(nameEl);
+    if (c) refs.push(c);
+  }
+  return refs;
+}
+
+// Custom functions do have a real UUID-bearing definition (unlike
+// plugin functions/variables), but calling one from a calc formula
+// doesn't go through a UUID-carrying *Reference element the way a
+// field/script/layout call does — it's Chunk[type="CustomFunctionRef"],
+// matched by name only, same DDR_INFO leaf-text mechanism as plugin
+// functions. uxFindReferences(uuid) alone (the generic UUID-attribute
+// lookup) only ever catches structural, non-calc-text mentions of a
+// custom function, so it undercounts to near zero — merge in the
+// name-matched chunks so this matches what the Custom Functions tab's
+// own reference count already shows.
+function uxFindCustomFunctionReferences(name, uuid) {
+  const refs = uuid ? uxFindReferences(uuid) : [];
+  const root = window.__lastRoot;
+  if (root && name) {
+    for (const chunk of root.querySelectorAll('Chunk[type="CustomFunctionRef"]')) {
+      if (chunk.textContent.trim() !== name) continue;
+      const c = uxClassifyRef(chunk);
+      if (c) refs.push(c);
+    }
+  }
+  return refs;
+}
+
 // Classify a reference element by its ancestor context. Returns
 // { ctx, where, how, link } — ctx groups the output, where names
 // the containing object (clickable when link is set), how adds
@@ -4206,11 +4324,15 @@ function uxClassifyRef(el) {
   }
   if (boundary === 'DDR_INFO') {
     // FM26 pre-rendered calculation text. Chunk lists are keyed by an
-    // element tag of the form _<ownerUUID>_<n>; resolving the owner UUID
-    // names the object whose calculation formula mentions this entity —
-    // the only element-level trace of calc-text references.
+    // element tag of the form _<ownerUUID>, _<ownerUUID>_<n>, or
+    // _<ownerUUID>_<label> (see the matching comment on chunkTag in
+    // uxUuidMap for the full breakdown — label suffixes are common for
+    // layout objects: Hide, Tooltip, ScriptTrigger_4, action, …).
+    // Resolving the owner UUID names the object whose calculation
+    // formula mentions this entity, the only element-level trace of
+    // calc-text references.
     for (const tag of Object.keys(anc)) {
-      const m = /^_([0-9A-Fa-f][0-9A-Fa-f-]{34}[0-9A-Fa-f])_/.exec(tag);
+      const m = /^_([0-9A-Fa-f][0-9A-Fa-f-]{34}[0-9A-Fa-f])(?:_.+)?$/.exec(tag);
       if (!m) continue;
       const def = (window.__uxDefMap || new Map()).get(m[1].toUpperCase());
       const own = def ? uxDescribeOwner(def) : null;
@@ -4433,8 +4555,16 @@ function uxRenderDetail(type, name) {
   if (input) input.value = name;
   __uxLinkReg = [];
   const T = UX_TYPES[type] || { label: type, badge: '?' };
-  const def  = uxFindDefinition(type, name);
-  const refs = def ? uxFindReferences(def.uuid) : [];
+  // Plugin functions and global variables aren't UUID-bearing entities —
+  // they're leaf text inside calc DDR_INFO chunks, so they have no
+  // definition and no outbound "elements used" side, only inbound
+  // reference sites.
+  const isChunkTextEntity = type === 'pluginfunction' || type === 'globalvariable';
+  const def  = isChunkTextEntity ? null : uxFindDefinition(type, name);
+  const refs = type === 'pluginfunction' ? uxFindPluginFunctionReferences(name)
+             : type === 'globalvariable' ? uxFindGlobalVariableReferences(name)
+             : type === 'customfunction' ? uxFindCustomFunctionReferences(name, def ? def.uuid : null)
+             : (def ? uxFindReferences(def.uuid) : []);
   const used = def ? uxFindElementsUsed(type, def) : [];
 
   // Group by context; collapse duplicate rows into a ×N count
@@ -4483,9 +4613,9 @@ function uxRenderDetail(type, name) {
     html += '</div>';
   }
 
-  if (!def) {
+  if (!def && !isChunkTextEntity) {
     html += '<div class="ux-detail-meta">Definition not found in the parsed XML — the name may be ambiguous or the entity was removed.</div>';
-  } else if (!def.uuid) {
+  } else if (def && !def.uuid) {
     html += '<div class="ux-detail-meta">This entity’s definition carries no UUID, so references cannot be resolved for it.</div>';
   } else {
     html += '<div class="section-title" style="padding-top:6px"><span class="section-icon">⇢</span>References (' + refs.length + ')</div>';
@@ -4587,21 +4717,61 @@ function cgToggle(el) {
     el.textContent = open ? '▶' : '▼';
 }
 
-// Clicking a script name in the call graph routes to the Impact Analysis
-// tab (a top-level tab built for "what references this"), pre-filling the
-// script name. More reliable than reaching into the Unreferenced pane's
-// dynamically-rendered Find References tool, and keeps the user in a
-// purpose-built view.
-function cgJumpToFind(evt, scriptName) {
+// Clicking an entity name in a list tab (Call Graph, Plugins, Scripts,
+// Layouts, …) routes to the Impact Analysis tab (a top-level tab built
+// for "what references this"), pre-filling the name. More reliable than
+// reaching into the Unreferenced pane's dynamically-rendered Find
+// References tool, and keeps the user in a purpose-built view.
+// returnTab is remembered on window.__uxReturnTab so uxGoBack() can send
+// the user back to the tab they jumped from once the drill stack empties,
+// instead of stranding them on the empty Impact Analysis search prompt.
+function uxJumpFromTab(evt, type, name, returnTab) {
     evt.stopPropagation();
-    const sidebarItem = document.querySelector('.sidebar-item[data-target="tab-impact"]');
-    if (sidebarItem) sidebarItem.click();
-    setTimeout(function() {
-        const inp = document.getElementById('impact-input');
-        if (inp) inp.value = scriptName;
-        openEntity('script', scriptName);
-    }, 80);
+    window.__uxReturnTab = returnTab;
+    // openEntity() already switches to the Impact Analysis pane itself
+    // and uxRenderDetail() syncs the search input — no sidebar click,
+    // no timer, no race. The sidebar's active state is updated directly
+    // so the nav still shows where the user landed.
+    document.querySelectorAll('.sidebar-item').forEach(function(item) {
+        item.classList.toggle('active', item.getAttribute('data-target') === 'tab-impact');
+    });
+    openEntity(type, name);
 }
+
+// Same jump, for a row inside one of the Unreferenced sub-panes (Fields,
+// Layouts, Scripts, Value Lists, Tables, Table Occurrences). Those panes
+// live inside a single "pane-unreferenced" tab switched by sub-tab name
+// rather than by their own top-level tab id — their sidebar entries use
+// data-target="unref:<subtab>" (see jumpToUnref), not "tab-<subtab>" —
+// so the return path just needs that prefix; uxGoBack()'s generic
+// sidebar-item lookup does the rest, no special-casing required there.
+// Doubles as a spot-check: an item listed here is unreferenced by
+// definition, so landing on "0 references" confirms the analysis; if a
+// name you know is actually in use shows up empty, that's a sign of a
+// reference path the analyser doesn't see (dynamic name resolution, …).
+function unrefJumpToFind(evt, type, name, subTab) {
+    uxJumpFromTab(evt, type, name, 'unref:' + subTab);
+}
+
+function cgJumpToFind(evt, scriptName) { uxJumpFromTab(evt, 'script', scriptName, 'tab-callgraph'); }
+
+// Plugin function name clicked in the Plugins tab's table.
+function pfJumpToFind(evt, fnName) { uxJumpFromTab(evt, 'pluginfunction', fnName, 'tab-plugins'); }
+
+// Script name clicked in the Scripts tab's table.
+function scrJumpToFind(evt, scriptName) { uxJumpFromTab(evt, 'script', scriptName, 'tab-scripts'); }
+
+// Layout name clicked in the Layouts tab's table.
+function layJumpToFind(evt, layoutName) { uxJumpFromTab(evt, 'layout', layoutName, 'tab-layouts'); }
+
+// Value list name clicked in the Value Lists tab's table.
+function vlJumpToFind(evt, vlName) { uxJumpFromTab(evt, 'valuelist', vlName, 'tab-valuelists'); }
+
+// Global variable name clicked in the Variables tab's table.
+function varJumpToFind(evt, varName) { uxJumpFromTab(evt, 'globalvariable', varName, 'tab-variables'); }
+
+// Custom function signature clicked in the Custom Functions tab's table.
+function cfJumpToFind(evt, cfName) { uxJumpFromTab(evt, 'customfunction', cfName, 'tab-custom-functions'); }
 
 // Build the full call graph tab content element
 function buildCallGraphTab(scr) {
@@ -4821,6 +4991,807 @@ function buildImpactTab(stats) {
 
 // ── v1.6: MERMAID EXPORT ──────────────────────────────────────
 // Generates Mermaid diagram text for relationships and/or script call tree.
+// ────────────────────────────────────────────────────────────────
+// v2.3: VISUAL RELATIONSHIP GRAPH (rebuild of the lost point-release)
+//
+// Renders the FileMaker relationship graph from the geometry stored
+// in the SaXML:
+//
+//   TableOccurrence  View="Collapse" height="36" ...
+//     CoordRect top/left/bottom/right   — position + expanded rect
+//     Color red/green/blue/alpha        — the TO's graph colour
+//
+// Empirical status (Ryedale JobManager export, FM 26):
+//   ✓ CoordRect carries the on-graph position and width of every TO
+//   ✓ Color carries the bar colour
+//   ✓ View="Collapse" TOs render in Manage Database as UNIFORM slim
+//     bars regardless of the stored height attribute (confirmed by
+//     screenshot comparison against the live graph). The height
+//     attribute is therefore NOT the collapsed display height and is
+//     ignored for collapsed TOs.
+//
+// Interactions:
+//   · Click a TO           — highlights the chain reachable to its
+//                            RIGHT (geometric x, transitive), dims the
+//                            rest, opens TO detail in the side panel.
+//   · Click a relationship — highlights the line + both TOs, opens
+//                            join detail (predicates, sorts, cascades)
+//                            in the side panel.
+//   · Click the background — clears the selection, closes the panel.
+//   · Wheel zooms at the cursor, drag pans, toolbar has Fit / 100% / ±.
+//     100% centres on the TO nearest the current view centre so the
+//     jump always lands on content, never empty graph space.
+// ────────────────────────────────────────────────────────────────
+
+// Parse TOs and relationships (with geometry) from the stashed SaXML
+// root. Kept separate from the stats parser so the graph can evolve
+// without touching the report pipeline.
+function relGraphParse(root) {
+    // Bail out cleanly when the export has no TO catalog at all
+    const toCatalog = root.querySelector('TableOccurrenceCatalog');
+    if (!toCatalog) return null;
+
+    // Collapsed TOs draw as one uniform slim bar, matching Manage
+    // Database. This is a graph-unit constant, not a pixel constant —
+    // it scales with zoom like everything else.
+    const collapsedBarHeight = 24;
+
+    const occurrences = [];
+    const occurrenceById = {};
+
+    for (const toEl of toCatalog.querySelectorAll(':scope > TableOccurrence')) {
+        const coordRect = toEl.querySelector(':scope > CoordRect');
+        // A TO without a CoordRect cannot be placed, so it is skipped
+        // rather than guessed at position 0,0
+        if (!coordRect) continue;
+
+        const colorEl = toEl.querySelector(':scope > Color');
+        const baseRef = toEl.querySelector('BaseTableSourceReference BaseTableReference');
+
+        const top = parseFloat(coordRect.getAttribute('top') || '0');
+        const left = parseFloat(coordRect.getAttribute('left') || '0');
+        const bottom = parseFloat(coordRect.getAttribute('bottom') || '0');
+        const right = parseFloat(coordRect.getAttribute('right') || '0');
+
+        // Collapsed TOs use the uniform bar height; anything else
+        // (an expanded TO, should a file ever contain one) uses its
+        // stored rect height
+        const view = toEl.getAttribute('View') || '';
+        const renderHeight = (view === 'Collapse')
+            ? collapsedBarHeight
+            : Math.max(bottom - top, collapsedBarHeight);
+
+        const occurrence = {
+            id: toEl.getAttribute('id') || '',
+            name: toEl.getAttribute('name') || '?',
+            base: baseRef ? (baseRef.getAttribute('name') || '') : '',
+            isExternal: toEl.getAttribute('type') === 'External',
+            x: left,
+            y: top,
+            w: Math.max(right - left, 60),
+            h: renderHeight,
+            red: colorEl ? parseInt(colorEl.getAttribute('red') || '120', 10) : 120,
+            green: colorEl ? parseInt(colorEl.getAttribute('green') || '120', 10) : 120,
+            blue: colorEl ? parseInt(colorEl.getAttribute('blue') || '120', 10) : 120,
+        };
+        occurrence.cx = occurrence.x + occurrence.w / 2;
+        occurrence.cy = occurrence.y + occurrence.h / 2;
+
+        occurrences.push(occurrence);
+        occurrenceById[occurrence.id] = occurrence;
+    }
+
+    // Relationships reference TOs by id in LeftTable / RightTable.
+    // "Left" and "Right" here are FileMaker's storage sides, NOT the
+    // visual left/right on the graph — visual direction is derived
+    // from geometry at render time.
+    const relationships = [];
+    const relCatalog = root.querySelector('RelationshipCatalog');
+    const operatorSymbols = {
+        Equal: '=', NotEqual: '\u2260', Greater: '>', Less: '<',
+        GreaterOrEqual: '\u2265', LessOrEqual: '\u2264',
+        CartesianProduct: '\u00d7',
+    };
+
+    if (relCatalog) {
+        for (const relEl of relCatalog.querySelectorAll(':scope > Relationship')) {
+            const leftTable = relEl.querySelector(':scope > LeftTable');
+            const rightTable = relEl.querySelector(':scope > RightTable');
+            const leftRef = leftTable ? leftTable.querySelector('TableOccurrenceReference') : null;
+            const rightRef = rightTable ? rightTable.querySelector('TableOccurrenceReference') : null;
+            // A relationship with a dangling TO reference cannot be
+            // drawn; skip it rather than crash the whole render
+            if (!leftRef || !rightRef) continue;
+            const leftId = leftRef.getAttribute('id');
+            const rightId = rightRef.getAttribute('id');
+            if (!occurrenceById[leftId] || !occurrenceById[rightId]) continue;
+
+            // Collect every join predicate with its operator so the
+            // detail panel can show the full key list
+            const predicates = [];
+            for (const predEl of relEl.querySelectorAll('JoinPredicate')) {
+                const leftField = predEl.querySelector('LeftField FieldReference');
+                const rightField = predEl.querySelector('RightField FieldReference');
+                const rawType = predEl.getAttribute('type') || 'Equal';
+                predicates.push({
+                    symbol: operatorSymbols[rawType] || rawType,
+                    leftField: leftField ? (leftField.getAttribute('name') || '') : '',
+                    rightField: rightField ? (rightField.getAttribute('name') || '') : '',
+                });
+            }
+
+            relationships.push({
+                fmId: relEl.getAttribute('id') || '',
+                leftId: leftId,
+                rightId: rightId,
+                predicates: predicates,
+                leftCascadeCreate: leftTable.getAttribute('cascadeCreate') === 'True',
+                leftCascadeDelete: leftTable.getAttribute('cascadeDelete') === 'True',
+                rightCascadeCreate: rightTable.getAttribute('cascadeCreate') === 'True',
+                rightCascadeDelete: rightTable.getAttribute('cascadeDelete') === 'True',
+                leftSorted: !!leftTable.querySelector(':scope > SortSpecification'),
+                rightSorted: !!rightTable.querySelector(':scope > SortSpecification'),
+            });
+        }
+    }
+
+    return { occurrences: occurrences, occurrenceById: occurrenceById, relationships: relationships };
+}
+
+// Build the Relationship Graph tab. Returns a detached element that the
+// pane loop appends; the SVG is built immediately (cheap even at ~600
+// TOs) but fit-to-content is deferred until the pane first becomes
+// visible, because a hidden container has no measurable size.
+function buildRelGraphTab() {
+    const svgNS = 'http://www.w3.org/2000/svg';
+
+    // Module-scoped styles are injected once here so the whole feature
+    // lives at a single splice point in the file
+    if (!document.getElementById('relgraph-style')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'relgraph-style';
+        styleEl.textContent = [
+            '.rg-wrap { display: flex; height: calc(100vh - 210px); min-height: 480px; border-top: 1px solid var(--line-soft); }',
+            '.rg-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 22px; flex-wrap: wrap; }',
+            '.rg-toolbar button { font: inherit; font-size: 12.5px; padding: 4px 12px; border: 1px solid var(--line); background: var(--surface); border-radius: 6px; cursor: pointer; color: var(--ink-2); }',
+            '.rg-toolbar button:hover { background: var(--surface-soft); color: var(--ink); }',
+            '.rg-toolbar input { font: inherit; font-size: 12.5px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 6px; min-width: 200px; }',
+            '.rg-hint { font-size: 12px; color: var(--ink-3); margin-left: auto; }',
+            '.rg-svg-host { flex: 1; min-width: 0; position: relative; overflow: hidden; background: #fafbfc; cursor: grab; }',
+            '.rg-svg-host.rg-panning { cursor: grabbing; }',
+            /* Nodes: slim rounded bars, soft depth, hover lift */
+            '.rg-node { cursor: pointer; }',
+            '.rg-node rect.rg-bar { stroke: rgba(0,0,0,0.18); stroke-width: 0.75; transition: filter 0.1s; }',
+            '.rg-node:hover rect.rg-bar { filter: brightness(1.06); stroke: rgba(0,0,0,0.35); }',
+            '.rg-node text { pointer-events: none; user-select: none; }',
+            /* Edges: soft curves that light up on hover */
+            '.rg-edge-hit { stroke: transparent; stroke-width: 12; fill: none; cursor: pointer; pointer-events: stroke; }',
+            '.rg-edge-line { fill: none; stroke: #adb3bd; stroke-width: 1.3; pointer-events: none; transition: stroke 0.1s; }',
+            '.rg-edge:hover .rg-edge-line { stroke: #5b6472; stroke-width: 1.8; }',
+            '.rg-op-box { fill: #fff; stroke: #b9bfc9; stroke-width: 0.8; pointer-events: none; }',
+            '.rg-op-text { font-size: 10.5px; fill: #4a5058; text-anchor: middle; pointer-events: none; font-family: ui-monospace, Menlo, monospace; }',
+            /* Focus mode: everything not highlighted fades right back */
+            '.rg-focus .rg-node:not(.rg-hi), .rg-focus .rg-edge:not(.rg-hi) { opacity: 0.10; }',
+            '.rg-edge.rg-hi .rg-edge-line { stroke: var(--brand-deep, #0a6ebd); stroke-width: 2.4; }',
+            '.rg-edge.rg-hi .rg-op-box { stroke: var(--brand-deep, #0a6ebd); }',
+            '.rg-node.rg-hi rect.rg-bar { stroke: var(--brand-deep, #0a6ebd); stroke-width: 2; }',
+            /* Docked detail panel — slides open on selection */
+            '.rg-side { width: 0; overflow: hidden; transition: width 0.18s var(--ease, ease); background: var(--surface); border-left: 1px solid transparent; }',
+            '.rg-side.open { width: 340px; border-left-color: var(--line); }',
+            '.rg-side-inner { width: 340px; height: 100%; overflow-y: auto; padding: 16px 18px; box-sizing: border-box; position: relative; font-size: 12.5px; }',
+            '.rg-side h4 { margin: 0 0 4px; font-size: 13.5px; color: var(--ink); }',
+            '.rg-side .rg-kicker { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-4); margin-bottom: 10px; }',
+            '.rg-close { position: absolute; top: 12px; right: 14px; cursor: pointer; color: var(--ink-4); font-size: 14px; }',
+            '.rg-close:hover { color: var(--ink); }',
+            /* TO chips carry the occurrence colour into the panel */
+            '.rg-chip { display: block; padding: 6px 10px; border-radius: 7px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; margin: 4px 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12); }',
+            '.rg-chip small { display: block; font-size: 10.5px; opacity: 0.8; margin-top: 1px; }',
+            /* Edit-Relationship layout: two table cards, join fields
+               aligned row by row, operator centred between them */
+            '.rg-rel-grid { display: grid; grid-template-columns: 1fr 30px 1fr; gap: 0 4px; align-items: stretch; margin: 10px 0 4px; }',
+            '.rg-table-card { border: 1px solid var(--line-soft); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }',
+            '.rg-table-card-head { padding: 7px 9px; font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; font-weight: 600; line-height: 1.25; }',
+            '.rg-table-card-head small { display: block; font-weight: 400; font-size: 10px; opacity: 0.8; }',
+            '.rg-join-field { padding: 6px 9px; border-top: 1px solid var(--line-soft); background: var(--surface); font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
+            '.rg-op-col { display: flex; flex-direction: column; }',
+            '.rg-op-col .rg-op-spacer { flex: 0 0 auto; }',
+            '.rg-op-col .rg-op-cell { height: 29px; display: flex; align-items: center; justify-content: center; font-family: ui-monospace, Menlo, monospace; font-size: 12px; font-weight: 700; color: var(--brand-deep, #0a6ebd); }',
+            '.rg-side-opts { font-size: 10.5px; color: var(--ink-3); padding: 5px 9px; border-top: 1px solid var(--line-soft); background: var(--surface-soft); line-height: 1.45; }',
+            '.rg-flag { display: inline-block; margin: 2px 6px 2px 0; padding: 2px 9px; border-radius: 10px; background: var(--surface-soft); font-size: 11px; color: var(--ink-3); }',
+            '.rg-side a { color: var(--brand-deep, #0a6ebd); cursor: pointer; text-decoration: none; }',
+            '.rg-side a:hover { text-decoration: underline; }',
+            /* Relationship list inside TO detail */
+            '.rg-rel-list { margin-top: 10px; }',
+            '.rg-rel-item { padding: 6px 10px; border: 1px solid var(--line-soft); border-radius: 7px; margin: 4px 0; cursor: pointer; font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--ink-2); }',
+            '.rg-rel-item:hover { background: var(--surface-soft); border-color: var(--line); }',
+        ].join('\n');
+        document.head.appendChild(styleEl);
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'section';
+    wrap.innerHTML =
+        '<div class="section-title"><span class="section-icon">\u229e</span>Relationship Graph</div>' +
+        '<div style="padding:2px 22px 0;font-size:12.5px;color:var(--ink-2)">Rendered from the geometry stored in the file, so occurrences sit exactly where they sit in Manage Database. Click an occurrence to trace its chain to the right. Click a line for join detail. Click the background to clear.</div>' +
+        '<div class="rg-toolbar">' +
+        '  <button data-rg="fit">Fit</button>' +
+        '  <button data-rg="zoom100">100%</button>' +
+        '  <button data-rg="zoomin">+</button>' +
+        '  <button data-rg="zoomout">\u2212</button>' +
+        '  <input type="search" placeholder="Find occurrence\u2026" list="rg-to-names" data-rg="find">' +
+        '  <datalist id="rg-to-names"></datalist>' +
+        '  <span class="rg-hint" data-rg="status"></span>' +
+        '</div>' +
+        '<div class="rg-wrap">' +
+        '  <div class="rg-svg-host" data-rg="host"></div>' +
+        '  <div class="rg-side" data-rg="side"><div class="rg-side-inner" data-rg="detail"></div></div>' +
+        '</div>';
+
+    const host = wrap.querySelector('[data-rg="host"]');
+    const sidePanel = wrap.querySelector('[data-rg="side"]');
+    const detailPanel = wrap.querySelector('[data-rg="detail"]');
+    const statusEl = wrap.querySelector('[data-rg="status"]');
+
+    const root = window.__lastRoot;
+    const graph = root ? relGraphParse(root) : null;
+    if (!graph || !graph.occurrences.length) {
+        host.innerHTML = '<div class="unref-empty" style="padding:40px">No table occurrence geometry found in this file.</div>';
+        return wrap;
+    }
+
+    statusEl.textContent = graph.occurrences.length + ' occurrences \u00b7 ' + graph.relationships.length + ' relationships';
+
+    // ── SVG scaffold ────────────────────────────────────────────
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+
+    // Content bounds drive fit-to-view and the dot-grid backdrop
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const occ of graph.occurrences) {
+        if (occ.x < minX) minX = occ.x;
+        if (occ.y < minY) minY = occ.y;
+        if (occ.x + occ.w > maxX) maxX = occ.x + occ.w;
+        if (occ.y + occ.h > maxY) maxY = occ.y + occ.h;
+    }
+    const boundsMargin = 80;
+    minX -= boundsMargin; minY -= boundsMargin; maxX += boundsMargin; maxY += boundsMargin;
+
+    // Subtle dot grid backdrop, defined once and tiled across the
+    // whole content area. It scales with zoom like a design tool grid.
+    const defs = document.createElementNS(svgNS, 'defs');
+    defs.innerHTML =
+        '<pattern id="rg-dots" width="28" height="28" patternUnits="userSpaceOnUse">' +
+        '<circle cx="1.2" cy="1.2" r="1.2" fill="#e3e6ea"/>' +
+        '</pattern>';
+    svg.appendChild(defs);
+    const backdrop = document.createElementNS(svgNS, 'rect');
+    backdrop.setAttribute('x', String(minX));
+    backdrop.setAttribute('y', String(minY));
+    backdrop.setAttribute('width', String(maxX - minX));
+    backdrop.setAttribute('height', String(maxY - minY));
+    backdrop.setAttribute('fill', 'url(#rg-dots)');
+    svg.appendChild(backdrop);
+
+    const rootGroup = document.createElementNS(svgNS, 'g');
+    svg.appendChild(rootGroup);
+    host.appendChild(svg);
+
+    // ── Edges (drawn first so bars sit on top) ──────────────────
+    // Adjacency map used by the rightward chain trace and the TO
+    // detail panel's relationship list:
+    //   toId -> [{ relIndex, otherId }]
+    const neighbours = {};
+    const addNeighbour = (fromId, relIndex, otherId) => {
+        if (!neighbours[fromId]) neighbours[fromId] = [];
+        neighbours[fromId].push({ relIndex: relIndex, otherId: otherId });
+    };
+
+    // Point on a cubic bezier at t=0.5, used to place the operator
+    // pill on the curve itself: (P0 + 3P1 + 3P2 + P3) / 8
+    const bezierMidpoint = (p0, p1, p2, p3) => {
+        return {
+            x: (p0.x + 3 * p1.x + 3 * p2.x + p3.x) / 8,
+            y: (p0.y + 3 * p1.y + 3 * p2.y + p3.y) / 8,
+        };
+    };
+
+    const edgeGroups = [];
+    graph.relationships.forEach((rel, relIndex) => {
+        const a = graph.occurrenceById[rel.leftId];
+        const b = graph.occurrenceById[rel.rightId];
+        addNeighbour(rel.leftId, relIndex, rel.rightId);
+        addNeighbour(rel.rightId, relIndex, rel.leftId);
+
+        // Visual source is whichever bar sits further left on the
+        // graph; the curve leaves its right edge and enters the
+        // partner's left edge, FileMaker style
+        const source = (a.cx <= b.cx) ? a : b;
+        const target = (a.cx <= b.cx) ? b : a;
+        const start = { x: source.x + source.w, y: source.cy };
+        const end = { x: target.x, y: target.cy };
+
+        // Horizontal control points give a smooth S-curve; the pull
+        // grows with distance but never collapses to a kink
+        const controlPull = Math.max(36, Math.abs(end.x - start.x) * 0.45);
+        const control1 = { x: start.x + controlPull, y: start.y };
+        const control2 = { x: end.x - controlPull, y: end.y };
+        const pathData = 'M ' + start.x + ' ' + start.y +
+            ' C ' + control1.x + ' ' + control1.y +
+            ' ' + control2.x + ' ' + control2.y +
+            ' ' + end.x + ' ' + end.y;
+
+        const edgeGroup = document.createElementNS(svgNS, 'g');
+        edgeGroup.setAttribute('class', 'rg-edge');
+        edgeGroup.dataset.rel = String(relIndex);
+
+        const visibleLine = document.createElementNS(svgNS, 'path');
+        visibleLine.setAttribute('d', pathData);
+        visibleLine.setAttribute('class', 'rg-edge-line');
+        edgeGroup.appendChild(visibleLine);
+
+        // Fat transparent twin of the curve so it is actually clickable
+        const hitLine = document.createElementNS(svgNS, 'path');
+        hitLine.setAttribute('d', pathData);
+        hitLine.setAttribute('class', 'rg-edge-hit');
+        edgeGroup.appendChild(hitLine);
+
+        // Operator pill sitting on the curve at its midpoint. Single
+        // predicate shows its symbol; multi-predicate shows the run of
+        // symbols (capped) the way a dev reads the graph.
+        const mid = bezierMidpoint(start, control1, control2, end);
+        const symbols = rel.predicates.map((p) => p.symbol);
+        const opLabel = symbols.length === 0 ? '\u00d7'
+            : symbols.length <= 3 ? symbols.join('')
+            : symbols[0] + '\u00d7' + symbols.length;
+        const opWidth = Math.max(18, opLabel.length * 7.5 + 8);
+
+        const opBox = document.createElementNS(svgNS, 'rect');
+        opBox.setAttribute('x', String(mid.x - opWidth / 2));
+        opBox.setAttribute('y', String(mid.y - 8.5));
+        opBox.setAttribute('width', String(opWidth));
+        opBox.setAttribute('height', '17');
+        opBox.setAttribute('rx', '8.5');
+        opBox.setAttribute('class', 'rg-op-box');
+        edgeGroup.appendChild(opBox);
+
+        const opText = document.createElementNS(svgNS, 'text');
+        opText.setAttribute('x', String(mid.x));
+        opText.setAttribute('y', String(mid.y + 3.5));
+        opText.setAttribute('class', 'rg-op-text');
+        opText.textContent = opLabel;
+        edgeGroup.appendChild(opText);
+
+        rootGroup.appendChild(edgeGroup);
+        edgeGroups.push(edgeGroup);
+    });
+
+    // ── Nodes: slim rounded bars, name + base table inline ──────
+    // Text is trimmed against an estimated character width because SVG
+    // has no native ellipsis
+    const nameCharWidth = 6.4;
+    const baseCharWidth = 5.6;
+    const trimToChars = (text, maxChars) => {
+        return text.length > maxChars ? text.slice(0, Math.max(1, maxChars - 1)) + '\u2026' : text;
+    };
+
+    const nodeGroups = {};
+    const datalist = wrap.querySelector('#rg-to-names');
+    for (const occ of graph.occurrences) {
+        const nodeGroup = document.createElementNS(svgNS, 'g');
+        nodeGroup.setAttribute('class', 'rg-node');
+        nodeGroup.dataset.to = occ.id;
+
+        // The bar itself, in the TO's stored graph colour
+        const bar = document.createElementNS(svgNS, 'rect');
+        bar.setAttribute('x', String(occ.x));
+        bar.setAttribute('y', String(occ.y));
+        bar.setAttribute('width', String(occ.w));
+        bar.setAttribute('height', String(occ.h));
+        bar.setAttribute('rx', '6');
+        bar.setAttribute('fill', 'rgb(' + occ.red + ',' + occ.green + ',' + occ.blue + ')');
+        bar.setAttribute('class', 'rg-bar');
+        nodeGroup.appendChild(bar);
+
+        // Text flips to dark on light bar colours
+        const luminance = 0.299 * occ.red + 0.587 * occ.green + 0.114 * occ.blue;
+        const textFill = luminance > 150 ? '#1c1e21' : '#ffffff';
+
+        // TO name, with the base table appended in a lighter weight
+        // when there is room: "occurrence  → base_table"
+        const innerWidth = occ.w - 16;
+        const nameMaxChars = Math.floor(innerWidth / nameCharWidth);
+        const shownName = trimToChars(occ.name, nameMaxChars);
+
+        const nameText = document.createElementNS(svgNS, 'text');
+        nameText.setAttribute('x', String(occ.x + 8));
+        nameText.setAttribute('y', String(occ.y + occ.h / 2 + 3.5));
+        nameText.setAttribute('font-size', '11');
+        nameText.setAttribute('font-weight', '600');
+        nameText.setAttribute('font-family', 'ui-monospace, Menlo, monospace');
+        nameText.setAttribute('fill', textFill);
+        if (occ.isExternal) nameText.setAttribute('font-style', 'italic');
+        nameText.textContent = shownName;
+        nodeGroup.appendChild(nameText);
+
+        // Base table hint only when the name differs and space allows
+        const namePx = shownName.length * nameCharWidth;
+        const remainingPx = innerWidth - namePx - 10;
+        if (occ.base && occ.base !== occ.name && remainingPx > 40) {
+            const baseText = document.createElementNS(svgNS, 'text');
+            baseText.setAttribute('x', String(occ.x + 8 + namePx + 10));
+            baseText.setAttribute('y', String(occ.y + occ.h / 2 + 3.5));
+            baseText.setAttribute('font-size', '10');
+            baseText.setAttribute('font-family', 'ui-monospace, Menlo, monospace');
+            baseText.setAttribute('fill', textFill);
+            baseText.setAttribute('opacity', '0.72');
+            baseText.textContent = trimToChars('\u2192 ' + occ.base, Math.floor(remainingPx / baseCharWidth));
+            nodeGroup.appendChild(baseText);
+        }
+
+        rootGroup.appendChild(nodeGroup);
+        nodeGroups[occ.id] = nodeGroup;
+
+        const option = document.createElement('option');
+        option.value = occ.name;
+        datalist.appendChild(option);
+    }
+
+    // ── Zoom + pan via viewBox ──────────────────────────────────
+    // viewState is the single source of truth; every gesture mutates
+    // it and applyView() writes it to the SVG
+    const viewState = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+
+    const applyView = () => {
+        svg.setAttribute('viewBox', viewState.x + ' ' + viewState.y + ' ' + viewState.w + ' ' + viewState.h);
+    };
+
+    // Convert a mouse event to graph coordinates so zoom can anchor
+    // on the cursor rather than the canvas centre
+    const eventToGraphPoint = (event) => {
+        const rect = host.getBoundingClientRect();
+        return {
+            x: viewState.x + ((event.clientX - rect.left) / rect.width) * viewState.w,
+            y: viewState.y + ((event.clientY - rect.top) / rect.height) * viewState.h,
+        };
+    };
+
+    const zoomAt = (graphPoint, factor) => {
+        // Clamp so the graph can neither vanish nor exceed sensible bounds
+        const newWidth = Math.min(Math.max(viewState.w * factor, 200), (maxX - minX) * 3);
+        const scale = newWidth / viewState.w;
+        viewState.x = graphPoint.x - (graphPoint.x - viewState.x) * scale;
+        viewState.y = graphPoint.y - (graphPoint.y - viewState.y) * scale;
+        viewState.w = newWidth;
+        viewState.h = viewState.h * scale;
+        applyView();
+    };
+
+    const fitToContent = () => {
+        const rect = host.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const contentWidth = maxX - minX;
+        const contentHeight = maxY - minY;
+        const hostAspect = rect.width / rect.height;
+        // Letterbox whichever axis is slack so nothing is cropped
+        if (contentWidth / contentHeight > hostAspect) {
+            viewState.w = contentWidth;
+            viewState.h = contentWidth / hostAspect;
+        } else {
+            viewState.h = contentHeight;
+            viewState.w = contentHeight * hostAspect;
+        }
+        viewState.x = minX - (viewState.w - contentWidth) / 2;
+        viewState.y = minY - (viewState.h - contentHeight) / 2;
+        applyView();
+    };
+
+    const zoomTo100 = () => {
+        // 1 graph unit = 1 CSS pixel. The graph is sparse, so a naive
+        // jump to the current view centre often lands on empty space —
+        // instead, centre on the TO nearest the current view centre so
+        // 100% always shows content.
+        const rect = host.getBoundingClientRect();
+        if (!rect.width) return;
+        const viewCenterX = viewState.x + viewState.w / 2;
+        const viewCenterY = viewState.y + viewState.h / 2;
+        let nearest = graph.occurrences[0];
+        let nearestDistance = Infinity;
+        for (const occ of graph.occurrences) {
+            const dx = occ.cx - viewCenterX;
+            const dy = occ.cy - viewCenterY;
+            const distance = dx * dx + dy * dy;
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearest = occ;
+            }
+        }
+        viewState.w = rect.width;
+        viewState.h = rect.height;
+        viewState.x = nearest.cx - viewState.w / 2;
+        viewState.y = nearest.cy - viewState.h / 2;
+        applyView();
+    };
+
+    host.addEventListener('wheel', (event) => {
+        event.preventDefault();
+        zoomAt(eventToGraphPoint(event), event.deltaY > 0 ? 1.15 : 1 / 1.15);
+    }, { passive: false });
+
+    // Drag-to-pan; pointer capture keeps the drag alive when the cursor
+    // briefly leaves the host mid-gesture.
+    //
+    // IMPORTANT: selection happens on pointerup, NOT on a click
+    // listener. Pointer capture retargets the browser's click event to
+    // the captured element (the host), so on click event.target never
+    // reaches the edge or bar that was actually pressed — the element
+    // under the pointer is recorded at pointerdown instead, and a
+    // press that never turned into a drag selects it on release.
+    let panState = null;
+    host.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        panState = {
+            startX: event.clientX,
+            startY: event.clientY,
+            viewX: viewState.x,
+            viewY: viewState.y,
+            moved: false,
+            downTarget: event.target,
+        };
+        if (host.setPointerCapture) host.setPointerCapture(event.pointerId);
+        host.classList.add('rg-panning');
+    });
+    host.addEventListener('pointermove', (event) => {
+        if (!panState) return;
+        const rect = host.getBoundingClientRect();
+        const dx = (event.clientX - panState.startX) * (viewState.w / rect.width);
+        const dy = (event.clientY - panState.startY) * (viewState.h / rect.height);
+        if (Math.abs(event.clientX - panState.startX) + Math.abs(event.clientY - panState.startY) > 4) panState.moved = true;
+        viewState.x = panState.viewX - dx;
+        viewState.y = panState.viewY - dy;
+        applyView();
+    });
+    host.addEventListener('pointerup', () => {
+        if (!panState) return;
+        const wasDrag = panState.moved;
+        const pressedElement = panState.downTarget;
+        panState = null;
+        host.classList.remove('rg-panning');
+        // A genuine drag is a pan, never a selection
+        if (wasDrag) return;
+        const nodeEl = pressedElement.closest ? pressedElement.closest('.rg-node') : null;
+        if (nodeEl) { selectOccurrence(nodeEl.dataset.to); return; }
+        const edgeEl = pressedElement.closest ? pressedElement.closest('.rg-edge') : null;
+        if (edgeEl) { selectRelationship(parseInt(edgeEl.dataset.rel, 10)); return; }
+        clearHighlight();
+    });
+
+    // Deferred first fit: the pane is display:none when built, so wait
+    // for the host to gain real dimensions before fitting
+    let hasFitted = false;
+    const resizeObserver = new ResizeObserver(() => {
+        if (!hasFitted && host.getBoundingClientRect().width > 0) {
+            hasFitted = true;
+            fitToContent();
+        }
+    });
+    resizeObserver.observe(host);
+    applyView();
+
+    // ── Selection + highlighting ────────────────────────────────
+    const esc2 = (typeof esc === 'function') ? esc : ((t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])));
+
+    // A TO chip inherits the occurrence's real graph colour so the
+    // panel visually maps back onto the canvas
+    const chipHtml = (occ) => {
+        const luminance = 0.299 * occ.red + 0.587 * occ.green + 0.114 * occ.blue;
+        const fg = luminance > 150 ? '#1c1e21' : '#fff';
+        return '<span class="rg-chip" style="background:rgb(' + occ.red + ',' + occ.green + ',' + occ.blue + ');color:' + fg + '">' +
+            esc2(occ.name) +
+            (occ.base && occ.base !== occ.name ? '<small>\u2192 ' + esc2(occ.base) + '</small>' : '') +
+            '</span>';
+    };
+
+    const clearHighlight = () => {
+        rootGroup.classList.remove('rg-focus');
+        rootGroup.querySelectorAll('.rg-hi').forEach((el) => el.classList.remove('rg-hi'));
+        sidePanel.classList.remove('open');
+    };
+
+    // Trace everything reachable strictly RIGHTWARD of the starting TO
+    // (anchor-buoy reading direction). Rightward means the partner's
+    // centre-x is greater than the current bar's centre-x — geometry,
+    // not the XML's LeftTable/RightTable, which does not track visual
+    // position.
+    const traceRightwardChain = (startId) => {
+        const visitedNodes = new Set([startId]);
+        const visitedEdges = new Set();
+        const queue = [startId];
+        while (queue.length) {
+            const currentId = queue.shift();
+            const current = graph.occurrenceById[currentId];
+            for (const link of (neighbours[currentId] || [])) {
+                const partner = graph.occurrenceById[link.otherId];
+                if (!partner || partner.cx <= current.cx) continue;
+                visitedEdges.add(link.relIndex);
+                if (!visitedNodes.has(link.otherId)) {
+                    visitedNodes.add(link.otherId);
+                    queue.push(link.otherId);
+                }
+            }
+        }
+        return { nodes: visitedNodes, edges: visitedEdges };
+    };
+
+    const showOccurrenceDetail = (occ, chain) => {
+        const links = neighbours[occ.id] || [];
+        // Each relationship of this TO becomes a clickable row that
+        // jumps straight to that relationship's own detail
+        const relItems = links.map((link) => {
+            const partner = graph.occurrenceById[link.otherId];
+            const rel = graph.relationships[link.relIndex];
+            const opRun = rel.predicates.map((p) => p.symbol).join('') || '\u00d7';
+            return '<div class="rg-rel-item" data-rg-rel="' + link.relIndex + '">' +
+                esc2(partner ? partner.name : '?') + ' <span style="color:var(--ink-4)">' + esc2(opRun) + '</span></div>';
+        }).join('');
+        detailPanel.innerHTML =
+            '<span class="rg-close" data-rg="close">\u2715</span>' +
+            '<div class="rg-kicker">Table occurrence</div>' +
+            '<h4>' + esc2(occ.name) + (occ.isExternal ? ' <span class="rg-flag">external</span>' : '') + '</h4>' +
+            chipHtml(occ) +
+            '<div style="margin:8px 0 2px">' +
+            '<span class="rg-flag">' + links.length + ' relationship' + (links.length === 1 ? '' : 's') + '</span>' +
+            '<span class="rg-flag">chain right: ' + (chain.nodes.size - 1) + '</span>' +
+            '</div>' +
+            '<div class="rg-rel-list">' + relItems + '</div>' +
+            '<div style="margin-top:12px"><a data-rg-open-to="' + esc2(occ.name) + '">Open in Reference Explorer \u2192</a></div>';
+        sidePanel.classList.add('open');
+    };
+
+    // Relationship detail rendered like FileMaker's Edit Relationship
+    // dialog: each side is a table card (occurrence + base table), the
+    // join fields sit aligned row by row under their own side, and the
+    // operator for each predicate is centred between them. Each side's
+    // options (sorted, allow create, cascade delete) live under its
+    // own table so ownership is unambiguous.
+    const showRelationshipDetail = (rel) => {
+        const left = graph.occurrenceById[rel.leftId];
+        const right = graph.occurrenceById[rel.rightId];
+
+        // Full operator wording for the tooltip on each symbol
+        const operatorWords = {
+            '=': 'equals', '\u2260': 'does not equal', '>': 'greater than',
+            '<': 'less than', '\u2265': 'greater than or equal',
+            '\u2264': 'less than or equal', '\u00d7': 'cartesian (all records)',
+        };
+
+        // A table card head reuses the occurrence's graph colour so the
+        // panel maps visually back onto the canvas
+        const cardHead = (occ) => {
+            const luminance = 0.299 * occ.red + 0.587 * occ.green + 0.114 * occ.blue;
+            const fg = luminance > 150 ? '#1c1e21' : '#fff';
+            return '<div class="rg-table-card-head" style="background:rgb(' + occ.red + ',' + occ.green + ',' + occ.blue + ');color:' + fg + '">' +
+                esc2(occ.name) +
+                (occ.base && occ.base !== occ.name ? '<small>\u2192 ' + esc2(occ.base) + '</small>' : '') +
+                '</div>';
+        };
+
+        // Per-side options listed under that side's own table
+        const sideOptions = (sorted, cascadeCreate, cascadeDelete) => {
+            const opts = [];
+            if (sorted) opts.push('sorted');
+            if (cascadeCreate) opts.push('allow create');
+            if (cascadeDelete) opts.push('cascade delete');
+            return opts.length ? '<div class="rg-side-opts">' + opts.join('<br>') + '</div>' : '';
+        };
+
+        const leftFields = rel.predicates.map((p) =>
+            '<div class="rg-join-field" title="' + esc2(p.leftField) + '">' + esc2(p.leftField) + '</div>').join('');
+        const rightFields = rel.predicates.map((p) =>
+            '<div class="rg-join-field" title="' + esc2(p.rightField) + '">' + esc2(p.rightField) + '</div>').join('');
+        const opCells = rel.predicates.map((p) =>
+            '<div class="rg-op-cell" title="' + esc2(operatorWords[p.symbol] || p.symbol) + '">' + esc2(p.symbol) + '</div>').join('');
+
+        // Cartesian relationships have no predicates; show the \u00d7 join
+        // explicitly so "how joined" is never blank
+        const cartesian = rel.predicates.length === 0;
+
+        detailPanel.innerHTML =
+            '<span class="rg-close" data-rg="close">\u2715</span>' +
+            '<div class="rg-kicker">Relationship</div>' +
+            '<div class="rg-rel-grid">' +
+            '  <div class="rg-table-card">' + cardHead(left) +
+                 (cartesian ? '<div class="rg-join-field">all records</div>' : leftFields) +
+                 sideOptions(rel.leftSorted, rel.leftCascadeCreate, rel.leftCascadeDelete) +
+            '  </div>' +
+            '  <div class="rg-op-col"><div class="rg-op-spacer" style="height:' + (left.base && left.base !== left.name ? 42 : 30) + 'px"></div>' +
+                 (cartesian ? '<div class="rg-op-cell" title="cartesian (all records)">\u00d7</div>' : opCells) +
+            '  </div>' +
+            '  <div class="rg-table-card">' + cardHead(right) +
+                 (cartesian ? '<div class="rg-join-field">all records</div>' : rightFields) +
+                 sideOptions(rel.rightSorted, rel.rightCascadeCreate, rel.rightCascadeDelete) +
+            '  </div>' +
+            '</div>' +
+            '<div style="margin-top:12px">' +
+            '<a data-rg-open-to="' + esc2(left.name) + '">' + esc2(left.name) + ' \u2192</a><br>' +
+            '<a data-rg-open-to="' + esc2(right.name) + '">' + esc2(right.name) + ' \u2192</a>' +
+            '</div>';
+        sidePanel.classList.add('open');
+    };
+
+    const selectOccurrence = (toId) => {
+        clearHighlight();
+        const occ = graph.occurrenceById[toId];
+        if (!occ) return;
+        const chain = traceRightwardChain(toId);
+        rootGroup.classList.add('rg-focus');
+        for (const nodeId of chain.nodes) {
+            if (nodeGroups[nodeId]) nodeGroups[nodeId].classList.add('rg-hi');
+        }
+        for (const edgeIndex of chain.edges) {
+            if (edgeGroups[edgeIndex]) edgeGroups[edgeIndex].classList.add('rg-hi');
+        }
+        showOccurrenceDetail(occ, chain);
+    };
+
+    const selectRelationship = (relIndex) => {
+        clearHighlight();
+        const rel = graph.relationships[relIndex];
+        if (!rel) return;
+        rootGroup.classList.add('rg-focus');
+        edgeGroups[relIndex].classList.add('rg-hi');
+        if (nodeGroups[rel.leftId]) nodeGroups[rel.leftId].classList.add('rg-hi');
+        if (nodeGroups[rel.rightId]) nodeGroups[rel.rightId].classList.add('rg-hi');
+        showRelationshipDetail(rel);
+    };
+
+    // Panel clicks: close button, relationship rows inside TO detail,
+    // and Reference Explorer links. openEntity is the existing drill
+    // entry point; it flips to the Impact Analysis pane itself.
+    detailPanel.addEventListener('click', (event) => {
+        if (event.target.dataset.rg === 'close') { clearHighlight(); return; }
+        const relRow = event.target.closest('[data-rg-rel]');
+        if (relRow) { selectRelationship(parseInt(relRow.getAttribute('data-rg-rel'), 10)); return; }
+        const openLink = event.target.closest('[data-rg-open-to]');
+        if (openLink && typeof openEntity === 'function') {
+            openEntity('to', openLink.getAttribute('data-rg-open-to'));
+        }
+    });
+
+    // ── Toolbar ─────────────────────────────────────────────────
+    wrap.querySelector('[data-rg="fit"]').addEventListener('click', fitToContent);
+    wrap.querySelector('[data-rg="zoom100"]').addEventListener('click', zoomTo100);
+    wrap.querySelector('[data-rg="zoomin"]').addEventListener('click', () => {
+        zoomAt({ x: viewState.x + viewState.w / 2, y: viewState.y + viewState.h / 2 }, 1 / 1.3);
+    });
+    wrap.querySelector('[data-rg="zoomout"]').addEventListener('click', () => {
+        zoomAt({ x: viewState.x + viewState.w / 2, y: viewState.y + viewState.h / 2 }, 1.3);
+    });
+
+    // Find box: on a committed value, centre the view on the named TO
+    // at a readable scale and run the same chain highlight as a click
+    const findInput = wrap.querySelector('[data-rg="find"]');
+    findInput.addEventListener('change', () => {
+        const wanted = findInput.value.trim().toLowerCase();
+        if (!wanted) return;
+        const found = graph.occurrences.find((o) => o.name.toLowerCase() === wanted)
+            || graph.occurrences.find((o) => o.name.toLowerCase().includes(wanted));
+        if (!found) return;
+        const rect = host.getBoundingClientRect();
+        viewState.w = Math.max(rect.width, 600);
+        viewState.h = viewState.w * (rect.height / Math.max(rect.width, 1));
+        viewState.x = found.cx - viewState.w / 2;
+        viewState.y = found.cy - viewState.h / 2;
+        applyView();
+        selectOccurrence(found.id);
+    });
+
+    return wrap;
+}
+
 function buildMermaidExport(stats) {
     const wrap = document.createElement('div');
 
@@ -5119,6 +6090,7 @@ function resetUI() {
   window.__uxDefMap = null;
   window.__uxChunkOwnerMap = null;
   window.__uxNavStack = [];
+  window.__uxReturnTab = null;
   __uxLinkReg = [];
   document.getElementById('drop-screen').style.display = '';
   document.getElementById('loading-screen').style.display = 'none';
@@ -9367,35 +10339,58 @@ function parseScripts(doc, root) {
 function parseValueLists(doc, root) {
   const s = {
     value_list_count:0, static:0, dynamic:0, dynamic_related_only:0, remote:0,
+    value_list_references:0,
     detail: { all: [], static_list: [], dynamic_list: [], dynamic_related_only_list: [] },
   };
   const vlCat = qs(root,'ValueListCatalog');
   if (!vlCat) return s;
   const vls = qsa(vlCat,':scope > ValueList');
   s.value_list_count = vls.length;
+  // Reference count per value list: tally every ValueListReference[UUID]
+  // in the file (layout objects, field validation, …) by target UUID —
+  // same UUID-matching approach the Reference Explorer uses, just
+  // pre-aggregated here so the table can show a count without opening
+  // the drill-down for each row.
+  const refTally = new Map();
+  for (const ref of root.querySelectorAll('ValueListReference[UUID]')) {
+    const u = (attr(ref,'UUID')||'').toUpperCase();
+    if (!u) continue;
+    refTally.set(u, (refTally.get(u)||0) + 1);
+  }
   for (const vl of vls) {
     const name = attr(vl,'name');
     if (!name) continue;
+    const uuidEl = qs(vl, ':scope > UUID');
+    const uuid = uuidEl ? (uuidEl.textContent||'').trim().toUpperCase() : '';
+    const refs = uuid ? (refTally.get(uuid)||0) : 0;
+    s.value_list_references += refs;
     const source = qs(vl,':scope > Source');
     const srcVal = source ? (attr(source,'value')||attr(source,'type')||'') : '';
     if (!srcVal||srcVal==='Custom') {
       const itemEls  = vl.querySelectorAll('Value');
       const itemCount = itemEls.length;
       s.static++;
-      s.detail.static_list.push({ name: name, items: itemCount, type: 'Static', source: '' });
-      s.detail.all.push({ name: name, items: itemCount, type: 'Static', source: '' });
+      s.detail.static_list.push({ name: name, items: itemCount, type: 'Static', source: '', refs: refs });
+      s.detail.all.push({ name: name, items: itemCount, type: 'Static', source: '', refs: refs });
     } else if (srcVal==='FromField') {
       s.dynamic++;
-      const srcField  = qs(vl, 'Field');
-      const srcTable  = srcField ? (attr(srcField,'table')||'') : '';
-      const srcFName  = srcField ? (attr(srcField,'name')||'') : '';
-      const source    = srcTable && srcFName ? srcTable + '::' + srcFName : 'from field';
-      s.detail.dynamic_list.push({ name: name, items: 0, type: 'Dynamic', source: source });
-      s.detail.all.push({ name: name, items: 0, type: 'Dynamic', source: source });
+      // The source field isn't on <Field> itself — it's nested at
+      // Field > PrimaryField > FieldReference, with the table occurrence
+      // one level deeper still on FieldReference > TableOccurrenceReference.
+      // (Same structure uxDetailMeta already reads correctly for the
+      // Reference Explorer's value-list detail pane.)
+      const srcField  = qs(vl, ':scope > Field');
+      const primary   = srcField ? qs(srcField, ':scope > PrimaryField > FieldReference') : null;
+      const primaryTo = primary ? qs(primary, 'TableOccurrenceReference') : null;
+      const srcTable  = primaryTo ? (attr(primaryTo,'name')||'') : '';
+      const srcFName  = primary ? (attr(primary,'name')||'') : '';
+      const source    = srcTable && srcFName ? srcTable + '::' + srcFName : (srcFName || 'from field');
+      s.detail.dynamic_list.push({ name: name, items: 0, type: 'Dynamic', source: source, refs: refs });
+      s.detail.all.push({ name: name, items: 0, type: 'Dynamic', source: source, refs: refs });
     } else {
       s.static++;
-      s.detail.static_list.push({ name: name, items: 0, type: 'Static', source: '' });
-      s.detail.all.push({ name: name, items: 0, type: 'Static', source: '' });
+      s.detail.static_list.push({ name: name, items: 0, type: 'Static', source: '', refs: refs });
+      s.detail.all.push({ name: name, items: 0, type: 'Static', source: '', refs: refs });
     }
   }
   const opts = qs(root,'OptionsForValueLists');
@@ -9589,12 +10584,18 @@ function parseCustomFunctions(doc, root) {
       if (allEntry) allEntry.recursive = true;
     }
   }
-  // Count per-CF references from Chunk elements
-  const cfIdMap = {};
-  for (const entry of s.detail.all) { if (entry.id) cfIdMap[entry.id] = entry; }
+  // Count per-CF references from Chunk elements — matched by name.
+  // Chunk[type="CustomFunctionRef"] carries only a `type` attribute; the
+  // referenced function's name is the chunk's text content, same as
+  // every other Chunk type (PluginFunctionRef, VariableReference, …) —
+  // there's no `id` attribute on these chunks to match against, so the
+  // old id-based lookup here always missed and left every function at
+  // refs:0.
+  const cfNameMap = {};
+  for (const entry of s.detail.all) { cfNameMap[entry.name] = entry; }
   for (const chunk of root.querySelectorAll('Chunk[type="CustomFunctionRef"]')) {
-    const chunkId = attr(chunk,'id') || '';
-    if (cfIdMap[chunkId]) cfIdMap[chunkId].refs++;
+    const name = chunk.textContent.trim();
+    if (cfNameMap[name]) cfNameMap[name].refs++;
   }
   s.custom_function_references = root.querySelectorAll('Chunk[type="CustomFunctionRef"]').length;
   return s;
@@ -9884,31 +10885,40 @@ function parseBrokenReferences(doc, root) {
 // ── GLOBAL VARIABLES ──────────────────────────────────────
 function parseGlobalVars(doc, root) {
   const s = { global_variable_count:0, inconsistent_case:0, contact_points:0 };
-  const gvPattern = /\$\$[A-Za-z_][\w.]*/g;
   const allVars = new Map();
 
-  function scanText(txt) {
-    if (!txt) return;
-    for (const m of txt.matchAll(gvPattern)) {
-      const upper = m[0].toUpperCase();
-      if (!allVars.has(upper)) allVars.set(upper,{cases:new Set(),count:0});
-      const entry = allVars.get(upper);
-      entry.cases.add(m[0]); entry.count++;
-    }
-  }
-  function scanNode(node) {
-    for (const el of node.querySelectorAll('*')) {
-      for (const cn of el.childNodes) { if (cn.nodeType===3) scanText(cn.textContent); }
-      for (const a of el.attributes) scanText(a.value);
-    }
-    for (const cn of node.childNodes) { if (cn.nodeType===3) scanText(cn.textContent); }
-    for (const a of node.attributes) scanText(a.value);
+  function record(rawName) {
+    if (!rawName) return;
+    const upper = rawName.toUpperCase();
+    if (!allVars.has(upper)) allVars.set(upper,{cases:new Set(),count:0});
+    const entry = allVars.get(upper);
+    entry.cases.add(rawName); entry.count++;
   }
 
-  const sfs = root.querySelector('StepsForScripts');
-  if (sfs) scanNode(sfs);
-  const lcEl = root.querySelector('LayoutCatalog');
-  if (lcEl) scanNode(lcEl);
+  // FileMaker variable names can contain spaces (e.g. "$$SMTP Server"),
+  // which a regex scan over raw XML text can't reliably tell apart from
+  // a variable reference followed by unrelated trailing prose — a plain
+  // \w-based pattern truncates at the space, silently merging every
+  // "$$SMTP *" variable into one fake "$$SMTP" bucket. Two precise
+  // sources instead, both matched by exact element, not pattern:
+  //
+  // 1. Every $$ read inside a calculation formula, already correctly
+  //    tokenized (full name, spaces included) by FileMaker's own
+  //    DDR_INFO chunker — covers scripts, layouts, fields, custom
+  //    functions and relationships alike, not just the two subtrees the
+  //    old raw-text scan covered.
+  for (const chunk of root.querySelectorAll('Chunk[type="VariableReference"]')) {
+    const t = chunk.textContent.trim();
+    if (t.slice(0,2) === '$$') record(t);
+  }
+  // 2. Every $$ set as a Set Variable step's target. That target name
+  //    lives in a literal <Name value="..."> attribute, not inside a
+  //    <Calculation>, so it never appears in the chunk stream above and
+  //    has to be read directly.
+  for (const nameEl of root.querySelectorAll('StepsForScripts Parameter[type="Variable"] > Name[value]')) {
+    const v = nameEl.getAttribute('value') || '';
+    if (v.slice(0,2) === '$$') record(v);
+  }
 
   s.global_variable_count = allVars.size;
   let inconsistent=0, contactPoints=0;
@@ -10092,23 +11102,115 @@ function parseBaseDirectories(doc, root) {
 }
 
 // ── PLUGINS ───────────────────────────────────────────────
+// FM26's DDR_INFO chunk data tags a calc-formula function reference as
+// type="PluginFunctionRef" whenever the function isn't in the core
+// scripting-engine dictionary baked into that chunk classifier — this
+// catches genuine plugin calls, but it also catches FileMaker's own
+// "Design functions" (which introspect the file itself) and a couple
+// of other native functions that apparently aren't in that dictionary
+// either. Left unfiltered, a file with heavy ValueListItems/FieldType
+// usage reports dozens of phantom "plugin functions". Names below are
+// excluded from the plugin count and reported separately instead.
+const FM_NATIVE_FUNCTIONS_MISTAGGED_AS_PLUGIN = new Set([
+  // Design functions (Claris official category)
+  'FieldBounds','FieldComment','FieldIDs','FieldNames','FieldRepetitions',
+  'FieldStyle','FieldType','LayoutIDs','LayoutNames','LayoutObjectNames',
+  'RelationshipInfo','ScriptIDs','ScriptNames','TableIDs','TableNames',
+  'ValueListIDs','ValueListItems','ValueListNames','WindowNames',
+  // Other native functions observed tagged the same way
+  'GetNextSerialValue',
+]);
+
+// DDR_INFO chunk lists are the ordered token stream FileMaker's own DDR
+// parser breaks a calculation formula into — every sibling Chunk under
+// the same ChunkList concatenates back to the literal formula text, in
+// order. So given the function-name chunk, walking its later siblings
+// and tracking paren depth reconstructs the exact "(...)" argument list
+// as written. This matters most for dispatcher-style plugins — MBS,
+// BaseElements' BE_ExecuteScript-style wrappers, bBox — where the DDR
+// only tags the outer dispatcher name (e.g. "MBS") as the plugin
+// function; the actual sub-function being called (e.g. "SQL.Connect")
+// only exists as a string literal inside the argument list, invisible
+// unless we read what's inside the brackets.
+function extractCalcCallArgs(chunkEl) {
+  const parent = chunkEl.parentNode;
+  if (!parent) return '';
+  const siblings = [...parent.children].filter(function(c) { return c.tagName === 'Chunk'; });
+  const idx = siblings.indexOf(chunkEl);
+  if (idx === -1) return '';
+  let text = '', depth = 0, started = false;
+  const CAP = 600; // guard against runaway concatenation on malformed/huge calls
+  for (let i = idx + 1; i < siblings.length && text.length < CAP; i++) {
+    const t = siblings[i].textContent || '';
+    for (const ch of t) {
+      if (ch === '(') { depth++; started = true; }
+      else if (ch === ')') { depth--; }
+    }
+    text += t;
+    if (started && depth <= 0) break;
+    // Not a call at all (no opening paren before hitting a statement
+    // boundary) — bail rather than swallowing the rest of the calc.
+    if (!started && /[;\n]/.test(t)) break;
+  }
+  return text.trim();
+}
+
+// Shared between parsePlugins (building the row label) and
+// uxFindPluginFunctionReferences (matching a clicked row back to its
+// exact chunks) — must stay identical so a truncated long-args label
+// still matches the chunks it was built from.
+const PLUGIN_CALL_ARGS_DISPLAY_CAP = 200;
+function truncateCallArgs(args) {
+  return args.length > PLUGIN_CALL_ARGS_DISPLAY_CAP ? args.slice(0, PLUGIN_CALL_ARGS_DISPLAY_CAP) + '…)' : args;
+}
+
+// Vendor-prefixed plugin functions (BE_FileExists, bBox_HTTPGet, …)
+// already carry a real function name in the part after the underscore —
+// the DDR-tagged name alone tells you what's being called, so there's
+// nothing to reveal by expanding into the call. A dispatcher-style
+// plugin (MBS's MBS(FunctionName) shape) tags every single call with
+// the same bare name with no separator at all — the actual function
+// only exists as a string inside the argument list. Rule: no
+// underscore/dot separator in the tagged name at all ⇒ it's just a
+// vendor tag with no function part of its own ⇒ expand into the call.
+// Underscore/dot present ⇒ the name is already self-descriptive ⇒ leave
+// it as the bare function name.
+function isDispatcherStylePluginName(fnName) {
+  return !/[_.]/.test(fnName);
+}
+
 function parsePlugins(doc, root) {
   const s = {
     plugin_function_count:0, plugin_function_references:0,
-    detail: { functions: [] },
+    detail: { functions: [], nativeMistagged: [] },
   };
-  const externalFns = new Map();
+  const nativeFns = new Map();
+  // Keyed by the resolved call text (e.g. MBS("Clipboard.GetHTMLText"))
+  // when the DDR chunk stream yields an argument list, else by the bare
+  // function name — so a dispatcher-style plugin (MBS, and the same
+  // pattern in some BE_/bBox calls) gets one row per distinct sub-function
+  // actually called, instead of one opaque "MBS" row hiding all of them.
+  const callTally = new Map();
   for (const chunk of root.querySelectorAll('Chunk')) {
     const t = attr(chunk,'type')||'';
-    if (t==='ExternalFunctionRef'||t==='PluginFunction') {
-      const fn = chunk.textContent.trim();
-      if (!externalFns.has(fn)) externalFns.set(fn, 0);
-      externalFns.set(fn, externalFns.get(fn) + 1);
-      s.plugin_function_references++;
+    if (t!=='ExternalFunctionRef' && t!=='PluginFunction' && t!=='PluginFunctionRef') continue;
+    const fn = chunk.textContent.trim();
+    if (FM_NATIVE_FUNCTIONS_MISTAGGED_AS_PLUGIN.has(fn)) {
+      nativeFns.set(fn, (nativeFns.get(fn) || 0) + 1);
+      continue;
     }
+    s.plugin_function_references++;
+    const args = isDispatcherStylePluginName(fn) ? extractCalcCallArgs(chunk) : '';
+    const displayName = args ? fn + truncateCallArgs(args) : fn;
+    let row = callTally.get(displayName);
+    if (!row) { row = { count: 0 }; callTally.set(displayName, row); }
+    row.count++;
   }
-  s.plugin_function_count = externalFns.size;
-  s.detail.functions = [...externalFns.entries()]
+  s.plugin_function_count = callTally.size;
+  s.detail.functions = [...callTally.entries()]
+    .sort((a,b) => b[1].count - a[1].count)
+    .map(([name, row]) => ({ name, note: row.count + ' ref' + (row.count===1?'':'s') }));
+  s.detail.nativeMistagged = [...nativeFns.entries()]
     .sort((a,b) => b[1] - a[1])
     .map(([name, count]) => ({ name, note: count + ' ref' + (count===1?'':'s') }));
   return s;
@@ -10398,10 +11500,13 @@ function extractDynamicFieldRefs(text) {
 }
 
 // v2.7: Extract globals referenced via merge syntax <<$$name>>
+// Variable names can contain spaces (see parseGlobalVars); inside merge
+// syntax the closing >> bounds the name unambiguously, so the capture
+// runs to the delimiter instead of stopping at the first non-word char.
 function extractMergeGlobals(text) {
     const out = [];
     if (!text) return out;
-    for (const m of text.matchAll(/<<\s*(\$\$[A-Za-z_][\w.]*)\s*>>/g)) {
+    for (const m of text.matchAll(/<<\s*(\$\$[^<>\s][^<>]*?)\s*>>/g)) {
         out.push(m[1]);
     }
     return out;
@@ -10583,6 +11688,13 @@ function parseDeepAnalysis(doc, root, allStats) {
 
                 // Stored calcs that reference globals — invalid configuration
                 // (FileMaker will quietly mark them unstored at recovery time).
+                // Known limitation: this scans raw calc text, where variable
+                // names containing spaces cannot be tokenized reliably by
+                // pattern ("$$a and $$b" is ambiguous — 'and' is an operator).
+                // A spaced name is still DETECTED here (the $$ prefix
+                // matches) but displays truncated at its first space. The
+                // Variables tab itself uses element-level sources
+                // (parseGlobalVars) and is not affected.
                 if (fieldType === 'Calculated' && isStored) {
                     const gvars = [...new Set([...body.matchAll(/\$\$[A-Za-z_][\w.]*/g)].map(m => m[0]))];
                     if (gvars.length > 0) {
@@ -12330,7 +13442,7 @@ function buildAboutTab(stats) {
     const mailto  = 'mailto:hello@clockworkct.com?subject=Clockwork%20Inspector%20feedback';
     return `<div class="doc-section">
 
-      <p class="doc-lead"><strong>Clockwork Inspector for FileMaker</strong> &middot; version 2.2. A static analysis tool for FileMaker Save-as-XML files. Built and maintained by Clockwork Creative Technology.</p>
+      <p class="doc-lead"><strong>Clockwork Inspector for FileMaker</strong> &middot; version 2.3. A static analysis tool for FileMaker Save-as-XML files. Built and maintained by Clockwork Creative Technology.</p>
 
       <h3>Privacy</h3>
       <div class="doc-good">
@@ -13669,7 +14781,8 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No tables found.',
         rows: tableRows,
         columns: [
-          { key: 'name',      label: 'Table',     width: '28%', mono: true },
+          { key: 'name',      label: 'Table',     width: '28%', mono: true,
+            renderCell: function(v) { return '<a class="ux-link" onclick="uxJumpFromTab(event,\'table\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tab-tables\')">' + esc(v) + '</a>'; } },
           { key: 'fields',    label: 'Fields',    width: '7%',  align: 'right' },
           { key: 'tos',       label: 'TOs',       width: '6%',  align: 'right' },
           { key: 'rels',      label: 'Rels',      width: '6%',  align: 'right', hideIfAllEmpty: true },
@@ -13729,8 +14842,10 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No fields found.',
         rows: fldRows,
         columns: [
-          { key:'table',      label:'Table',      width:'20%', mono:true },
-          { key:'field',      label:'Field',      width:'22%', mono:true },
+          { key:'table',      label:'Table',      width:'20%', mono:true,
+            renderCell: function(v) { return '<a class="ux-link" onclick="uxJumpFromTab(event,\'table\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tab-fields\')">' + esc(v) + '</a>'; } },
+          { key:'field',      label:'Field',      width:'22%', mono:true,
+            renderCell: function(v, r) { return '<a class="ux-link" onclick="uxJumpFromTab(event,\'field\',\'' + esc(r.table + '::' + v).replace(/'/g, "\\'") + '\',\'tab-fields\')">' + esc(v) + '</a>'; } },
           { key:'type',       label:'Type',       width:'10%' },
           { key:'data_type',  label:'Data Type',  width:'10%' },
           { key:'auto_entry', label:'Auto-Entry',              hideIfAllEmpty:true },
@@ -13774,8 +14889,10 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No structural field dependencies found.',
         rows: depRows,
         columns: [
-          { key: 'table',         label: 'Table',   width: '13%', mono: true },
-          { key: 'field',         label: 'Field',   width: '16%', mono: true },
+          { key: 'table',         label: 'Table',   width: '13%', mono: true,
+            renderCell: function(v) { return '<a class="ux-link" onclick="uxJumpFromTab(event,\'table\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tab-field-deps\')">' + esc(v) + '</a>'; } },
+          { key: 'field',         label: 'Field',   width: '16%', mono: true,
+            renderCell: function(v, r) { return '<a class="ux-link" onclick="uxJumpFromTab(event,\'field\',\'' + esc(r.table + '::' + v).replace(/'/g, "\\'") + '\',\'tab-field-deps\')">' + esc(v) + '</a>'; } },
           { key: 'uses_count',    label: 'Uses',    width: '5%',  align: 'right', hideIfAllEmpty: true,
             renderCell: function(v) { return v ? String(v) : '<span class="dt-empty">—</span>'; } },
           { key: 'used_by_count', label: 'Used by', width: '6%',  align: 'right', hideIfAllEmpty: true,
@@ -13964,7 +15081,8 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No container fields found.',
         rows: tableRows,
         columns: [
-          { key: 'table',  label: 'Table',    width: '28%', mono: true },
+          { key: 'table',  label: 'Table',    width: '28%', mono: true,
+            renderCell: function(v) { return '<a class="ux-link" onclick="uxJumpFromTab(event,\'table\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tab-containers\')">' + esc(v) + '</a>'; } },
           { key: 'total',  label: 'Total',    width: '14%', renderCell: function(v) { return makeBar(Math.round(v/maxTotal*100), v); } },
           { key: 'local',  label: 'Local',    width: '14%', align: 'right', hideIfAllEmpty: true },
           { key: 'open',   label: 'Ext (open)',   width: '12%', align: 'right', hideIfAllEmpty: true },
@@ -13981,8 +15099,10 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No container fields found.',
         rows: fieldRows,
         columns: [
-          { key: 'table',         label: 'Table',         width: '18%', mono: true },
-          { key: 'field',         label: 'Field',         width: '20%', mono: true },
+          { key: 'table',         label: 'Table',         width: '18%', mono: true,
+            renderCell: function(v) { return '<a class="ux-link" onclick="uxJumpFromTab(event,\'table\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tab-containers\')">' + esc(v) + '</a>'; } },
+          { key: 'field',         label: 'Field',         width: '20%', mono: true,
+            renderCell: function(v, r) { return '<a class="ux-link" onclick="uxJumpFromTab(event,\'field\',\'' + esc(r.table + '::' + v).replace(/'/g, "\\'") + '\',\'tab-containers\')">' + esc(v) + '</a>'; } },
           { key: 'mode',          label: 'Storage',       width: '16%' },
           { key: 'base_dir',      label: 'Base Directory',width: '22%', mono: true, hideIfAllEmpty: true },
           { key: 'absolute',      label: 'Absolute',      width: '7%',  align: 'center', hideIfAllEmpty: true },
@@ -14012,9 +15132,12 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No relationships found.',
         rows: relRows,
         columns: [
-          { key: 'leftBase',  label: 'Left Table', width: '12%', mono: true },
-          { key: 'leftTO',    label: 'Left TO',    width: '17%', mono: true },
-          { key: 'rightTO',   label: 'Right TO',   width: '17%', mono: true },
+          { key: 'leftBase',  label: 'Left Table', width: '12%', mono: true,
+            renderCell: function(v) { return v ? '<a class="ux-link" onclick="uxJumpFromTab(event,\'table\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tab-relationships\')">' + esc(v) + '</a>' : ''; } },
+          { key: 'leftTO',    label: 'Left TO',    width: '17%', mono: true,
+            renderCell: function(v) { return v ? '<a class="ux-link" onclick="uxJumpFromTab(event,\'to\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tab-relationships\')">' + esc(v) + '</a>' : ''; } },
+          { key: 'rightTO',   label: 'Right TO',   width: '17%', mono: true,
+            renderCell: function(v) { return v ? '<a class="ux-link" onclick="uxJumpFromTab(event,\'to\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tab-relationships\')">' + esc(v) + '</a>' : ''; } },
           { key: 'predicates',label: 'Join Keys',  width: '18%' },
           { key: 'pred_types',label: 'Predicate',  width: '8%',  hideIfAllEmpty: true },
           { key: 'self_join', label: 'Self Join',  width: '7%',  align: 'center', hideIfAllEmpty: true },
@@ -14088,7 +15211,7 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No layouts found.',
         rows: layRows,
         columns: [
-          { key:'name',       label:'Layout',     width:'24%', mono:true },
+          { key:'name',       label:'Layout',     width:'24%', mono:true, renderCell: function(v) { return '<a class="ux-link" onclick="layJumpToFind(event,\'' + esc(v).replace(/'/g, "\\'") + '\')">' + esc(v) + '</a>'; } },
           { key:'base_to',    label:'Base TO',    width:'16%', mono:true, hideIfAllEmpty:true },
           { key:'hidden',     label:'Hidden',     width:'6%',  align:'center', hideIfAllEmpty:true },
           { key:'objects',    label:'Objects',    width:'7%',  align:'right' },
@@ -14129,10 +15252,12 @@ function renderResults(file, root, s, elapsed) {
           emptyMsg: 'No portals found.',
           rows: portalRows,
           columns: [
-            { key: 'layout',       label: 'Layout',       width: '22%', mono: true },
+            { key: 'layout',       label: 'Layout',       width: '22%', mono: true,
+              renderCell: function(v) { return '<a class="ux-link" onclick="uxJumpFromTab(event,\'layout\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tab-portals\')">' + esc(v) + '</a>'; } },
             { key: 'portal_num',   label: '#',            width: '4%',  align: 'right' },
             { key: 'obj_name',     label: 'Object Name',  width: '13%', mono: true, hideIfAllEmpty: true },
-            { key: 'to',           label: 'Table TO',     width: '20%', mono: true },
+            { key: 'to',           label: 'Table TO',     width: '20%', mono: true,
+              renderCell: function(v) { return v ? '<a class="ux-link" onclick="uxJumpFromTab(event,\'to\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tab-portals\')">' + esc(v) + '</a>' : ''; } },
             { key: 'row_limit',    label: 'Rows',         width: '6%',  align: 'right', hideIfAllEmpty: true },
             { key: 'filter',       label: 'Filter',       width: '6%',  align: 'center', hideIfAllEmpty: true },
             { key: 'allow_create', label: 'Create',       width: '7%',  align: 'center', hideIfAllEmpty: true },
@@ -14195,7 +15320,8 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No controls found.',
         rows: controlRows,
         columns: [
-          { key: 'layout',       label: 'Layout',       width: '50%', mono: true },
+          { key: 'layout',       label: 'Layout',       width: '50%', mono: true,
+            renderCell: function(v) { return '<a class="ux-link" onclick="uxJumpFromTab(event,\'layout\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tab-controls\')">' + esc(v) + '</a>'; } },
           { key: 'portals',        label: 'Portals',        width: '10%', align: 'right', hideIfAllEmpty: true },
           { key: 'tab_controls',   label: 'Tab Controls',   width: '13%', align: 'right', hideIfAllEmpty: true },
           { key: 'slide_controls', label: 'Slide Controls', width: '14%', align: 'right', hideIfAllEmpty: true },
@@ -14254,7 +15380,7 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No scripts found.',
         rows: scrRows,
         columns: [
-          { key:'name',           label:'Script',       width:'32%', mono:true },
+          { key:'name',           label:'Script',       width:'32%', mono:true, renderCell: function(v) { return '<a class="ux-link" onclick="scrJumpToFind(event,\'' + esc(v).replace(/'/g, "\\'") + '\')">' + esc(v) + '</a>'; } },
           { key:'steps',          label:'Steps',        width:'12%', renderCell: function(v) { if (!v) return '<span class="dt-empty">—</span>'; return makeBar(Math.min(100, Math.round(v/Math.max(scr.max_length,1)*100)), v, 33, 67); } },
           { key:'complexity',     label:'Complexity',   width:'14%', renderCell: function(v) { if (!v) return '<span class="dt-empty">—</span>'; return makeBar(Math.min(100, Math.round(v/30*100)), v, 50, 100); } },
           { key:'nesting',        label:'Nesting',      width:'12%', renderCell: function(v) { if (!v) return '<span class="dt-empty">—</span>'; return makeBar(Math.min(100, Math.round(v/7*100)), v, 57, 100); } },
@@ -14294,9 +15420,11 @@ function renderResults(file, root, s, elapsed) {
         type:   item.type   || 'Static',
         items:  item.items  || 0,
         source: item.source || '',
+        refs:   item.refs   || 0,
         unused: unreferenced ? '⚠' : '',
       };
     });
+    const maxRefs = Math.max.apply(null, vlRows.map(function(x){ return x.refs || 0; }).concat([1]));
 
     setTimeout(function() {
       renderDenseTable({
@@ -14304,11 +15432,15 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No value lists found.',
         rows: vlRows,
         columns: [
-          { key: 'name',   label: 'Name',   width: '38%', mono: true },
-          { key: 'type',   label: 'Type',   width: '10%' },
-          { key: 'items',  label: 'Items',  width: '14%', hideIfAllEmpty: true, renderCell: function(v) { if (!v) return '<span class="dt-empty">—</span>'; const maxItems = Math.max.apply(null, (vld.all||[]).map(function(x){return x.items||0;})); return makeBar(maxItems > 0 ? Math.round(v/maxItems*100) : 0, v); } },
-          { key: 'source', label: 'Source Field', width: '34%', mono: true, hideIfAllEmpty: true },
-          { key: 'unused', label: 'Unref',  width: '8%', align: 'center', hideIfAllEmpty: true },
+          { key: 'name',   label: 'Name',   width: '30%', mono: true, renderCell: function(v) { return '<a class="ux-link" onclick="vlJumpToFind(event,\'' + esc(v).replace(/'/g, "\\'") + '\')">' + esc(v) + '</a>'; } },
+          { key: 'type',   label: 'Type',   width: '9%' },
+          { key: 'items',  label: 'Items',  width: '12%', hideIfAllEmpty: true, renderCell: function(v) { if (!v) return '<span class="dt-empty">—</span>'; const maxItems = Math.max.apply(null, (vld.all||[]).map(function(x){return x.items||0;})); return makeBar(maxItems > 0 ? Math.round(v/maxItems*100) : 0, v); } },
+          { key: 'source', label: 'Source Field', width: '27%', mono: true, hideIfAllEmpty: true },
+          { key: 'refs',   label: 'References', width: '14%',
+            tooltip: 'Places in the file that use this value list — layout objects (drop-down, radio, checkbox), field validation, or as the external source for another value list. Click the name to see exactly where.',
+            renderCell: function(v) { if (!v) return '<span class="dt-empty">—</span>'; return makeBar(Math.round(v/maxRefs*100), v); } },
+          { key: 'unused', label: 'Unref',  width: '8%', align: 'center', hideIfAllEmpty: true,
+            tooltip: '⚠ = no reference to this value list was found anywhere in the file. Static analysis only — a value list named dynamically (e.g. inside Evaluate(), or via ValueListItems() with a computed name) won’t be seen, so treat this as a lead to check, not a guarantee it’s safe to delete.' },
         ],
         defaultSort: 'name',
         noScroll: true,
@@ -14334,7 +15466,8 @@ function renderResults(file, root, s, elapsed) {
           { key: 'name',          label: 'Account',       width: '28%', mono: true },
           { key: 'type',          label: 'Type',          width: '14%' },
           { key: 'status',        label: 'Status',        width: '10%' },
-          { key: 'privilege_set', label: 'Privilege Set', width: '28%', mono: true },
+          { key: 'privilege_set', label: 'Privilege Set', width: '28%', mono: true,
+            renderCell: function(v) { return v ? '<a class="ux-link" onclick="jumpToPrivilegeSet(\'' + esc(v).replace(/'/g, "\\'") + '\')">' + esc(v) + '</a>' : ''; } },
           { key: 'full_access',   label: 'Full Access',   width: '9%',  align: 'center', hideIfAllEmpty: true },
           { key: 'blank_pw',      label: 'Blank PW',      width: '8%',  align: 'center', hideIfAllEmpty: true },
         ],
@@ -14356,7 +15489,12 @@ function renderResults(file, root, s, elapsed) {
         rows: (psd.all || []),
         columns: [
           { key: 'name',         label: 'Privilege Set',   width: '26%', mono: true },
-          { key: 'accounts',     label: 'Accounts',        width: '9%',  align: 'right', hideIfAllEmpty: true },
+          { key: 'accounts',     label: 'Accounts',        width: '9%',  align: 'right', hideIfAllEmpty: true,
+            tooltip: 'Number of accounts assigned this privilege set. Click a count to jump to the Accounts tab, filtered to just those accounts.',
+            renderCell: function(v, r) {
+              if (!v) return '<span class="dt-empty">—</span>';
+              return '<a class="ux-link" onclick="jumpToAccountsByPrivilegeSet(\'' + esc(r.name).replace(/'/g, "\\'") + '\')">' + v + '</a>';
+            } },
           { key: 'print',        label: 'Print',           width: '7%',  align: 'center', hideIfAllEmpty: true },
           { key: 'export_',      label: 'Export',          width: '8%',  align: 'center', hideIfAllEmpty: true },
           { key: 'manage_db',    label: 'Manage DB',       width: '10%', align: 'center', hideIfAllEmpty: true },
@@ -14430,7 +15568,7 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No global variables found.',
         rows: varRows,
         columns: [
-          { key: 'name',     label: 'Variable',         width: '40%', mono: true },
+          { key: 'name',     label: 'Variable',         width: '40%', mono: true, renderCell: function(v) { return '<a class="ux-link" onclick="varJumpToFind(event,\'' + esc(v).replace(/'/g, "\\'") + '\')">' + esc(v) + '</a>'; } },
           { key: 'refs',     label: 'References',       width: '18%', renderCell: function(v) { if (!v) return '<span class="dt-empty">—</span>'; return makeBar(Math.min(100, Math.round(v/Math.max(gv.max_global_contacts||1,1)*100)), v); } },
           { key: 'variants', label: 'Case Variants',    width: '45%', hideIfAllEmpty: true },
         ],
@@ -14446,6 +15584,7 @@ function renderResults(file, root, s, elapsed) {
     const wrap = document.createElement('div');
     const cfRows = (cfd.all || []).map(function(f) {
       return {
+        name:      f.name       || '',
         signature: f.signature || f.name || '',
         params:    f.params    || 0,
         refs:      f.refs      || 0,
@@ -14460,7 +15599,8 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No custom functions found.',
         rows: cfRows,
         columns: [
-          { key: 'signature', label: 'Signature',  width: '55%', mono: true },
+          { key: 'signature', label: 'Signature',  width: '55%', mono: true,
+            renderCell: function(v, r) { return '<a class="ux-link" onclick="cfJumpToFind(event,\'' + esc(r.name).replace(/'/g, "\\'") + '\')">' + esc(v) + '</a>'; } },
           { key: 'params',    label: 'Params',     width: '8%',  align: 'right' },
           { key: 'refs',      label: 'References', width: '16%', renderCell: function(v) { if (!v) return '<span class="dt-empty">—</span>'; return makeBar(Math.min(100, Math.round(v/Math.max(cf.custom_function_references||1,1)*100)), v); } },
           { key: 'recursive', label: 'Recursive',  width: '10%', align: 'center', hideIfAllEmpty: true },
@@ -14481,6 +15621,9 @@ function renderResults(file, root, s, elapsed) {
     const summaryHtml = '<div class="section"><div class="section-title"><span class="section-icon">⚡</span>Plugin Functions — ' + (plg.plugin_function_count||0).toLocaleString() + ' (' + (plg.plugin_function_references||0).toLocaleString() + ' references in calcs)</div><div class="plugin-host"></div></div>';
     wrap.innerHTML = summaryHtml;
     const host = wrap.querySelector('.plugin-host');
+    const nameLinkCell = function(v) {
+      return '<a class="ux-link" onclick="pfJumpToFind(event,\'' + esc(v).replace(/'/g, "\\'") + '\')">' + esc(v) + '</a>';
+    };
     if (plugRows.length > 0) {
       setTimeout(function() {
         renderDenseTable({
@@ -14488,7 +15631,7 @@ function renderResults(file, root, s, elapsed) {
           emptyMsg: 'No plugin functions found.',
           rows: plugRows,
           columns: [
-            { key: 'name', label: 'Function', width: '65%', mono: true },
+            { key: 'name', label: 'Function', width: '65%', mono: true, renderCell: nameLinkCell },
             { key: 'note', label: 'Detail',               hideIfAllEmpty: true },
           ],
           defaultSort: 'name',
@@ -14578,7 +15721,9 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No themes found.',
         rows: themeRows,
         columns: [
-          { key: 'name',    label: 'Theme',    width: '40%', mono: true },
+          { key: 'name',    label: 'Theme',    width: '40%', mono: true,
+            tooltip: 'Click to jump to the Layouts tab, filtered to layouts using this theme.',
+            renderCell: function(v) { return '<a class="ux-link" onclick="jumpToLayoutsByTheme(\'' + esc(v).replace(/'/g, "\\'") + '\')">' + esc(v) + '</a>'; } },
           { key: 'custom',  label: 'Custom',   width: '8%',  align: 'center', hideIfAllEmpty: true },
           { key: 'styles',  label: 'Styles',   width: '9%',  align: 'right' },
           { key: 'unused',  label: 'Unused',   width: '14%', hideIfAllEmpty: true, renderCell: function(v, r) { if (!v) return '<span class="dt-empty">—</span>'; const pct = r.styles > 0 ? Math.round(v/r.styles*100) : 0; return makeBar(pct, v + ' / ' + r.styles, 20, 50); } },
@@ -14676,7 +15821,8 @@ function renderResults(file, root, s, elapsed) {
           emptyMsg: 'No plugin functions.',
           rows: (plgd.functions || []).map(function(f) { return { name: f.name || '', refs: parseInt((f.note||'').match(/^(\d+)/)?.[1]||'0') }; }),
           columns: [
-            { key: 'name', label: 'Function',   width: '70%', mono: true },
+            { key: 'name', label: 'Function',   width: '70%', mono: true,
+              renderCell: function(v) { return '<a class="ux-link" onclick="uxJumpFromTab(event,\'pluginfunction\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tab-fileconfig\')">' + esc(v) + '</a>'; } },
             { key: 'refs', label: 'References', width: '20%', align: 'right' },
           ],
           defaultSort: 'refs',
@@ -14860,6 +16006,7 @@ function renderResults(file, root, s, elapsed) {
   // Call Graph, Dead Code Explorer, Impact Analysis, Mermaid Export.
   tabDefs.splice(tabDefs.length - 2, 0,
     { id: 'tab-callgraph',   label: 'Call Graph',       icon: '⬡', contentEl: buildCallGraphTab(scr) },
+    { id: 'tab-relgraph',    label: 'Relationship Graph', icon: '⊞', contentEl: buildRelGraphTab() },
     { id: 'tab-impact',      label: 'Impact Analysis',  icon: '⚡', contentEl: buildImpactTab(s) },
     { id: 'tab-mermaid',     label: 'Mermaid Export',   icon: '⌗', contentEl: buildMermaidExport(s) }
   );
@@ -14940,6 +16087,7 @@ function renderResults(file, root, s, elapsed) {
     'tab-field-deps':  'Schema',
     'tab-containers':  'Schema',
     'tab-relationships': 'Schema',
+    'tab-relgraph':    'Schema',
     'tab-layouts':         'Schema',
     'tab-portals':         'Schema',
     'tab-controls':        'Schema',
@@ -15305,7 +16453,8 @@ function renderResults(file, root, s, elapsed) {
           rows: rows,
           groupBy: 'table',
           columns: [
-              { key:'field',      label:'Field',         width:'28%', mono: true },
+              { key:'field',      label:'Field',         width:'28%', mono: true,
+                renderCell: function(v, row) { return '<a class="ux-link" onclick="unrefJumpToFind(event,\'field\',\'' + esc(row.table + '::' + v).replace(/'/g, "\\'") + '\',\'fields\')">' + esc(v) + '</a>'; } },
               { key:'data_type',  label:'Type',          width:'10%', renderCell: function(v, row) {
                   if (!v) return '';
                   const ft = row.storage || '';
@@ -15360,7 +16509,8 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No unreferenced layouts found.',
         rows: rows,
         columns: [
-            { key:'name',     label:'Layout',  width:'34%', mono: true },
+            { key:'name',     label:'Layout',  width:'34%', mono: true,
+              renderCell: function(v) { return '<a class="ux-link" onclick="unrefJumpToFind(event,\'layout\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'layouts\')">' + esc(v) + '</a>'; } },
             { key:'theme',    label:'Theme',                 hideIfAllEmpty: true },
             { key:'base_to',  label:'Base TO',               hideIfAllEmpty: true, mono: true },
             { key:'triggers', label:'Triggers', align:'right', hideIfAllEmpty: true },
@@ -15416,7 +16566,8 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No unreferenced scripts found.',
         rows: sRows,
         columns: [
-            { key:'name',              label:'Script',     width:'40%', mono: true },
+            { key:'name',              label:'Script',     width:'40%', mono: true,
+              renderCell: function(v) { return '<a class="ux-link" onclick="unrefJumpToFind(event,\'script\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'scripts\')">' + esc(v) + '</a>'; } },
             { key:'steps',             label:'Steps',      align:'right', hideIfAllEmpty: true },
             { key:'full_access',       label:'Full Access',                hideIfAllEmpty: true },
             { key:'has_loops',         label:'Has Loops',                  hideIfAllEmpty: true },
@@ -15446,7 +16597,8 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No unreferenced value lists found.',
         rows: vRows,
         columns: [
-            { key:'name', label:'Value List', width:'60%', mono: true },
+            { key:'name', label:'Value List', width:'60%', mono: true,
+              renderCell: function(v) { return '<a class="ux-link" onclick="unrefJumpToFind(event,\'valuelist\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'vl\')">' + esc(v) + '</a>'; } },
             { key:'kind', label:'Kind',                    hideIfAllEmpty: true },
         ],
         defaultSort: 'name',
@@ -15470,7 +16622,8 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: 'No unreferenced base tables found.',
         rows: tRows,
         columns: [
-            { key:'name',    label:'Table',   width:'30%', mono: true },
+            { key:'name',    label:'Table',   width:'30%', mono: true,
+              renderCell: function(v) { return '<a class="ux-link" onclick="unrefJumpToFind(event,\'table\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'tables\')">' + esc(v) + '</a>'; } },
             { key:'fields',  label:'Fields',  align:'right', hideIfAllEmpty: true },
             { key:'comment', label:'Comment',              hideIfAllEmpty: true },
             { key:'id',      label:'ID',      align:'right', hideIfAllEmpty: true },
@@ -15506,7 +16659,8 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: '',
         rows: u.table_occurrences.map(n => ({ name: n, base: toBaseLookup[n] || '' })),
         columns: [
-          { key:'name', label:'Table Occurrence', width:'55%', mono: true },
+          { key:'name', label:'Table Occurrence', width:'55%', mono: true,
+            renderCell: function(v) { return '<a class="ux-link" onclick="unrefJumpToFind(event,\'to\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'to\')">' + esc(v) + '</a>'; } },
           { key:'base', label:'Base Table',                    hideIfAllEmpty: true, mono: true },
         ],
         defaultSort: 'name',
@@ -15529,7 +16683,8 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: '',
         rows: extraUnused.map(t => ({ name: t.name, base: t.base, reason: t.reason })),
         columns: [
-          { key:'name',   label:'Table Occurrence', width:'40%', mono: true },
+          { key:'name',   label:'Table Occurrence', width:'40%', mono: true,
+            renderCell: function(v) { return '<a class="ux-link" onclick="unrefJumpToFind(event,\'to\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'to\')">' + esc(v) + '</a>'; } },
           { key:'base',   label:'Base Table',                    mono: true, hideIfAllEmpty: true },
           { key:'reason', label:'Reason',                                    hideIfAllEmpty: true },
         ],
@@ -15551,7 +16706,8 @@ function renderResults(file, root, s, elapsed) {
         emptyMsg: '',
         rows: toRelOnly.map(t => ({ name: t.name, base: t.base, reason: t.reason })),
         columns: [
-          { key:'name',   label:'Table Occurrence', width:'34%', mono: true },
+          { key:'name',   label:'Table Occurrence', width:'34%', mono: true,
+            renderCell: function(v) { return '<a class="ux-link" onclick="unrefJumpToFind(event,\'to\',\'' + esc(v).replace(/'/g, "\\'") + '\',\'to\')">' + esc(v) + '</a>'; } },
           { key:'base',   label:'Base Table',                    mono: true, hideIfAllEmpty: true },
           { key:'reason', label:'Reason',                                    hideIfAllEmpty: true },
         ],
@@ -15728,10 +16884,11 @@ function redrawDenseTable(container) {
         const align = c.align === 'right' ? ' style="text-align:right"' : '';
         const w = c.width ? ` style="width:${c.width}"` : '';
         const sortable = c.sortable === false ? '' : ` onclick="sortDenseTable(this.closest('.dt-wrap'), '${c.key}')"`;
+        const title = c.tooltip ? ` title="${esc(c.tooltip)}"` : '';
         const classes = ['dt-th'];
         if (c.sortable !== false) classes.push('dt-th-sortable');
         if (isActive) classes.push('dt-th-active');
-        return `<th class="${classes.join(' ')}"${align || w}${sortable}>${esc(c.label)}${arrow}</th>`;
+        return `<th class="${classes.join(' ')}"${align || w}${sortable}${title}>${esc(c.label)}${arrow}</th>`;
     }).join('');
 
     // Body HTML — optionally grouped
@@ -15839,6 +16996,64 @@ function jumpToFieldBrowser(tableName) {
         if (input) {
             input.value = tableName;
             filterDenseTable(wrap, tableName);
+        }
+    }, 50);
+}
+
+// Accounts and privilege sets aren't part of the schema reference graph
+// the Impact Analysis explorer walks (they're security config, not
+// fields/scripts/layouts/etc.), so there's no entity type to route
+// through there. Same jump-and-filter approach as jumpToFieldBrowser
+// above instead: land on the Accounts tab pre-filtered to the privilege
+// set name, which the filter already matches against every column
+// including "Privilege Set" — no new filtering logic needed.
+function jumpToAccountsByPrivilegeSet(psName) {
+    jumpToTab('tab-security');
+    setTimeout(function() {
+        const pane = document.getElementById('tab-security');
+        if (!pane) return;
+        const wrap = pane.querySelector('.dt-wrap');
+        if (!wrap) return;
+        const input = wrap.querySelector('.dt-filter-input');
+        if (input) {
+            input.value = psName;
+            filterDenseTable(wrap, psName);
+        }
+    }, 50);
+}
+
+// Reverse of the above — an account's Privilege Set cell jumps to the
+// Privilege Sets tab, filtered to that one set.
+function jumpToPrivilegeSet(psName) {
+    jumpToTab('tab-privilege-sets');
+    setTimeout(function() {
+        const pane = document.getElementById('tab-privilege-sets');
+        if (!pane) return;
+        const wrap = pane.querySelector('.dt-wrap');
+        if (!wrap) return;
+        const input = wrap.querySelector('.dt-filter-input');
+        if (input) {
+            input.value = psName;
+            filterDenseTable(wrap, psName);
+        }
+    }, 50);
+}
+
+// Same jump-and-filter pattern for a theme name — Themes isn't a schema
+// reference-graph entity either, but the Layouts tab already has its own
+// "Theme" column, so filtering there is a direct, meaningful "what uses
+// this theme" view.
+function jumpToLayoutsByTheme(themeName) {
+    jumpToTab('tab-layouts');
+    setTimeout(function() {
+        const pane = document.getElementById('tab-layouts');
+        if (!pane) return;
+        const wrap = pane.querySelector('.dt-wrap');
+        if (!wrap) return;
+        const input = wrap.querySelector('.dt-filter-input');
+        if (input) {
+            input.value = themeName;
+            filterDenseTable(wrap, themeName);
         }
     }, 50);
 }
@@ -16022,7 +17237,7 @@ function exportMarkdown() {
     const md = [];
     md.push('# ' + fname + ' — Clockwork Inspector report');
     md.push('');
-    md.push('_Generated by Clockwork Inspector for FileMaker v2.2._  ');
+    md.push('_Generated by Clockwork Inspector for FileMaker v2.3._  ');
     md.push('_' + new Date().toISOString().slice(0, 16).replace('T', ' ') + '_');
     md.push('');
     md.push('All findings are observations from static analysis of the FileMaker Save-as-XML file. See the Methodology tab in the report for what each check inspects and what it does not see.');
