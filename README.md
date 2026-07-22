@@ -125,18 +125,6 @@ Five open-source resources for the FileMaker/Claris community:
 
 ---
 
-## Current limitations (known gaps)
-
-- Script step analysis uses a step ID dictionary of roughly 200 entries — steps not in the dictionary report as `unknown`. The dictionary is updated as new steps are confirmed.
-- Relationship duplicate detection is not yet implemented — planned once the definition is nailed down.
-- Layout object analysis covers common object types; some edge cases (web viewer configurations, complex button bar scripts) are partially parsed.
-- The comparison diff caps very long script bodies and calculations (around 400 lines) for performance; where a calculation exceeds that, the diff says so rather than silently hiding later changes.
-- Windows and cross-platform XML variations have not been systematically tested.
-- Custom function references are matched by name inside calculation text, so their reference lists are sparser than UUID-matched types.
-- Dynamic references (Evaluate(), GetField() with non-literal arguments, constructed SQL) are invisible to static analysis throughout the tool.
-
----
-
 ## Version history
 
 | Version | Notes |
