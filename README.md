@@ -7,8 +7,6 @@ A single-file, browser-based audit tool for FileMaker Save as XML analysis. Get 
 
 Developed by Andrew Kear, owner of [Clockwork Creative Technology](https://www.clockworkct.co.uk), and shared openly with the FileMaker/Claris community.
 
-> **A working tool, actively developed.** It is used in actual consultancy work and handles production files, it is being rapidly iterated through real world feedback so check often for new versions.
-
 ---
 
 ## Why open source?
