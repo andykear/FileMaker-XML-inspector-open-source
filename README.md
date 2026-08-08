@@ -7,7 +7,7 @@
 
 A modern alternative to the commercial FileMaker analysis tools that now exceeds most of them on usability, without asking you to install anything, license anything, or send your work to a server. Drop a Save as XML export onto the page and get a full structured analysis in seconds.
 
-It analyses around a million lines of XML per second on a reasonably capable computer, so even a large enterprise solution is parsed and reported about as fast as you can open the file. It reads Save as XML, FileMaker's native object export, rather than the DDR the commercial tools rely on, and it does things neither those tools nor FileMaker itself offer, like a complete visual mood board of any theme with every named style drawn as the object it styles.
+It analyses around a million lines of XML per second on a reasonably capable computer, so even a large enterprise solution is parsed and reported about as fast as you can open the file. It reads Save as XML, FileMaker's native object export, and it does things FileMaker itself does not offer, like a complete visual mood board of any theme with every named style drawn as the object it styles.
 
 Developed by Andrew Kear, owner of [Clockwork Creative Technology](https://www.clockworkct.co.uk), and shared openly with the FileMaker/Claris community.
 
@@ -17,7 +17,7 @@ Developed by Andrew Kear, owner of [Clockwork Creative Technology](https://www.c
 
 Local, in the browser, and open is where the platform is heading, and it is a better place to do this work from.
 
-The commercial tools in this space are closed and paid, and most need installing. The Inspector needs none of that. It runs in any modern browser, there is nothing to license, your file is parsed on your own machine and never uploaded, and the source is readable, forkable, and built to be extended or embedded in your own workflows.
+There is nothing to install and nothing to license. It runs in any modern browser, your file is parsed on your own machine and never uploaded, and the source is readable, forkable, and built to be extended or embedded in your own workflows.
 
 It is also the tool we use ourselves. Clockwork runs the Inspector in daily production, in place of the commercial products it replaced.
 
