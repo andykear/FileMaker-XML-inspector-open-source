@@ -141,7 +141,7 @@ Strips API keys, passwords and internal hostnames out of FileMaker XML before yo
 
 | Version | Notes |
 |---|---|
-| 2.4 | Theme mood board. Every named style is rendered as the object it styles (button, field, text, portal, part band) from its own fill, border, corners and font, so you can see a theme whole without dropping each style onto a layout, a preview FileMaker itself does not provide. The colour palette is indexed to the styles that use each colour, with WCAG contrast checks. Plus a field performance risk column scoring each field 1 to 10, clearer Tables to Fields navigation, and more legible wireframe hidden panels. |
+| 2.4 | Theme mood board. Every named style is rendered as the object it styles (button, field, text, portal, part band) from its own fill, border, corners and font, so you can see a theme whole without dropping each style onto a layout. Plus a field performance risk column scoring each field 1 to 10, clearer Tables to Fields navigation, and more legible wireframe hidden panels. |
 | 2.3 | Relationship graph interactive view. Plus more super additions by Darrin from CadenceUX including fix to reference counts throughout the system, and every list tab now links into the Reference Explorer. |
 | 2.2 | Layout wireframe view. Plus numerous additions kindly contributed by Darrin Southern from CadenceUX - highlight is enhanced Impact Analysis now a clever universal reference explorer. |
 | 2.1 | Minor UI improvements, handles illegal XML control characters in the source (strips and reports them) so affected files parse; quoted Mermaid relationship labels (fixes leading-underscore key fields) |
