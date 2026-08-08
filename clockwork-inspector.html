@@ -1893,13 +1893,26 @@
     font-size: 13px;
     color: var(--ink-2);
   }
-  .sidebar-child .sidebar-icon { display: none; width: 0; margin: 0; padding: 0; }
-  .sidebar-child { gap: 4px; }
+  .sidebar-child .sidebar-icon { display: inline-block; width: 14px; font-size: 11px; opacity: 0.6; }
+  .sidebar-child { gap: 6px; padding-left: 28px; }
   .sidebar-children {
     display: none;
     overflow: hidden;
   }
   .sidebar-children.open { display: block; }
+
+  /* Banner shown at the top of the Fields browser when it has been
+     filtered to a single table via a click-through from the Tables list. */
+  .fields-filter-banner {
+    margin: 8px 18px 0;
+    padding: 7px 12px;
+    background: var(--warn-tint);
+    border: 1px solid var(--warn-bd);
+    border-radius: 6px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+  .fields-filter-banner .ux-link { font-weight: 600; }
 
   .sidebar-footer {
     padding: 12px 12px;
@@ -2839,8 +2852,7 @@
 
   /* ── IMPACT ANALYSIS: UNIVERSAL SEARCH & REFERENCE EXPLORER ──
      Typeahead dropdown on the Impact Analysis input + the grouped
-     reference output with drill-down links and a back stack.
-     Contributed by Darrin Southern (CadenceUX). */
+     reference output with drill-down links and a back stack. */
   .ux-search-wrap {
     position: relative;
     display: flex;
@@ -2991,6 +3003,116 @@
     border: 1px solid var(--info-bd);
     border-radius: 6px;
   }
+
+  /* ── Theme mood board ─────────────────────────────────────── */
+  .tmb-picker { display:flex; align-items:center; gap:10px; padding:2px 22px 14px; flex-wrap:wrap; }
+  .tmb-picker select {
+    font-family:var(--font-sans); font-size:13px; color:var(--ink); background:var(--surface);
+    border:1px solid var(--line-strong); border-radius:var(--r-sm); padding:7px 11px; min-width:240px;
+  }
+  .tmb-picker .hint { font-size:12px; color:var(--ink-3); }
+  .tmb-board { padding:0 22px; }
+  .tmb-hero {
+    position:relative; overflow:hidden; border:1px solid var(--line); border-radius:var(--r-lg);
+    background:var(--surface); box-shadow:var(--shadow-sm); padding:20px 22px; margin-bottom:26px;
+  }
+  .tmb-hero-ribbon { position:absolute; inset:0 0 auto 0; height:4px; }
+  .tmb-hero-inner { display:flex; align-items:flex-end; gap:18px; flex-wrap:wrap; }
+  .tmb-hero-name { font-size:26px; font-weight:700; letter-spacing:-0.02em; color:var(--ink); line-height:1; }
+  .tmb-hero-sub { color:var(--ink-3); font-size:12.5px; margin-top:7px; }
+  .tmb-hero-sub b { color:var(--ink-2); font-weight:600; }
+  .tmb-hero-meta { margin-left:auto; display:flex; gap:7px; flex-wrap:wrap; }
+  .tmb-pill { font-size:11px; font-weight:500; color:var(--ink-2); background:var(--surface-soft); border:1px solid var(--line); padding:4px 10px; border-radius:var(--r-full); }
+  .tmb-pill b { font-family:var(--font-mono); color:var(--ink); font-weight:600; }
+  .tmb-pill.custom { color:var(--brand-deep); background:var(--brand-tint); border-color:var(--brand-soft); }
+
+  .tmb-block { margin-bottom:26px; }
+  .tmb-block-head { display:flex; align-items:baseline; gap:10px; margin-bottom:12px; }
+  .tmb-block-title { font-size:13.5px; font-weight:600; color:var(--navy-deep); }
+  .tmb-block-note { font-size:11.5px; color:var(--ink-4); }
+
+  .tmb-spectrum { height:11px; border-radius:var(--r-full); margin-bottom:14px; box-shadow:inset 0 0 0 1px rgba(16,24,40,0.06); }
+  .tmb-swatches { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:10px; }
+  .tmb-swatch { border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden; background:var(--surface); box-shadow:var(--shadow-xs); cursor:pointer; transition:transform .15s var(--ease-out), box-shadow .15s var(--ease-out); text-align:left; font-family:inherit; width:100%; display:block; }
+  .tmb-swatch:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+  .tmb-swatch:focus-visible { outline:2px solid var(--navy); outline-offset:2px; }
+  .tmb-swatch-chip { height:54px; position:relative; }
+  .tmb-swatch-chip .copyhint { position:absolute; right:7px; bottom:6px; font-size:9.5px; font-family:var(--font-mono); color:#fff; background:rgba(16,24,40,0.42); padding:2px 6px; border-radius:var(--r-full); opacity:0; transition:opacity .14s var(--ease); }
+  .tmb-swatch:hover .copyhint { opacity:1; }
+  .tmb-swatch-body { padding:8px 10px 10px; }
+  .tmb-swatch-hex { font-family:var(--font-mono); font-size:11px; font-weight:600; color:var(--ink); }
+  .tmb-swatch-rgb { font-family:var(--font-mono); font-size:9.5px; color:var(--ink-4); margin-top:1px; }
+
+  .tmb-contrast { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:10px; }
+  .tmb-ctile { border-radius:var(--r-md); overflow:hidden; border:1px solid var(--line); box-shadow:var(--shadow-xs); }
+  .tmb-ctile-demo { padding:14px 13px; font-size:13px; font-weight:600; }
+  .tmb-ctile-foot { display:flex; align-items:center; gap:7px; padding:8px 11px; background:var(--surface); border-top:1px solid var(--line-soft); }
+  .tmb-ctile-label { font-size:11px; color:var(--ink-3); flex:1; }
+  .tmb-ctile-ratio { font-family:var(--font-mono); font-size:11.5px; font-weight:600; color:var(--ink); }
+  .tmb-badge { font-size:9.5px; font-weight:700; letter-spacing:.03em; padding:2px 7px; border-radius:var(--r-full); white-space:nowrap; }
+  .tmb-badge.pass { color:var(--good); background:var(--good-tint); border:1px solid var(--good-bd); }
+  .tmb-badge.aa { color:var(--warn); background:var(--warn-tint); border:1px solid var(--warn-bd); }
+  .tmb-badge.fail { color:var(--bad); background:var(--bad-tint); border:1px solid var(--bad-bd); }
+
+  /* Component preview — tinted with the theme's own mapped colours */
+  .tmb-preview { --tt-primary:#3538CD; --tt-accent:#F04438; --tt-ink:#101828; --tt-body:#475467; --tt-muted:#98A2B3; --tt-line:#EAECF0; --tt-surface:#F9FAFB; --tt-white:#FFFFFF; }
+  .tmb-gallery { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:12px; }
+  .tmb-card { border:1px solid var(--line); border-radius:var(--r-md); background:var(--surface); box-shadow:var(--shadow-xs); padding:14px; display:flex; flex-direction:column; gap:12px; }
+  .tmb-card-label { font-size:10px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-4); }
+  .tmb-stage { display:flex; flex-direction:column; gap:9px; align-items:flex-start; }
+  .tfm-btn { font-size:12.5px; font-weight:600; border-radius:6px; padding:8px 15px; border:1px solid transparent; }
+  .tfm-btn.primary { background:var(--tt-primary); color:var(--tt-white); }
+  .tfm-btn.secondary { background:var(--tt-white); color:var(--tt-primary); border-color:var(--tt-primary); }
+  .tfm-btn.accent { background:var(--tt-accent); color:var(--tt-white); }
+  .tfm-row { display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
+  .tfm-flabel { font-size:10.5px; font-weight:600; color:var(--tt-body); margin-bottom:4px; display:block; }
+  .tfm-field { font-size:12.5px; color:var(--tt-ink); background:var(--tt-white); border:1px solid var(--tt-line); border-radius:6px; padding:8px 10px; width:100%; display:flex; justify-content:space-between; align-items:center; }
+  .tfm-field.focus { border-color:var(--tt-primary); box-shadow:0 0 0 3px rgba(53,56,205,0.14); }
+  .tfm-field .chev { color:var(--tt-muted); font-size:10px; }
+  .tfm-check { display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--tt-ink); }
+  .tfm-box { width:16px; height:16px; border-radius:4px; border:1.5px solid var(--tt-muted); background:var(--tt-white); flex-shrink:0; position:relative; }
+  .tfm-box.on { background:var(--tt-primary); border-color:var(--tt-primary); }
+  .tfm-box.on::after { content:""; position:absolute; left:4.5px; top:1px; width:5px; height:9px; border:solid var(--tt-white); border-width:0 2px 2px 0; transform:rotate(45deg); }
+  .tfm-portal { width:100%; border:1px solid var(--tt-line); border-radius:6px; overflow:hidden; }
+  .tfm-phead { display:flex; background:var(--tt-primary); color:var(--tt-white); font-size:10.5px; font-weight:600; }
+  .tfm-phead div { padding:7px 11px; }
+  .tfm-prow { display:flex; font-size:12px; color:var(--tt-ink); background:var(--tt-white); }
+  .tfm-prow.alt { background:var(--tt-surface); }
+  .tfm-prow div { padding:7px 11px; }
+  .tfm-portal .c1 { flex:1; } .tfm-portal .c2 { width:72px; text-align:right; color:var(--tt-body); }
+
+  .tmb-inv { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:12px; }
+  .tmb-inv-group { border:1px solid var(--line); border-radius:var(--r-md); background:var(--surface); box-shadow:var(--shadow-xs); overflow:hidden; }
+  .tmb-inv-head { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; background:var(--surface-soft); border-bottom:1px solid var(--line-soft); }
+  .tmb-inv-head .t { font-size:12px; font-weight:600; color:var(--ink-2); }
+  .tmb-inv-head .n { font-family:var(--font-mono); font-size:11px; color:var(--ink-4); }
+  .tmb-inv-list { padding:6px 0; max-height:180px; overflow:auto; }
+  .tmb-inv-item { display:flex; align-items:center; gap:8px; padding:4px 12px; font-size:12px; color:var(--ink-2); }
+  .tmb-inv-item .dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .tmb-inv-item .dot.used { background:var(--good); }
+  .tmb-inv-item .dot.unused { background:var(--ink-5); }
+  .tmb-inv-item .nm { font-family:var(--font-mono); font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tmb-inv-item.is-unused .nm { color:var(--ink-4); }
+
+  .tmb-empty { border:1px dashed var(--line-strong); border-radius:var(--r-md); background:var(--surface-soft); padding:16px 18px; font-size:12.5px; color:var(--ink-3); }
+  .tmb-chip { display:inline-flex; align-items:center; justify-content:center; width:54px; height:30px; line-height:1; box-sizing:border-box; overflow:hidden; letter-spacing:.02em; }
+  .tmb-prev { display:inline-flex; align-items:center; min-height:26px; line-height:1; box-sizing:border-box; overflow:hidden; white-space:nowrap; vertical-align:middle; }
+  .tmb-prev-pop { position:relative; margin-top:6px; height:26px; }
+  .tmb-prev-caret { position:absolute; top:-4px; left:14px; width:8px; height:8px; transform:rotate(45deg); }
+  .tmb-swatch-uses { display:inline-block; margin-top:4px; font-size:10px; font-weight:600; color:var(--ink-3); background:var(--surface-mute); padding:1px 6px; border-radius:var(--r-full); }
+  .tmb-swatch-uses.base { color:var(--ink-4); background:transparent; font-weight:400; padding-left:0; }
+  .tmb-swatch.tmb-swatch-active { outline:2px solid var(--navy); outline-offset:1px; }
+  .tmb-usage { margin-top:14px; border:1px solid var(--line); border-radius:var(--r-md); background:var(--surface-soft); padding:12px 14px; }
+  .tmb-usage-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .tmb-usage-sw { width:20px; height:20px; border-radius:5px; box-shadow:inset 0 0 0 1px rgba(16,24,40,0.12); flex-shrink:0; }
+  .tmb-usage-hex { font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--ink); }
+  .tmb-usage-copy { font-family:var(--font-sans); font-size:11px; font-weight:600; color:var(--ink-2); background:var(--surface); border:1px solid var(--line-strong); border-radius:var(--r-sm); padding:3px 9px; cursor:pointer; }
+  .tmb-usage-copy:hover { background:var(--surface-hover); }
+  .tmb-usage-count { font-size:12px; color:var(--ink-3); margin-left:auto; }
+  .tmb-usage-list { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:8px 14px; }
+  .tmb-usage-item { display:flex; align-items:center; gap:9px; min-width:0; }
+  .tmb-usage-name { font-family:var(--font-mono); font-size:11.5px; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tmb-usage-note { font-size:12px; color:var(--ink-3); }
   </style>
 
 </head>
@@ -3639,8 +3761,6 @@ function findScriptReferences(query) {
 // UUID as a child element's text, while every *Reference element
 // carries it as an attribute — so collecting attribute matches
 // yields exactly the references and never the definition itself.
-//
-// Contributed by Darrin Southern (CadenceUX).
 // ═══════════════════════════════════════════════════════════
 
 const UX_TYPES = {
@@ -4439,6 +4559,18 @@ function uxDetailMeta(type, name, def, usedCount) {
   if (type === 'field') {
     const fi = ((s.tables || {}).field_info || {})[name];
     if (fi && typeof buildFieldPills === 'function') rows.push(buildFieldPills(fi));
+    // Performance-risk score, same heuristic as the Fields tab column, so a
+    // field drilled into here shows why it might be a cost hotspot.
+    if (fi && typeof fieldPerfScore === 'function') {
+      const perfDep = (((s.unrefs || {}).calc_deps) || []).find(function(r) { return r.name === name; }) || null;
+      const ps = fieldPerfScore(fi, perfDep);
+      let pbg = 'transparent', pbd = 'transparent', pfg = 'var(--ink-4)';
+      if (ps.score >= 7)      { pbg = 'var(--bad-tint)';  pbd = 'var(--bad-bd)';  pfg = 'var(--bad)'; }
+      else if (ps.score >= 4) { pbg = 'var(--warn-tint)'; pbd = 'var(--warn-bd)'; pfg = 'var(--warn)'; }
+      const pill = '<span style="display:inline-block;min-width:20px;text-align:center;padding:1px 8px;border-radius:var(--r-full);font-variant-numeric:tabular-nums;font-weight:600;background:' + pbg + ';border:1px solid ' + pbd + ';color:' + pfg + '">' + ps.score + '</span>';
+      const why = ps.factors.length ? ' <span style="color:var(--ink-3)">' + esc(ps.factors.join(' · ')) + '</span>' : ' <span style="color:var(--ink-3)">minimal performance risk</span>';
+      rows.push('<div class="ux-meta-row"><strong>Perf risk:</strong> ' + pill + why + '</div>');
+    }
     if (fi && fi.comment) rows.push('<div class="ux-meta-row"><strong>Comment:</strong> <em>' + esc(fi.comment) + '</em></div>');
     const calcEl = def && def.el ? def.el.querySelector(':scope > Calculation') : null;
     if (calcEl) {
@@ -6174,6 +6306,13 @@ function selectSidebarItem(el, target) {
   document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
   // Mark this one active
   if (el) el.classList.add('active');
+  // A manual click on the Fields nav item resets any table filter left
+  // over from a "browse this table's fields" jump. The pending-jump flag
+  // suppresses this during the programmatic jump, which routes through
+  // here on its way to setting the filter itself.
+  if (target === 'tab-fields' && !window.__fieldsJumpPending && typeof fieldsBrowserClear === 'function') {
+    fieldsBrowserClear();
+  }
   // Route the click
   if (target.startsWith('unref:')) {
     const sub = target.slice(6);
@@ -9317,7 +9456,17 @@ function parseTablesAndFields(doc, root) {
       if (ft==='Calculated') {
         const calcEl = qs(f, ':scope > Calculation');
         const calcExpr = calcEl ? (calcEl.textContent || '').trim().replace(/\s+/g, ' ') : '';
-        if (s.field_info[qualified]) s.field_info[qualified].calc_expr = calcExpr.length > 80 ? calcExpr.slice(0,77) + '…' : calcExpr;
+        if (s.field_info[qualified]) {
+          s.field_info[qualified].calc_expr = calcExpr.length > 80 ? calcExpr.slice(0,77) + '…' : calcExpr;
+          // Read the formula from the Text CDATA child specifically — the
+          // Calculation element also carries reference/DDRREF children whose
+          // text would otherwise trip false positives. Flag set-pulling and
+          // SQL calls, which fetch related records or run a query on every
+          // evaluation of an unstored calc (see fieldPerfScore).
+          const calcTextEl = calcEl ? qs(calcEl, ':scope > Text') : null;
+          const calcFormula = calcTextEl ? (calcTextEl.textContent || '') : (calcEl ? (calcEl.textContent || '') : '');
+          s.field_info[qualified].is_aggregate_calc = /\b(Sum|Count|Average|Max|Min|StDev|Variance|List|GetSummary|ExecuteSQL)\s*\(/i.test(calcFormula);
+        }
         const calcEntry = { table: tableName, field: fieldName, name: qualified, data_type: dt, field_type: ft };
         if (stor) {
           const storeAttr = stor.getAttribute('storeCalculationResults');
@@ -10979,6 +11128,411 @@ function parseCustomMenus(doc, root) {
 }
 
 // ── THEMES ────────────────────────────────────────────────
+// Extract the real colour values a theme defines. FileMaker stores colours
+// as <Color red green blue> integer attributes (the same convention the
+// relationship graph reads off table occurrences), so this reads them,
+// converts to hex, and dedupes. Returns [{hex,r,g,b}] in document order,
+// or [] when the export carries no readable colour values.
+function extractThemePalette(themeEl) {
+    if (!themeEl) return [];
+    // FileMaker stores theme colours two ways depending on version: as
+    // <Color red green blue> elements, or (the common modern case) as CSS
+    // colour values inside the style definitions, which land in the element's
+    // text/CDATA. Read both. Scoping to the theme element keeps web-viewer and
+    // calculation colours — which live in layouts and scripts — out of the palette.
+    const counts = new Map(); // hex -> frequency across the theme
+    const clamp = function(v) { return Math.max(0, Math.min(255, Math.round(v))); };
+    const bump = function(r, g, b) {
+        if (isNaN(r) || isNaN(g) || isNaN(b)) return;
+        const hex = '#' + [r, g, b].map(function(v) { return clamp(v).toString(16).padStart(2, '0'); }).join('').toUpperCase();
+        counts.set(hex, (counts.get(hex) || 0) + 1);
+    };
+
+    // 1. <Color red green blue> elements, when present.
+    const meta = qs(themeEl, 'Metadata');
+    const colorEls = meta ? qsa(meta, 'color, Color') : [];
+    for (const c of colorEls) {
+        bump(parseInt(c.getAttribute('red'), 10), parseInt(c.getAttribute('green'), 10), parseInt(c.getAttribute('blue'), 10));
+    }
+
+    // 2. CSS colour values in the theme's style text. rgb()/rgba() channels
+    // may be percentages or 0-255; alpha 0 (fully transparent) is a clear-fill
+    // marker, not a palette colour, so it is skipped.
+    const css = themeEl.textContent || '';
+    const toChan = function(tok) { tok = tok.trim(); return tok.charAt(tok.length - 1) === '%' ? parseFloat(tok) / 100 * 255 : parseFloat(tok); };
+    const fnRe = /rgba?\(\s*([\d.]+%?)\s*,\s*([\d.]+%?)\s*,\s*([\d.]+%?)\s*(?:,\s*([\d.]+%?)\s*)?\)/gi;
+    let m;
+    while ((m = fnRe.exec(css)) !== null) {
+        let a = 1;
+        if (m[4] != null) a = m[4].charAt(m[4].length - 1) === '%' ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
+        if (a === 0) continue;
+        bump(toChan(m[1]), toChan(m[2]), toChan(m[3]));
+    }
+    const hexRe = /#([0-9a-fA-F]{6})\b/g;
+    while ((m = hexRe.exec(css)) !== null) {
+        const n = parseInt(m[1], 16);
+        bump((n >> 16) & 255, (n >> 8) & 255, n & 255);
+    }
+
+    // Rank by frequency so the structural and brand colours lead, collapse
+    // near-identical colours (the greys), and cap so a palette stays a palette.
+    const ranked = [...counts.entries()].sort(function(a, b) { return b[1] - a[1]; });
+    const out = [];
+    for (const entry of ranked) {
+        const n = parseInt(entry[0].slice(1), 16);
+        const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+        const near = out.some(function(o) { return Math.max(Math.abs(o.r - r), Math.abs(o.g - g), Math.abs(o.b - b)) <= 10; });
+        if (near) continue;
+        out.push({ hex: entry[0], r: r, g: g, b: b, count: entry[1] });
+        if (out.length >= 40) break;
+    }
+    return out;
+}
+
+// Convert a CSS colour token to #RRGGBB (FileMaker uses rgba with
+// percentages; rgb and hex also handled), or null when fully transparent.
+function tmbCssColorToHex(tok) {
+    if (!tok) return null;
+    tok = String(tok).trim();
+    let m = tok.match(/rgba?\(\s*([\d.]+%?)\s*,\s*([\d.]+%?)\s*,\s*([\d.]+%?)\s*(?:,\s*([\d.]+%?)\s*)?\)/i);
+    if (m) {
+        let a = 1;
+        if (m[4] != null) a = m[4].charAt(m[4].length - 1) === '%' ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
+        if (a === 0) return null;
+        const ch = function(t) { t = t.trim(); const v = t.charAt(t.length - 1) === '%' ? parseFloat(t) / 100 * 255 : parseFloat(t); return Math.max(0, Math.min(255, Math.round(v))); };
+        return '#' + [ch(m[1]), ch(m[2]), ch(m[3])].map(function(v) { return v.toString(16).padStart(2, '0'); }).join('').toUpperCase();
+    }
+    m = tok.match(/#([0-9a-fA-F]{6})\b/);
+    return m ? ('#' + m[1]).toUpperCase() : null;
+}
+function tmbParsePt(tok) { if (!tok) return 0; const m = String(tok).match(/-?[\d.]+/); return m ? parseFloat(m[0]) : 0; }
+function tmbFmFont(tok) {
+    if (!tok) return '';
+    const m = String(tok).match(/-fm-font-family\(([^,)]+)/i);
+    const raw = m ? m[1] : String(tok).split(',')[0];
+    return raw.trim().replace(/^['"]|['"]$/g, '');
+}
+// Parse a theme's <CSS> CDATA into per-style visual properties, keyed by
+// style id (the namedstyles tag). Only the :normal .self rule is read, which
+// is the object's own base appearance.
+function parseThemeStyleCss(themeEl) {
+    const cssEls = qsa(themeEl, 'CSS');
+    if (!cssEls.length) return {};
+    let css = '';
+    for (const el of cssEls) css += (el.textContent || '') + '\n';
+    css = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const out = {};
+    const ruleRe = /([^{}]+)\{([^{}]*)\}/g;
+    let m;
+    while ((m = ruleRe.exec(css)) !== null) {
+        const selector = m[1].trim();
+        const body = m[2];
+        const sel = selector.match(/^([A-Za-z0-9_]+)(?:\.([A-Za-z0-9_-]+))?:(normal|hover|pressed|inFocus|inFocusInactive)\b(.*)$/);
+        if (!sel || sel[3] !== 'normal') continue;
+        const target = (sel[4] || '').trim();
+        const firstTok = target.split(/\s+/).filter(Boolean)[0] || '.self';
+        if (firstTok !== '.self') continue;
+        const key = sel[2] || sel[1];
+        const p = out[key] || (out[key] = {});
+        const get = function(name) { const mm = body.match(new RegExp('(?:^|[;{\\s])' + name.replace(/-/g, '\\-') + '\\s*:\\s*([^;]+)')); return mm ? mm[1].trim() : null; };
+        const bg = tmbCssColorToHex(get('background-color')); if (bg) p.fill = bg;
+        const col = tmbCssColorToHex(get('color')); if (col) p.color = col;
+        const bs = get('border-top-style');
+        if (bs && bs !== 'none') {
+            const bc = tmbCssColorToHex(get('border-top-color')); if (bc) p.borderColor = bc;
+            p.borderWidth = tmbParsePt(get('border-top-width')) || 1;
+        }
+        const rad = get('border-top-left-radius'); if (rad != null) p.radius = tmbParsePt(rad);
+        const fs = get('font-size'); if (fs) p.fontSize = tmbParsePt(fs);
+        const fw = get('font-weight'); if (fw) p.fontWeight = fw.trim();
+        const ff = get('font-family'); if (ff) p.fontFamily = tmbFmFont(ff);
+    }
+    return out;
+}
+// Build the per-theme named-style list: id -> display name (from namedstyles)
+// joined to the visual properties parsed from the theme CSS.
+function buildThemeStyles(themeEl) {
+    const meta = qs(themeEl, 'Metadata');
+    const ns = meta ? qs(meta, 'namedstyles') : null;
+    if (!ns) return [];
+    const cssProps = parseThemeStyleCss(themeEl);
+    const list = [];
+    for (const child of ns.children) {
+        const name = (child.textContent || '').replace(/^[\u2022\u00b7\s]+/, '').trim();
+        list.push({ id: child.tagName, name: name, css: cssProps[child.tagName] || null });
+    }
+    return list;
+}
+
+// Resolve a style's parsed CSS into concrete, always-visible render values
+// (transparent or missing values get contrasting defaults). Shared by the
+// compact chip and the object-shaped previews.
+function tmbStyleVars(css) {
+    css = css || {};
+    let fill = css.fill, color = css.color;
+    if (!fill && color) fill = tmbLumHex(color) > 0.5 ? '#1A1A1A' : '#FFFFFF';
+    if (!fill) fill = '#FFFFFF';
+    if (!color) color = tmbLumHex(fill) > 0.5 ? '#111111' : '#FFFFFF';
+    const borderW = css.borderColor ? Math.max(1, Math.min(css.borderWidth || 1, 3)) : 1;
+    const borderCol = css.borderColor || 'var(--line)';
+    const radius = css.radius != null ? Math.min(css.radius, 10) : 3;
+    const weight = (css.fontWeight === 'bold' || parseInt(css.fontWeight, 10) >= 600) ? 700 : 400;
+    const size = css.fontSize ? Math.max(8, Math.min(css.fontSize, 15)) : 12;
+    const font = css.fontFamily ? (esc(css.fontFamily) + ', Arial, sans-serif') : 'Arial, sans-serif';
+    return { fill: fill, color: color, borderW: borderW, borderCol: borderCol, radius: radius, weight: weight, size: size, font: font, rawFill: css.fill, hasBorder: !!css.borderColor };
+}
+
+// Compact swatch of a style (used in the colour-usage panel).
+function tmbChipHtml(css) {
+    const v = tmbStyleVars(css);
+    return '<span class="tmb-chip" style="background:' + v.fill + ';border:' + v.borderW + 'px solid ' + v.borderCol + ';border-radius:' + v.radius + 'px;color:' + v.color + ';font-weight:' + v.weight + ';font-size:' + v.size + 'px;font-family:' + v.font + '">Aa</span>';
+}
+
+// Render a named style as its actual object type, from its real CSS. This is
+// the theme preview FileMaker itself does not provide. Base normal-state only;
+// hover/pressed/active states are a later increment.
+function tmbStylePreview(css, type) {
+    const v = tmbStyleVars(css);
+    const border = v.borderW + 'px solid ' + v.borderCol;
+    const ff = 'font-family:' + v.font + ';';
+
+    if (type === 'Text') {
+        const tSize = css.fontSize ? Math.max(9, Math.min(css.fontSize * 1.15, 20)) : 13;
+        const light = tmbLumHex(css.color || '#000000') > 0.7;
+        const bg = light ? 'background:#1A1A1A;padding:2px 9px;border-radius:4px;' : '';
+        return '<span class="tmb-prev" style="' + bg + 'color:' + (css.color || '#111111') + ';font-weight:' + v.weight + ';font-size:' + tSize + 'px;' + ff + '">Sample</span>';
+    }
+    if (type === 'Buttons') {
+        return '<span class="tmb-prev" style="justify-content:center;padding:5px 15px;background:' + v.fill + ';border:' + border + ';border-radius:' + Math.min(v.radius, 8) + 'px;color:' + v.color + ';font-weight:' + v.weight + ';font-size:' + v.size + 'px;' + ff + '">Button</span>';
+    }
+    if (type === 'Fields') {
+        const ffill = v.rawFill || '#FFFFFF';
+        const fcolor = css.color || (tmbLumHex(ffill) > 0.5 ? '#667085' : '#FFFFFF');
+        return '<span class="tmb-prev" style="width:130px;padding:0 10px;background:' + ffill + ';border:' + border + ';border-radius:' + v.radius + 'px;color:' + fcolor + ';font-size:' + v.size + 'px;' + ff + '">Sample</span>';
+    }
+    if (type === 'Portals') {
+        const rowBg = v.rawFill || '#FFFFFF';
+        const div = '1px solid ' + v.borderCol;
+        return '<span class="tmb-prev" style="flex-direction:column;align-items:stretch;width:130px;padding:0;background:' + rowBg + ';border:' + border + ';border-radius:' + v.radius + 'px;overflow:hidden">' +
+            '<span style="height:9px;border-bottom:' + div + '"></span>' +
+            '<span style="height:9px;border-bottom:' + div + '"></span>' +
+            '<span style="height:9px"></span></span>';
+    }
+    if (type === 'Parts') {
+        return '<span class="tmb-prev" style="width:130px;padding:0 10px;background:' + v.fill + ';color:' + v.color + ';font-weight:' + v.weight + ';font-size:' + Math.min(v.size, 11) + 'px;' + ff + 'border-radius:2px">Part band</span>';
+    }
+    if (type === 'Panels') {
+        return '<span class="tmb-prev" style="padding:0;overflow:visible;font-size:10px;' + ff + '">' +
+            '<span style="padding:5px 11px;background:' + v.fill + ';color:' + v.color + ';border:' + border + ';border-bottom:none;border-radius:4px 4px 0 0">Tab</span>' +
+            '<span style="padding:5px 11px;background:var(--surface-mute);color:var(--ink-4);border:1px solid var(--line);border-bottom:none;border-radius:4px 4px 0 0;margin-left:2px">Tab</span></span>';
+    }
+    if (type === 'Popovers') {
+        return '<span class="tmb-prev tmb-prev-pop" style="justify-content:center;width:108px;background:' + v.fill + ';border:' + border + ';border-radius:6px;color:' + v.color + ';font-size:' + v.size + 'px;' + ff + '"><span class="tmb-prev-caret" style="background:' + v.fill + ';border-left:' + border + ';border-top:' + border + '"></span>Popover</span>';
+    }
+    // Colour blocks, containers, web viewers and anything else: a fill block.
+    return '<span class="tmb-prev" style="width:56px;background:' + v.fill + ';border:' + border + ';border-radius:' + v.radius + 'px"></span>';
+}
+
+// Build a colour -> named styles index: for each colour value anywhere in a
+// named style's CSS, record which styles reference it. Lets the palette answer
+// "which elements use this colour". Keyed by #RRGGBB, value is sorted names.
+function buildThemeColorUsage(themeEl) {
+    const meta = qs(themeEl, 'Metadata');
+    const ns = meta ? qs(meta, 'namedstyles') : null;
+    if (!ns) return {};
+    const nameOf = {};
+    for (const child of ns.children) nameOf[child.tagName] = (child.textContent || '').replace(/^[\u2022\u00b7\s]+/, '').trim();
+    const cssEls = qsa(themeEl, 'CSS');
+    let css = '';
+    for (const el of cssEls) css += (el.textContent || '') + '\n';
+    css = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const usage = {};
+    const ruleRe = /([^{}]+)\{([^{}]*)\}/g;
+    let m;
+    while ((m = ruleRe.exec(css)) !== null) {
+        const sel = m[1].trim().match(/^([A-Za-z0-9_]+)(?:\.([A-Za-z0-9_-]+))?:/);
+        if (!sel) continue;
+        const name = nameOf[sel[2] || sel[1]];
+        if (!name) continue; // only styles that appear in namedstyles
+        const colRe = /rgba?\([^)]*\)|#[0-9a-fA-F]{6}\b/gi;
+        let cm;
+        while ((cm = colRe.exec(m[2])) !== null) {
+            const hex = tmbCssColorToHex(cm[0]);
+            if (!hex) continue;
+            (usage[hex] = usage[hex] || new Set()).add(name);
+        }
+    }
+    const out = {};
+    for (const hex of Object.keys(usage)) out[hex] = [...usage[hex]].sort();
+    return out;
+}
+
+// Panel shown when a palette swatch is clicked: which named styles use that
+// colour, each rendered as its own chip so the colour is tied to real elements.
+function tmbUsagePanelHtml(hex, t) {
+    const users = (t.color_usage && t.color_usage[hex]) || [];
+    const cssByName = {};
+    (t.styles_detail || []).forEach(function(s) { cssByName[s.name] = s.css; });
+    let h = '<div class="tmb-usage-head">' +
+        '<span class="tmb-usage-sw" style="background:' + hex + '"></span>' +
+        '<span class="tmb-usage-hex">' + esc(hex) + '</span>' +
+        '<button class="tmb-usage-copy" data-copy="' + esc(hex) + '">Copy</button>' +
+        '<span class="tmb-usage-count">' + (users.length ? (users.length + ' style' + (users.length === 1 ? '' : 's') + ' use this colour') : 'Not used by a named style') + '</span></div>';
+    if (users.length) {
+        h += '<div class="tmb-usage-list">';
+        for (const name of users) h += '<span class="tmb-usage-item">' + tmbChipHtml(cssByName[name] || null) + '<span class="tmb-usage-name">' + esc(name) + '</span></span>';
+        h += '</div>';
+    } else {
+        h += '<div class="tmb-usage-note">This colour appears in the theme\u2019s base object styling rather than a named style.</div>';
+    }
+    return h;
+}
+
+// Colour maths for the mood board.
+function tmbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    let h = 0, s = 0; const l = (mx + mn) / 2; const d = mx - mn;
+    if (d) {
+        s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+        if (mx === r)      h = (g - b) / d + (g < b ? 6 : 0);
+        else if (mx === g) h = (b - r) / d + 2;
+        else               h = (r - g) / d + 4;
+        h /= 6;
+    }
+    return { h: h * 360, s: s, l: l };
+}
+function tmbLumHex(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(function(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function tmbContrast(a, b) {
+    const L1 = tmbLumHex(a), L2 = tmbLumHex(b);
+    const hi = Math.max(L1, L2), lo = Math.min(L1, L2);
+    return (hi + 0.05) / (lo + 0.05);
+}
+function tmbBadge(ratio) {
+    if (ratio >= 7)   return { cls: 'pass', txt: 'AAA' };
+    if (ratio >= 4.5) return { cls: 'pass', txt: 'AA' };
+    if (ratio >= 3)   return { cls: 'aa',   txt: 'AA large' };
+    return { cls: 'fail', txt: 'Fail' };
+}
+// Map a raw palette to component roles so the preview renders in the theme's
+// own colours. FileMaker theme colours carry no role labels, so this is a
+// documented heuristic: darkest = ink, lightest = surface, most saturated =
+// primary, next distinct hue = accent, neutrals fill body/muted/line.
+function tmbMapRoles(palette) {
+    const roles = { primary:'#3538CD', accent:'#F04438', ink:'#101828', body:'#475467', muted:'#98A2B3', line:'#EAECF0', surface:'#F9FAFB', white:'#FFFFFF' };
+    if (!palette || !palette.length) return roles;
+    // Chroma (max-min of RGB) is a stable "how grey is it" measure. HSL
+    // saturation swings wildly near white and black, so it is not used here.
+    const info = palette.map(function(p) { const h = tmbToHsl(p.r, p.g, p.b); return { hex: p.hex, h: h.h, l: h.l, chroma: Math.max(p.r, p.g, p.b) - Math.min(p.r, p.g, p.b), count: p.count || 0 }; });
+    const byL = info.slice().sort(function(a, b) { return a.l - b.l; });
+    roles.ink = byL[0].hex;
+    const lightest = byL[byL.length - 1];
+    roles.surface = (lightest.hex === '#FFFFFF' && byL.length > 1) ? byL[byL.length - 2].hex : lightest.hex;
+    // Primary is the dominant brand colour: the most-used chromatic colour, not
+    // merely the most saturated (which would let a rare punchy accent win).
+    const chromatic = info.filter(function(c) { return c.chroma >= 35; }).sort(function(a, b) { return (b.count - a.count) || (b.chroma - a.chroma); });
+    const primCand = chromatic.filter(function(c) { return c.l > 0.15 && c.l < 0.82; });
+    if (primCand.length)       roles.primary = primCand[0].hex;
+    else if (chromatic.length) roles.primary = chromatic[0].hex;
+    if (chromatic.length) {
+        const primHue = (chromatic.find(function(c) { return c.hex === roles.primary; }) || chromatic[0]).h;
+        const acc = chromatic.find(function(c) { return c.hex !== roles.primary && Math.abs(c.h - primHue) > 35; }) || chromatic.find(function(c) { return c.hex !== roles.primary; });
+        if (acc) roles.accent = acc.hex;
+    }
+    const neutrals = info.filter(function(c) { return c.chroma < 35; }).sort(function(a, b) { return a.l - b.l; });
+    // Body text: darkest neutral that still reads on the surface, else ink —
+    // so it can never land on an unreadable near-surface colour.
+    const bodyCand = neutrals.filter(function(c) { return c.hex !== roles.ink && tmbContrast(c.hex, roles.surface) >= 4.5; });
+    roles.body = bodyCand.length ? bodyCand[bodyCand.length - 1].hex : roles.ink;
+    const midNeutral = neutrals.filter(function(c) { return c.l > 0.45 && c.l < 0.85; });
+    if (midNeutral.length) roles.muted = midNeutral[0].hex;
+    const lineCand = neutrals.filter(function(c) { return c.l > 0.8 && c.hex !== '#FFFFFF' && c.hex !== roles.surface; });
+    if (lineCand.length) roles.line = lineCand[lineCand.length - 1].hex;
+    return roles;
+}
+// Bucket a named style by object type from its name. Best-effort: FileMaker's
+// own style names carry the object type; fully custom names fall to Other.
+function tmbCategorise(name) {
+    const n = (name || '').toLowerCase();
+    if (/button|btn/.test(n)) return 'Buttons';
+    if (/field|edit box|input|entry/.test(n)) return 'Fields';
+    if (/portal/.test(n)) return 'Portals';
+    if (/tab|slide|panel/.test(n)) return 'Panels';
+    if (/popover/.test(n)) return 'Popovers';
+    if (/web ?viewer/.test(n)) return 'Web viewers';
+    if (/text|label|title|heading|caption/.test(n)) return 'Text';
+    if (/part|header|footer|body|summary/.test(n)) return 'Parts';
+    return 'Other';
+}
+
+// Build the mood board HTML for one theme, from its parsed palette and the
+// file's named-style detail. All data here is real; the only heuristic is the
+// colour-to-role mapping used to tint the component preview.
+function tmbBoardHtml(t, allStyleDetail) {
+    const palette = t.palette || [];
+    const withHsl = palette.map(function(p) { const h = tmbToHsl(p.r, p.g, p.b); return { hex: p.hex, r: p.r, g: p.g, b: p.b, h: h.h, l: h.l, chroma: Math.max(p.r, p.g, p.b) - Math.min(p.r, p.g, p.b) }; });
+    const colours = withHsl.filter(function(c) { return c.chroma >= 35; }).sort(function(a, b) { return a.h - b.h || b.l - a.l; });
+    const neutrals = withHsl.filter(function(c) { return c.chroma < 35; }).sort(function(a, b) { return b.l - a.l; });
+    const ordered = colours.concat(neutrals);
+    const gradFor = function(arr) { const hx = arr.map(function(c) { return c.hex; }); return hx.length >= 2 ? 'linear-gradient(90deg,' + hx.join(',') + ')' : (hx[0] || 'transparent'); };
+
+    let html = '<div class="tmb-hero">';
+    if (ordered.length) html += '<div class="tmb-hero-ribbon" style="background:' + gradFor(ordered) + '"></div>';
+    html += '<div class="tmb-hero-inner"><div>' +
+        '<div class="tmb-hero-name">' + esc(t.name) + '</div>' +
+        '<div class="tmb-hero-sub">' + (t.custom ? 'Custom theme' : 'Standard theme') + '</div></div>' +
+        '<div class="tmb-hero-meta">' +
+        (t.custom ? '<span class="tmb-pill custom">Custom</span>' : '') +
+        '<span class="tmb-pill"><b>' + (t.styles || 0) + '</b> styles</span>' +
+        '<span class="tmb-pill"><b>' + ((t.palette && t.palette.length) || 0) + '</b> colours</span>' +
+        '</div></div></div>';
+
+    html += '<div class="tmb-block"><div class="tmb-block-head"><span class="tmb-block-title">Colour palette</span><span class="tmb-block-note">' +
+        (ordered.length ? ordered.length + ' distinct colours. Click one to see which styles use it.' : '') + '</span></div>';
+    if (ordered.length) {
+        html += '<div class="tmb-spectrum" style="background:' + gradFor(ordered) + '"></div><div class="tmb-swatches">';
+        for (const c of ordered) {
+            const border = c.hex === '#FFFFFF' ? 'box-shadow:inset 0 0 0 1px var(--line)' : '';
+            const uses = (t.color_usage && t.color_usage[c.hex]) ? t.color_usage[c.hex].length : 0;
+            const useTag = uses ? '<span class="tmb-swatch-uses">' + uses + ' style' + (uses === 1 ? '' : 's') + '</span>' : '<span class="tmb-swatch-uses base">base</span>';
+            html += '<button class="tmb-swatch" data-hex="' + c.hex + '"><div class="tmb-swatch-chip" style="background:' + c.hex + ';' + border + '"></div>' +
+                '<div class="tmb-swatch-body"><div class="tmb-swatch-hex">' + c.hex + '</div><div class="tmb-swatch-rgb">' + c.r + ', ' + c.g + ', ' + c.b + '</div>' + useTag + '</div></button>';
+        }
+        html += '</div><div class="tmb-usage" style="display:none"></div>';
+    } else {
+        html += '<div class="tmb-empty">This export reports ' + (t.colors || 0) + ' colour' + (t.colors === 1 ? '' : 's') + ' for this theme but does not expose their values in a form the analyser reads. Palette rendering needs the colour values present in the theme metadata.</div>';
+    }
+    html += '</div>';
+
+    if (ordered.length) {
+        const roles = tmbMapRoles(palette);
+        const pairs = [
+            { label: 'Ink on surface',   fg: roles.ink,     bg: roles.surface },
+            { label: 'White on primary', fg: '#FFFFFF',     bg: roles.primary },
+            { label: 'White on accent',  fg: '#FFFFFF',     bg: roles.accent },
+            { label: 'Body on surface',  fg: roles.body,    bg: roles.surface },
+        ];
+        html += '<div class="tmb-block"><div class="tmb-block-head"><span class="tmb-block-title">Contrast checks</span><span class="tmb-block-note">Key pairs measured against WCAG.</span></div><div class="tmb-contrast">';
+        for (const p of pairs) {
+            const ratio = tmbContrast(p.fg, p.bg); const b = tmbBadge(ratio);
+            html += '<div class="tmb-ctile"><div class="tmb-ctile-demo" style="background:' + p.bg + ';color:' + p.fg + '">Ag 24</div>' +
+                '<div class="tmb-ctile-foot"><span class="tmb-ctile-label">' + esc(p.label) + '</span><span class="tmb-ctile-ratio">' + ratio.toFixed(2) + '</span><span class="tmb-badge ' + b.cls + '">' + b.txt + '</span></div></div>';
+        }
+        html += '</div></div>';
+    }
+
+    const styleList = t.styles_detail || [];
+    if (styleList.length) {
+        html += '<div class="tmb-block"><div class="tmb-block-head"><span class="tmb-block-title">Named styles</span><span class="tmb-block-note">' + styleList.length + ' style' + (styleList.length === 1 ? '' : 's') + ', each shown as itself from its own fill, border, corners and font. Grouped by object type; In Use marks styles placed on a layout.</span></div><div class="tmb-styles-host"></div></div>';
+    }
+
+    return html;
+}
+
 function parseThemes(doc, root) {
   const s = { theme_count:0, style_count:0, unused_styles:0, custom_themes:0, themes_detail:[],
     detail: { all: [], custom: [] }
@@ -10989,7 +11543,7 @@ function parseThemes(doc, root) {
   s.theme_count = themes.length;
   let totalStyles = 0;
   for (const theme of themes) {
-    const isCustom = attr(theme,'custom')==='True'||attr(theme,'isCustom')==='True';
+    const isCustom = attr(theme,'custom')==='True'||attr(theme,'isCustom')==='True'||/(^|\.)custom\./i.test(attr(theme,'name')||'');
     if (isCustom) s.custom_themes++;
     const meta = qs(theme,'Metadata');
     let styleCount = 0;
@@ -11016,7 +11570,8 @@ function parseThemes(doc, root) {
     } else {
       themeName = themeIdAttr || '(unnamed)';
     }
-    s.themes_detail.push({ name: themeName, custom: isCustom, styles: styleCount, colors: colorCount });
+    const palette = extractThemePalette(theme);
+    s.themes_detail.push({ name: themeName, custom: isCustom, styles: styleCount, colors: palette.length, palette: palette, styles_detail: buildThemeStyles(theme), color_usage: buildThemeColorUsage(theme) });
     s.detail.all.push({ name: themeName, note: styleCount + ' style' + (styleCount===1?'':'s') + (isCustom ? ' · custom' : '') });
     if (isCustom) s.detail.custom.push({ name: themeName, note: styleCount + ' style' + (styleCount===1?'':'s') });
   }
@@ -13576,13 +14131,16 @@ function buildWireframeTab(lay) {
         const cat = WF_CATS[key];
         legendHtml += '<span class="wf-chip"><span class="wf-swatch" style="background:' + cat.stroke + '"></span>' + esc(cat.label) + '</span>';
     }
+    // Hidden-panel ghost colour, shown so the violet dashed overlay drawn
+    // by the "hidden panels" toggle is decodable.
+    legendHtml += '<span class="wf-chip"><span class="wf-swatch" style="background:#7c3aed"></span>hidden panel</span>';
     wrap.innerHTML =
         '<div class="section">' +
         '<div class="section-title"><span class="section-icon">⊡</span>Wireframe — ' + fmt(layoutChoices.length) + ' layouts</div>' +
         '<div class="wf-toolbar">' +
         '<select class="wf-select">' + selectHtml + '</select>' +
         '<label class="wf-toggle"><input type="checkbox" class="wf-t-fills" checked> fills</label>' +
-        '<label class="wf-toggle"><input type="checkbox" class="wf-t-panels"> hidden panels<span class="wf-t-panels-n"></span></label>' +
+        '<label class="wf-toggle" title="Reveals objects on the back tab and slide panels. They share the same space as the front panel, so they draw as violet dashed ghosts over the main content. Overlap is expected."><input type="checkbox" class="wf-t-panels"> hidden panels<span class="wf-t-panels-n"></span></label>' +
         '<label class="wf-toggle"><input type="checkbox" class="wf-t-popovers"> popovers<span class="wf-t-popovers-n"></span></label>' +
         '<div class="wf-zoom">' +
         '<button class="wf-zoom-btn" data-zoom="out">−</button>' +
@@ -14066,30 +14624,39 @@ function buildWireframeTab(lay) {
             if (!b || b.w < 0 || b.h < 0) return;
             const cat = WF_CATS[entry.cat] || WF_CATS.other;
             const isContainer = ['portal', 'panel', 'popover', 'group'].includes(entry.cat);
-            const dash = isContainer ? ' stroke-dasharray="5 3"' : '';
+            // An object only visible because the "hidden panels" toggle
+            // revealed it sits on a back tab/slide panel, in the same space
+            // as the front panel. Draw it in a distinct violet, always
+            // dashed, and semi-transparent so it reads as a separate layer
+            // stacked over the front content rather than part of it.
+            const revealedPanel = entry.suppressed === 'panel' && viewState.allPanels;
+            const strokeCol = revealedPanel ? '#7c3aed' : cat.stroke;
+            const dash = (isContainer || revealedPanel) ? ' stroke-dasharray="5 3"' : '';
             const rx = entry.type === 'Rounded Rectangle' ? 6 : 2;
-            // Leaf fills can be toggled off for a pure outline view.
-            const fillValue = viewState.fills ? cat.fill : 'none';
+            // Leaf fills can be toggled off for a pure outline view. Revealed
+            // back-panel objects stay unfilled regardless, so the front
+            // content underneath them remains legible through the overlap.
+            const fillValue = revealedPanel ? 'none' : (viewState.fills ? cat.fill : 'none');
 
-            svg += '<g class="wf-obj" data-wf-i="' + index + '">';
-            svg += '<title>' + esc(entry.type + (entryLabel(entry) ? ' — ' + entryLabel(entry) : '')) + '</title>';
+            svg += '<g class="wf-obj' + (revealedPanel ? ' wf-obj-revealed' : '') + '" data-wf-i="' + index + '"' + (revealedPanel ? ' opacity="0.55"' : '') + '>';
+            svg += '<title>' + esc((revealedPanel ? 'Hidden panel: ' : '') + entry.type + (entryLabel(entry) ? ' — ' + entryLabel(entry) : '')) + '</title>';
 
             if (entry.type === 'Line') {
                 // Lines are stored as a bounding box; draw the diagonal.
                 // Horizontal/vertical lines have a ~zero extent on one
                 // axis so the diagonal degrades to the correct line.
                 svg += '<line class="wf-obj-shape" x1="' + b.left + '" y1="' + b.top + '" x2="' + b.right + '" y2="' + b.bottom +
-                    '" stroke="' + cat.stroke + '" stroke-width="1.5" vector-effect="non-scaling-stroke"/>';
+                    '" stroke="' + strokeCol + '" stroke-width="1.5" vector-effect="non-scaling-stroke"/>';
                 // Invisible fat hit area so thin lines stay hoverable
                 svg += '<line x1="' + b.left + '" y1="' + b.top + '" x2="' + b.right + '" y2="' + b.bottom +
                     '" stroke="transparent" stroke-width="' + (8 / scale) + '"/>';
             } else if (entry.type === 'Oval') {
                 svg += '<ellipse class="wf-obj-shape" cx="' + (b.left + b.w / 2) + '" cy="' + (b.top + b.h / 2) +
-                    '" rx="' + (b.w / 2) + '" ry="' + (b.h / 2) + '" fill="' + fillValue + '" stroke="' + cat.stroke +
+                    '" rx="' + (b.w / 2) + '" ry="' + (b.h / 2) + '" fill="' + fillValue + '" stroke="' + strokeCol +
                     '" stroke-width="1" vector-effect="non-scaling-stroke"/>';
             } else {
                 svg += '<rect class="wf-obj-shape" x="' + b.left + '" y="' + b.top + '" width="' + Math.max(b.w, 0.5) +
-                    '" height="' + Math.max(b.h, 0.5) + '" rx="' + rx + '" fill="' + fillValue + '" stroke="' + cat.stroke +
+                    '" height="' + Math.max(b.h, 0.5) + '" rx="' + rx + '" fill="' + fillValue + '" stroke="' + strokeCol +
                     '" stroke-width="1" vector-effect="non-scaling-stroke"' + dash + '/>';
             }
 
@@ -14772,7 +15339,7 @@ function renderResults(file, root, s, elapsed) {
 
     const unreftNote = u.tables && u.tables.length ? ' · ' + u.tables.length + ' unreferenced' : '';
     const wrap = document.createElement('div');
-    wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">⬡</span>Tables — ' + tf.table_count + unreftNote + '<span style="margin-left:12px;font-size:11px;color:var(--ink-3);font-weight:400">Click a row to browse its fields</span></div><div class="tables-host"></div></div>';
+    wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">⬡</span>Tables — ' + tf.table_count + unreftNote + '<span style="margin-left:12px;font-size:11px;color:var(--ink-3);font-weight:400">Click a row to browse its fields. Click the table name to trace what references it.</span></div><div class="tables-host"></div></div>';
     const host = wrap.querySelector('.tables-host');
 
     setTimeout(function() {
@@ -14810,11 +15377,20 @@ function renderResults(file, root, s, elapsed) {
 
     wrap.innerHTML =
       '<div class="section"><div class="section-title"><span class="section-icon">≡</span>Fields — ' + fmt(tf.field_count) + fldUnrefNote + '</div>' +
+      '<div style="padding:6px 18px 0;font-size:12px;color:var(--ink-3)">The <strong>Perf risk</strong> column rates each field 1 (low) to 10 (high) for likely performance cost. Sort it descending to surface the fields worth checking. Hover a score for the reasons behind it.</div>' +
+      '<div class="fields-filter-banner" id="fields-filter-banner" style="display:none"></div>' +
       '<div class="fields-browser-host"></div></div>';
 
     const host = wrap.querySelector('.fields-browser-host');
     const fInfo = tf.field_info || {};
+    // Index the calc-dependency rows by qualified name so the performance
+    // heuristic can look up cross-table references, fan-in, relationship
+    // keys and layout exposure per field without re-walking the XML.
+    const depByName = {};
+    (u.calc_deps || []).forEach(function(d) { depByName[d.name] = d; });
     const fldRows = Object.values(fInfo).map(function(f) {
+      const perfKey = (f.table || '') + '::' + (f.field || '');
+      const perf = fieldPerfScore(f, depByName[perfKey] || null);
       // Show index level explicitly: None/Minimal/All for normal fields,
       // Stored/Unstored for calc fields, blank for container/global/summary
       let indexDisplay = '';
@@ -14832,6 +15408,8 @@ function renderResults(file, root, s, elapsed) {
         validation: f.validated  ? (f.validation_rules || 'yes') : '',
         storage:    f.is_global ? 'global' : f.is_repeating ? 'repeating ×' + (f.reps||'') : '',
         index:      indexDisplay,
+        perf:       perf.score,
+        perf_factors: perf.factors.join(' · '),
         calc:       f.calc_expr  || '',
         comment:    f.comment    || '',
       };
@@ -14852,6 +15430,16 @@ function renderResults(file, root, s, elapsed) {
           { key:'validation', label:'Validation',              hideIfAllEmpty:true },
           { key:'storage',    label:'Storage',                 hideIfAllEmpty:true },
           { key:'index',      label:'Index',                   hideIfAllEmpty:true },
+          { key:'perf',       label:'Perf risk',  width:'8%',  align:'center',
+            tooltip:'Static performance risk heuristic, 1 (low) to 10 (high). Built from field storage (unstored calc, summary, global), whether a calc reaches across relationships, aggregate and SQL calls inside calcs, how many other calcs a field feeds, unstored calcs used as relationship match keys, and layout exposure. This is a heuristic from schema shape, not a measurement. Sort descending to surface the riskiest fields; hover a score for its breakdown.',
+            renderCell: function(v, r) {
+              const n = r.perf || 1;
+              let bg = 'transparent', bd = 'transparent', fg = 'var(--ink-4)';
+              if (n >= 7)      { bg = 'var(--bad-tint)';  bd = 'var(--bad-bd)';  fg = 'var(--bad)'; }
+              else if (n >= 4) { bg = 'var(--warn-tint)'; bd = 'var(--warn-bd)'; fg = 'var(--warn)'; }
+              const title = r.perf_factors ? esc(r.perf_factors) : 'Minimal performance risk';
+              return '<span title="' + title + '" style="display:inline-block;min-width:20px;text-align:center;padding:1px 7px;border-radius:var(--r-full);font-variant-numeric:tabular-nums;font-weight:600;background:' + bg + ';border:1px solid ' + bd + ';color:' + fg + '">' + n + '</span>';
+            } },
           { key:'calc',       label:'Expression', width:'20%', hideIfAllEmpty:true },
           { key:'comment',    label:'Comment',    width:'15%', hideIfAllEmpty:true },
         ],
@@ -15709,13 +16297,89 @@ function renderResults(file, root, s, elapsed) {
 
     const unusedNote = unusedStyleCount > 0 ? ' · ' + unusedStyleCount.toLocaleString() + ' unused styles' : '';
     wrap.innerHTML =
-      '<div class="section"><div class="section-title"><span class="section-icon">🎨</span>Themes — ' + fmt(thm.theme_count) + unusedNote + '</div><div class="theme-summary-host"></div></div>' +
-      '<div class="section"><div class="section-title"><span class="section-icon">🎨</span>All Named Styles — ' + fmt(thm.style_count) + '</div><div class="style-browser-host"></div></div>';
+      '<div class="section"><div class="section-title"><span class="section-icon">🎨</span>Theme mood board</div>' +
+        '<div class="tmb-picker"><span class="hint">Theme</span><select id="tmb-select"></select><span class="hint" id="tmb-status"></span></div>' +
+        '<div class="tmb-board" id="tmb-board"></div></div>' +
+      '<div class="section"><div class="section-title"><span class="section-icon">🎨</span>Themes — ' + fmt(thm.theme_count) + unusedNote + '</div><div class="theme-summary-host"></div></div>';
 
     const themeSummaryHost = wrap.querySelector('.theme-summary-host');
-    const styleHost = wrap.querySelector('.style-browser-host');
 
     setTimeout(function() {
+      // ── Theme mood board ──────────────────────────────────────────────
+      const boardHost = wrap.querySelector('#tmb-board');
+      const selectEl = wrap.querySelector('#tmb-select');
+      const themesForBoard = thm.themes_detail || [];
+      const allStyleDetail = (u && u.all_styles_detail) || [];
+      if (selectEl && boardHost) {
+        // Custom themes first in the picker, since they are what a developer
+        // is usually inspecting.
+        const sorted = themesForBoard.slice().sort(function(a, b) { return (b.custom ? 1 : 0) - (a.custom ? 1 : 0) || a.name.localeCompare(b.name); });
+        selectEl.innerHTML = sorted.map(function(t) { return '<option value="' + esc(t.name) + '">' + esc(t.name) + (t.custom ? ' (custom)' : '') + '</option>'; }).join('');
+        let currentTheme = null;
+        const renderBoard = function(themeName) {
+          const t = themesForBoard.find(function(x) { return x.name === themeName; });
+          boardHost.innerHTML = t ? tmbBoardHtml(t, allStyleDetail) : '<div class="tmb-empty">Theme not found.</div>';
+          if (!t) return;
+          currentTheme = t;
+          // Named styles for this theme, shown as a dense report with each
+          // style rendered as itself (real fill, border, corners, font).
+          const stylesHostEl = boardHost.querySelector('.tmb-styles-host');
+          if (stylesHostEl) {
+            // In Use flags come from the layout-usage analysis, matched by name.
+            const usedSet = {};
+            allStyleDetail.filter(function(s) { return s.theme === themeName; }).forEach(function(s) {
+              if (s.used === '\u2713' || s.used === true) usedSet[(s.name || '').toLowerCase()] = true;
+            });
+            const rows = (t.styles_detail || []).map(function(st) {
+              const css = st.css || {};
+              let font = '';
+              if (css.fontSize) font = css.fontSize + 'pt ' + (css.fontFamily || '') + (css.fontWeight === 'bold' ? ' bold' : '');
+              return { css: css, name: st.name, type: tmbCategorise(st.name), font: font.trim(), used: usedSet[(st.name || '').toLowerCase()] ? '\u2713' : '' };
+            });
+            renderDenseTable({
+              containerEl: stylesHostEl,
+              emptyMsg: 'No named styles for this theme.',
+              rows: rows,
+              columns: [
+                { key: 'preview', label: 'Preview', width: '16%', sortable: false, renderCell: function(v, r) { return tmbStylePreview(r.css, r.type); } },
+                { key: 'name', label: 'Style',       width: '34%', mono: true },
+                { key: 'type', label: 'Object type', width: '16%' },
+                { key: 'font', label: 'Font',        width: '20%', hideIfAllEmpty: true },
+                { key: 'used', label: 'In Use',      width: '9%',  align: 'center' },
+              ],
+              defaultSort: 'name',
+              groupBy: 'type',
+              noScroll: true,
+            });
+          }
+        };
+        selectEl.addEventListener('change', function() { renderBoard(selectEl.value); });
+        // Palette interaction: click a swatch to see which styles use that
+        // colour; the panel carries a Copy button for the hex.
+        boardHost.addEventListener('click', function(e) {
+          const copyBtn = e.target.closest('.tmb-usage-copy');
+          if (copyBtn) {
+            const hx = copyBtn.getAttribute('data-copy');
+            if (hx && navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(hx).catch(function() {});
+            copyBtn.textContent = 'Copied';
+            setTimeout(function() { copyBtn.textContent = 'Copy'; }, 900);
+            return;
+          }
+          const sw = e.target.closest('.tmb-swatch'); if (!sw) return;
+          const hex = sw.getAttribute('data-hex'); if (!hex || !currentTheme) return;
+          const panel = boardHost.querySelector('.tmb-usage'); if (!panel) return;
+          if (sw.classList.contains('tmb-swatch-active') && panel.style.display !== 'none') {
+            panel.style.display = 'none'; sw.classList.remove('tmb-swatch-active'); return;
+          }
+          boardHost.querySelectorAll('.tmb-swatch-active').forEach(function(x) { x.classList.remove('tmb-swatch-active'); });
+          sw.classList.add('tmb-swatch-active');
+          panel.innerHTML = tmbUsagePanelHtml(hex, currentTheme);
+          panel.style.display = '';
+        });
+        if (sorted.length) { selectEl.value = sorted[0].name; renderBoard(sorted[0].name); }
+        else boardHost.innerHTML = '<div class="tmb-empty">No themes found in this file.</div>';
+      }
+
       renderDenseTable({
         containerEl: themeSummaryHost,
         emptyMsg: 'No themes found.',
@@ -15731,20 +16395,6 @@ function renderResults(file, root, s, elapsed) {
           { key: 'layouts', label: 'Layouts',  width: '9%',  align: 'right' },
         ],
         defaultSort: 'layouts',
-        noScroll: true,
-      });
-
-      const allStyles = (u && u.all_styles_detail) || [];
-      renderDenseTable({
-        containerEl: styleHost,
-        emptyMsg: 'No styles found.',
-        rows: allStyles,
-        columns: [
-          { key: 'name',  label: 'Style',  width: '65%', mono: true },
-          { key: 'used',  label: 'In Use', width: '10%', align: 'center' },
-        ],
-        defaultSort: 'name',
-        groupBy: 'theme',
         noScroll: true,
       });
     }, 0);
@@ -16253,7 +16903,7 @@ function renderResults(file, root, s, elapsed) {
           const childTarget = c.sub ? 'unref:' + c.sub : c.id;
           const childClick = `onclick="selectSidebarItem(this, '${childTarget}')"`;
           sidebarHtml += `<div class="sidebar-item sidebar-child" data-target="${childTarget}" ${childClick}>
-            <span class="sidebar-icon" style="font-size:10px;opacity:0.5">${c.icon||''}</span>
+            <span class="sidebar-icon">${c.icon||''}</span>
             <span class="sidebar-label">${esc(c.label || decode(c.label||''))}</span>
             ${c.count > 0 ? `<span class="sidebar-count">${c.count.toLocaleString()}</span>` : ''}
           </div>`;
@@ -16983,21 +17633,146 @@ function sortDenseTable(wrap, key) {
 
 // Input handler — re-render with new filter term
 // Jump to Field Browser tab and filter to a specific table
+// ── Field performance-risk heuristic (v2.4) ──────────────────
+// Rates a field 1 (low) to 10 (high) for how likely it is to be a
+// performance drag, from schema shape alone. This is a heuristic, not a
+// measurement: it cannot see found-set sizes, portal row counts, WAN
+// latency or the query planner, so it flags fields worth checking rather
+// than proving one slow. Every point added is recorded in `factors` so
+// the score is explainable rather than a black box.
+//
+// Weighting reflects where FileMaker cost actually concentrates:
+//   • Stored data (normal stored, stored calc, auto-enter that stores a
+//     value) reads straight from disk or index and costs nothing here.
+//     Note this corrects a common assumption: an auto-enter *calc* is
+//     evaluated once at commit and stored, so it scores low, unlike an
+//     unstored calc which re-evaluates on every reference.
+//   • Globals live in session memory and evaluate once — capped low.
+//   • Unstored calcs are the core driver: evaluated every time they are
+//     referenced (shown, sorted, found, in a portal, in a report).
+//   • Crossing relationships to evaluate is the expensive part of an
+//     unstored calc — record fetches per hop, over the WAN on a hosted
+//     file — so cross-table references weigh more than same-table ones.
+//   • Aggregate and SQL calls pull related sets or run a query on every
+//     evaluation. Summary fields recalculate over the found set.
+//   • An unstored calc can never be indexed, so a relationship keyed on
+//     one evaluates dynamically instead of matching against an index.
+//   • Layout placement multiplies an on-demand field's evaluations.
+//
+// fi  = the field_info entry for the field.
+// dep = its calc_deps row (cross-table uses, fan-in, rel/layout counts),
+//       or null when the field has no structural dependency.
+function fieldPerfScore(fi, dep) {
+    const factors = [];
+    let score = 1; // every field starts at minimal risk
+    const add = function(label, weight) { score += weight; factors.push(label + ' +' + weight); };
+
+    const isUnstored = !!fi.is_unstored_calc; // calc with results not stored
+    const isSummary  = fi.type === 'Summary';
+    const isGlobal   = !!fi.is_global;
+
+    // Globals are session-memory and evaluate once — nothing per-record.
+    if (isGlobal) {
+        factors.push('global, session memory, evaluated once');
+        return { score: 2, factors: factors };
+    }
+
+    // Core evaluation class.
+    if (isUnstored)      add('unstored calc, evaluated on every reference', 4);
+    else if (isSummary)  add('summary, recalculated over the found set', 3);
+
+    // Reference breadth — only meaningful for things evaluated on demand.
+    if ((isUnstored || isSummary) && dep && dep.uses) {
+        const own = (fi.table || '').toUpperCase();
+        const otherTables = {};
+        dep.uses.split(', ').forEach(function(u) {
+            const parts = u.split('::');
+            if (parts.length === 2 && parts[0].toUpperCase() !== own) otherTables[parts[0].toUpperCase()] = true;
+        });
+        const crossCount = Object.keys(otherTables).length;
+        if (crossCount >= 2)      add('calc crosses ' + crossCount + ' related tables', 3);
+        else if (crossCount === 1) add('calc crosses a relationship', 2);
+    }
+
+    // Set-pulling / SQL calls inside an unstored calc.
+    if (isUnstored && fi.is_aggregate_calc) add('aggregate or SQL call in calc', 2);
+
+    // Dependency fan-in — cascading re-evaluation when this feeds other
+    // calcs. Only costs when this field is itself evaluated on demand.
+    if ((isUnstored || isSummary) && dep && dep.used_by_count) {
+        if (dep.used_by_count >= 3) add('feeds ' + dep.used_by_count + ' other calcs', 2);
+        else                        add('feeds ' + dep.used_by_count + ' other calc' + (dep.used_by_count === 1 ? '' : 's'), 1);
+    }
+
+    // Unindexed join key: an unstored calc cannot be indexed.
+    if (isUnstored && dep && dep.rel_count) {
+        add('unindexed match field in ' + dep.rel_count + ' relationship' + (dep.rel_count === 1 ? '' : 's'), 2);
+    }
+
+    // Layout exposure — an on-demand field placed where it must render is
+    // evaluated every time shown (worse per row in lists and portals,
+    // which this static view cannot see directly).
+    if ((isUnstored || isSummary) && dep && dep.layout_count) {
+        add('placed on ' + dep.layout_count + ' layout' + (dep.layout_count === 1 ? '' : 's'), 1);
+        if (dep.layout_count >= 5) add('broad layout exposure', 1);
+    }
+
+    if (score < 1) score = 1;
+    if (score > 10) score = 10;
+    return { score: score, factors: factors };
+}
+
+// Jump to the Fields browser filtered to one table, and show a banner
+// making the filter obvious with a way back (browser Back does nothing in
+// a single-page app, and a jumpToTab pushes no history entry).
 function jumpToFieldBrowser(tableName) {
-    // Switch to the field browser tab
+    // Flag the pending jump so a manual Fields sidebar click can tell
+    // itself apart from this programmatic one (see selectSidebarItem).
+    window.__fieldsJumpPending = true;
     jumpToTab('tab-fields');
-    // Wait for tab to render, then set filter
+    // Wait for tab to render, then set the filter and the banner
     setTimeout(function() {
         const pane = document.getElementById('tab-fields');
-        if (!pane) return;
-        const wrap = pane.querySelector('.dt-wrap');
-        if (!wrap) return;
-        const input = wrap.querySelector('.dt-filter-input');
-        if (input) {
-            input.value = tableName;
-            filterDenseTable(wrap, tableName);
+        if (pane) {
+            const wrap = pane.querySelector('.dt-wrap');
+            if (wrap) {
+                const input = wrap.querySelector('.dt-filter-input');
+                if (input) {
+                    input.value = tableName;
+                    filterDenseTable(wrap, tableName);
+                }
+            }
+            const banner = document.getElementById('fields-filter-banner');
+            if (banner) {
+                banner.style.display = '';
+                banner.innerHTML = 'Showing the <strong>' + esc(tableName) + '</strong> table\u2019s fields. ' +
+                    '<a class="ux-link" onclick="fieldsBrowserBack()">Back to Tables</a>' +
+                    '<span style="color:var(--ink-4);margin:0 8px">\u00b7</span>' +
+                    '<a class="ux-link" onclick="fieldsBrowserClear()">Show all fields</a>';
+            }
         }
+        window.__fieldsJumpPending = false;
     }, 50);
+}
+
+// Clear the Fields browser filter and hide the table banner.
+function fieldsBrowserClear() {
+    const pane = document.getElementById('tab-fields');
+    if (pane) {
+        const wrap = pane.querySelector('.dt-wrap');
+        if (wrap) {
+            const input = wrap.querySelector('.dt-filter-input');
+            if (input) { input.value = ''; filterDenseTable(wrap, ''); }
+        }
+    }
+    const banner = document.getElementById('fields-filter-banner');
+    if (banner) { banner.style.display = 'none'; banner.innerHTML = ''; }
+}
+
+// Back from a filtered Fields view to the Tables list.
+function fieldsBrowserBack() {
+    fieldsBrowserClear();
+    jumpToTab('tab-tables');
 }
 
 // Accounts and privilege sets aren't part of the schema reference graph

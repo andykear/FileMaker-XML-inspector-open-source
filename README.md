@@ -3,19 +3,25 @@
 [![Stars](https://img.shields.io/github/stars/andykear/FileMaker-XML-inspector-open-source?style=social)](https://github.com/andykear/FileMaker-XML-inspector-open-source)
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-green)](https://creativecommons.org/licenses/by/4.0/)
 
-A single-file, browser-based audit tool for FileMaker Save as XML analysis. Get an instant structured analysis — no installation, no server, no dependencies.
+**Full-solution analysis for FileMaker. Local, in the browser, open. No install, no licence, no cloud.**
+
+A modern alternative to the commercial FileMaker analysis tools that now exceeds most of them on usability, without asking you to install anything, license anything, or send your work to a server. Drop a Save as XML export onto the page and get a full structured analysis in seconds.
+
+It analyses around a million lines of XML per second on a reasonably capable computer, so even a large enterprise solution is parsed and reported about as fast as you can open the file. It reads Save as XML, FileMaker's native object export, rather than the DDR the commercial tools rely on, and it does things neither those tools nor FileMaker itself offer, like a complete visual mood board of any theme with every named style drawn as the object it styles.
 
 Developed by Andrew Kear, owner of [Clockwork Creative Technology](https://www.clockworkct.co.uk), and shared openly with the FileMaker/Claris community.
 
 ---
 
-## Why open source?
+## Why open source, and why local
 
-There are other XML analysis tools. What makes this different is intent.
+Local, in the browser, and open is where the platform is heading, and it is a better place to do this work from.
 
-Other solutions in this space are commercial, closed, or both. This one is open — the source is readable, forkable, and designed to be absorbed. Specifically, it is structured so that the HTML file can be modified, extended, or embedded in your own workflows.
+The commercial tools in this space are closed and paid, and most need installing. The Inspector needs none of that. It runs in any modern browser, there is nothing to license, your file is parsed on your own machine and never uploaded, and the source is readable, forkable, and built to be extended or embedded in your own workflows.
 
-Open sharing and collaboration is how the FileMaker community drives the platform forward. Publishing the analysis logic means everyone can see how it works, correct it when it's wrong, and build on it.
+It is also the tool we use ourselves. Clockwork runs the Inspector in daily production, in place of the commercial products it replaced.
+
+And open sharing is how the FileMaker community moves the platform forward. Publishing the analysis logic means anyone can see how it works, correct it when it is wrong, and build on it.
 
 ---
 
@@ -25,12 +31,13 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 
 **Schema**
 - Base tables, table occurrences, fields — counts, types, storage, validation, auto-entry
+- Field performance risk — each field scored 1 to 10 from its storage, whether a calculation reaches across relationships, aggregate and SQL calls, how many other calculations it feeds, relationship keys, and layout exposure, so likely cost hotspots surface. A heuristic from schema shape, not a measurement
 - Relationships — full sortable list with TOs, base tables, and join keys; multi-predicate, sorted, cascade create/delete
 - Relationship graph — interactive view rendered from the TO geometry stored in the file, so occurrences sit exactly where they sit in Manage Database; zoom, pan, rightward chain tracing, Edit Relationship detail on click
 - Field dependencies and container field usage
 - Layouts — count, visibility, themes, triggers, portal usage, object counts; portals and layout controls in their own sortable tables
 - Wireframe — visual preview of any layout drawn from object bounds: part bands, colour-coded objects, clickable tab panels, portal rows, off-layout zone
-- Themes, including unused theme styles
+- Themes — a full mood board of any theme. Every named style is rendered as the object it styles (button, field, text, portal, part band) from its own fill, border, corners and font, so you can see a theme whole without dropping each style onto a layout. The colour palette is indexed to the styles that use each colour, with WCAG contrast checks, and unused theme styles are flagged. A theme preview FileMaker itself does not provide
 
 **Scripts**
 - Script count and step totals
@@ -134,6 +141,7 @@ Strips API keys, passwords and internal hostnames out of FileMaker XML before yo
 
 | Version | Notes |
 |---|---|
+| 2.4 | Theme mood board. Every named style is rendered as the object it styles (button, field, text, portal, part band) from its own fill, border, corners and font, so you can see a theme whole without dropping each style onto a layout, a preview FileMaker itself does not provide. The colour palette is indexed to the styles that use each colour, with WCAG contrast checks. Plus a field performance risk column scoring each field 1 to 10, clearer Tables to Fields navigation, and more legible wireframe hidden panels. |
 | 2.3 | Relationship graph interactive view. Plus more super additions by Darrin from CadenceUX including fix to reference counts throughout the system, and every list tab now links into the Reference Explorer. |
 | 2.2 | Layout wireframe view. Plus numerous additions kindly contributed by Darrin Southern from CadenceUX - highlight is enhanced Impact Analysis now a clever universal reference explorer. |
 | 2.1 | Minor UI improvements, handles illegal XML control characters in the source (strips and reports them) so affected files parse; quoted Mermaid relationship labels (fixes leading-underscore key fields) |
