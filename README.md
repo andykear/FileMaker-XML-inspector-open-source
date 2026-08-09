@@ -5,9 +5,11 @@
 
 **Full-solution analysis for FileMaker. Local, in the browser, open. No install, no licence, no cloud.**
 
-A modern alternative to the commercial FileMaker analysis tools that now exceeds most of them on usability, without asking you to install anything, license anything, or send your work to a server. Drop a Save as XML export onto the page and get a full structured analysis in seconds.
+A modern alternative to the commercial FileMaker analysis tools that now exceeds most of them on usability, without asking you to install anything, license anything, or send your work to a server. Drop a Save as XML export onto the page and get a full structured analysis in seconds. It is a single self-contained HTML file: no dependencies, no build, nothing to wire up.
 
-It analyses around a million lines of XML per second on a reasonably capable computer, so even a large enterprise solution is parsed and reported about as fast as you can open the file. It reads Save as XML, FileMaker's native object export, and it does things FileMaker itself does not offer, like a complete visual mood board of any theme with every named style drawn as the object it styles.
+It analyses around a million lines of XML per second on a reasonably capable computer, so even a large enterprise solution is parsed and reported about as fast as you can open the file. It reads Save as XML, FileMaker's native object export.
+
+Along the way it does things FileMaker itself does not offer: a complete visual mood board of any theme with every named style drawn as the object it styles, an interactive relationship graph laid out from the real TO geometry in the file, layout wireframes, field performance risk scoring, universal reference exploration in both directions, and two-file comparison with script and calculation diffs.
 
 Developed by Andrew Kear, owner of [Clockwork Creative Technology](https://www.clockworkct.co.uk), and shared openly with the FileMaker/Claris community.
 
@@ -96,7 +98,7 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 
 ---
 
-## Usage
+## Quick start
 
 1. Download `clockwork-inspector.html`
 2. Open it in any modern browser
@@ -110,7 +112,9 @@ No installation. No server. Runs entirely locally.
 
 ## Using with Claude
 
-The Inspector complements AI-assisted FileMaker development. Upload the HTML file to a Claude Project or as a skill — Claude can then reason about your solution's structure, cross-reference scripts and layouts, and help you identify gaps or opportunities for improvement.
+The Inspector complements AI-assisted FileMaker development. Upload the HTML file to a Claude Project or as a skill, and Claude can reason about your solution's structure, cross-reference scripts and layouts, and help you identify gaps or opportunities for improvement.
+
+If the file contains API keys, passwords, or internal hostnames, run it through the XML Scrubber first.
 
 ---
 
@@ -141,7 +145,7 @@ Strips API keys, passwords and internal hostnames out of FileMaker XML before yo
 
 | Version | Notes |
 |---|---|
-| 2.4 | Theme mood board. Every named style is rendered as the object it styles (button, field, text, portal, part band) from its own fill, border, corners and font, so you can see a theme whole without dropping each style onto a layout. Plus a field performance risk column scoring each field 1 to 10, clearer Tables to Fields navigation, and more legible wireframe hidden panels. |
+| 2.4 | Theme mood board. Every named style is rendered as the object it styles (button, field, text, portal, part band) from its own fill, border, corners and font, so you can see a theme whole without dropping each style onto a layout, a preview FileMaker itself does not provide. The colour palette is indexed to the styles that use each colour, with WCAG contrast checks. Plus a field performance risk column scoring each field 1 to 10, clearer Tables to Fields navigation, and more legible wireframe hidden panels. |
 | 2.3 | Relationship graph interactive view. Plus more super additions by Darrin from CadenceUX including fix to reference counts throughout the system, and every list tab now links into the Reference Explorer. |
 | 2.2 | Layout wireframe view. Plus numerous additions kindly contributed by Darrin Southern from CadenceUX - highlight is enhanced Impact Analysis now a clever universal reference explorer. |
 | 2.1 | Minor UI improvements, handles illegal XML control characters in the source (strips and reports them) so affected files parse; quoted Mermaid relationship labels (fixes leading-underscore key fields) |
