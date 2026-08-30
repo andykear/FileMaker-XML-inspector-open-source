@@ -46,8 +46,9 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 - Script call tree — recursive parent/child call mapping with circular-reference protection, cross-file and Perform Script on Server detection
 - Unbalanced If/Loop detection
 - Orphaned enabled steps inside disabled wrappers
-- Show Custom Dialog anomalies
-- Script issue detection — swallowed errors, PSoS scripts containing client-only steps, dead Set Variables, unbounded loops, unguarded Allow User Abort, hardcoded file/layout names
+- Send Mail dialog inversion (NoInteract quirk — [True] means the dialog WILL appear on this step)
+- Step Index — every distinct step used in the file with usage counts, Commit Records split by dialog on/off, per-step drill-down to the scripts using it, and a content search across rendered step text (calc bodies, dialog messages) to find a step by what it says, not just what it is
+- Script issue detection — swallowed errors, PSoS scripts containing client-only steps, dead Set Variables, Set Variable steps with no variable name, unbounded loops, unguarded Allow User Abort, hardcoded file/layout names
 - Step ID dictionary — localisation-independent, version-independent
 
 **Calculations**
@@ -145,6 +146,7 @@ Strips API keys, passwords and internal hostnames out of FileMaker XML before yo
 
 | Version | Notes |
 |---|---|
+| 2.5 | Step Index tab: every step used in the file with usage counts, Commit Records split by dialog on/off, drill-down to the scripts using each step, and a content search so a Show Custom Dialog can be found by its message. Script rendering rebuilt against the real Save as XML grammar and verified on three production exports: Set Variable, Set Field, Commit options, New Window, GTRR and Go to Record now all show their real content. PSoS check now derived from the verified AI Vocabulary platform matrix (83 steps, was 16 hand-typed with five false positives). New findings: broken value list sources, inert and dead conditional formatting rules, blank-name Set Variable (name read from the Name value attribute, so it flags only the genuinely blank steps rather than every Set Variable). Tables to Fields now scopes field search to the source table. |
 | 2.4 | Theme mood board. Every named style is rendered as the object it styles (button, field, text, portal, part band) from its own fill, border, corners and font, so you can see a theme whole without dropping each style onto a layout, a preview FileMaker itself does not provide. The colour palette is indexed to the styles that use each colour, with WCAG contrast checks. Plus a field performance risk column scoring each field 1 to 10, clearer Tables to Fields navigation, and more legible wireframe hidden panels. |
 | 2.3 | Relationship graph interactive view. Plus more super additions by Darrin from CadenceUX including fix to reference counts throughout the system, and every list tab now links into the Reference Explorer. |
 | 2.2 | Layout wireframe view. Plus numerous additions kindly contributed by Darrin Southern from CadenceUX - highlight is enhanced Impact Analysis now a clever universal reference explorer. |

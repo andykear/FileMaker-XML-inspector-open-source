@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Clockwork Inspector for FileMaker — v2.4
+  Clockwork Inspector for FileMaker — v2.5
   Single-file, browser-based audit tool for FileMaker Save as XML analysis.
   Runs entirely client-side. Nothing is uploaded.
   Developed by Andrew Kear, Clockwork Creative Technology (clockworkct.co.uk).
@@ -2017,7 +2017,7 @@
     .content { padding: 16px 18px 36px; height: auto; overflow-y: visible; }
   }
 
-  /* ── v2.7 ADDITIONS ───────────────────────────────────────── */
+  /* ── v2.4 ADDITIONS ───────────────────────────────────────── */
 
   /* Observations panel — neutral counts at the top of the report */
   .obs-panel {
@@ -3122,7 +3122,7 @@
   <div class="header-logo">
     <svg class="cw-mark" width="30" height="30" viewBox="0 0 1700 1700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Clockwork"><defs><clipPath id="cwclip"><path transform="matrix(1,0,0,-1,0,1700)" d="M0 1700H1700V0H0Z"/></clipPath></defs><g inkscape:groupmode="layer" inkscape:label="Layer 1"><g clip-path="url(#cwclip)"><path transform="matrix(1,0,0,-1,1356.4618,496.62013)" d="M0 0-406.175-476.056C-433.779-508.41-482.33-512.397-514.843-484.98L-566.673-441.273C-599.319-413.743-603.467-364.961-575.937-332.315L-167.015 152.608C-137.136 188.04-83.012 189.407-51.384 155.527L-2.302 102.953C24.53 74.212 25.521 29.911 0 0" fill="#49af5e"/><path transform="matrix(1,0,0,-1,854.1509,1060.6453)" d="M0 0-276.525 232.093C-283.608 238.037-284.53 248.597-278.586 255.68L-157.393 400.074C-151.449 407.156-140.889 408.079-133.806 402.135L142.719 170.042C149.802 164.098 150.724 153.537 144.78 146.455L23.587 2.061C17.643-5.022 7.082-5.944 0 0" fill="#49af5e"/><path transform="matrix(1,0,0,-1,1415.4699,854.7839)" stroke-width="220.547" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#2f4495" d="M0 0C0-311.648-252.64-564.288-564.288-564.288-875.936-564.288-1128.576-311.648-1128.576 0-1128.576 311.648-875.936 564.288-564.288 564.288"/><path transform="matrix(1,0,0,-1,1415.4699,854.7839)" stroke-width="220.547" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#394999" d="M0 0C0-311.648-252.64-564.288-564.288-564.288-875.936-564.288-1128.576-311.648-1128.576 0-1128.576 311.648-875.936 564.288-564.288 564.288"/></g></g></svg>
     <div>
-      <h1><span class="wm-clockwork">Clockwork</span> Inspector <span class="version">v2.4</span></h1>
+      <h1><span class="wm-clockwork">Clockwork</span> Inspector <span class="version">v2.5</span></h1>
       <div class="header-sub">Static analysis for FileMaker Save-as-XML</div>
     </div>
   </div>
@@ -3170,7 +3170,7 @@
     </button>
     <input type="file" id="file-input" accept=".xml" multiple>
   </div>
-  <div class="hint">UTF-16 · UTF-8 · FileMaker Save-as-XML · FM26 split catalogs · v2.4 · All analysis runs locally in your browser</div>
+  <div class="hint">UTF-16 · UTF-8 · FileMaker Save-as-XML · FM26 split catalogs · v2.5 · All analysis runs locally in your browser</div>
 </div>
 
 <div id="loading-screen">
@@ -7128,13 +7128,34 @@ function extractStepText(step) {
     const enabled = step.getAttribute('enable') !== 'False';
     const prefix  = enabled ? '' : '// ';
 
-    // Helper: get first Calculation text content, trimmed and capped
-    function calc(sel) {
-        const el = step.querySelector(sel || 'Calculation');
+    // Helper: read the calc body from a Calculation element. Verified
+    // against real Save-as-XML exports (grammar 2.2.x): the body lives in
+    // a nested Text element, and the Calculation's OWN textContent also
+    // includes a ChunkList that repeats the body token by token — so
+    // reading textContent doubles every calc. Text-first, always.
+    function calcBody(el) {
         if (!el) return '';
-        let t = (el.textContent || '').trim();
+        const textEl = el.querySelector('Text');
+        let t = ((textEl ? textEl.textContent : el.textContent) || '').trim();
         if (t.length > 120) t = t.slice(0, 117) + '\u2026';
         return t;
+    }
+
+    // Helper: get first Calculation text content, trimmed and capped
+    function calc(sel) {
+        return calcBody(step.querySelector(sel || 'Calculation'));
+    }
+
+    // Helper: first Calculation that is NOT a repetition calc. Set Field
+    // and friends carry a Repetition > Calculation (usually "1") before
+    // the value Calculation in document order, so a bare querySelector
+    // returns the repetition and every Set Field renders as "; 1".
+    function valueCalc() {
+        for (const el of step.querySelectorAll('Calculation')) {
+            if (el.closest('Repetition') || el.closest('repetition')) continue;
+            return calcBody(el);
+        }
+        return '';
     }
 
     // Helper: get attribute from a child element
@@ -7158,10 +7179,28 @@ function extractStepText(step) {
 
         // ── Variables ────────────────────────────────────────
         case 141: {
-            const varName = (step.querySelector('Name') || {}).textContent || '';
-            const val     = calc('Value > Calculation');
-            const rep     = calc('Repetition > Calculation');
-            let s = prefix + 'Set Variable [ ' + (varName.trim() || '?');
+            // SaXML grammar (verified against real exports): the variable
+            // lives at Parameter[type="Variable"] with the name in a Name
+            // VALUE ATTRIBUTE (not text content — why this rendered as ?),
+            // the value under a lowercase <value> element, and repetition
+            // under a lowercase <repetition> element (empty when 1).
+            // Clipboard-style direct Name/Value children kept as fallback.
+            const varParam = step.querySelector('Parameter[type="Variable"]');
+            let varName = '';
+            if (varParam) {
+                const nameEl = varParam.querySelector('Name');
+                varName = nameEl ? (nameEl.getAttribute('value') || nameEl.textContent || '') : '';
+            }
+            if (!varName) {
+                const nameNode = step.querySelector('Name');
+                varName = nameNode ? (nameNode.getAttribute('value') || nameNode.textContent || '') : '';
+            }
+            const val = (varParam ? calcBody(varParam.querySelector('value Calculation')) : '')
+                     || calc('Value > Calculation')
+                     || (varParam ? '' : valueCalc());
+            const rep = (varParam ? calcBody(varParam.querySelector('repetition Calculation')) : '')
+                     || calc('Repetition > Calculation');
+            let s = prefix + 'Set Variable [ ' + (varName.trim() || '(no name)');
             if (val)                                s += ' ; ' + val;
             if (rep && rep !== '1' && rep !== '')  s += ' ; rep: ' + rep;
             return s + ' ]';
@@ -7173,11 +7212,39 @@ function extractStepText(step) {
             const tor = fr ? fr.querySelector('TableOccurrenceReference') : null;
             const fld = fr ? (fr.getAttribute('name') || '?') : '?';
             const tbl = tor ? (tor.getAttribute('name') || '') : '';
-            const c   = calc();
-            return prefix + 'Set Field [ ' + (tbl ? tbl + '::' : '') + fld + ' ; ' + (c || '\u2026') + ' ]';
+            // SaXML: value calc is Parameter[type="Calculation"]; the field
+            // repetition is a lowercase <repetition value="n"> attr child
+            // of FieldReference (verified against real exports).
+            const valParam = step.querySelector('Parameter[type="Calculation"]');
+            const c = (valParam ? calcBody(valParam.querySelector('Calculation')) : '')
+                   || calc('Value > Calculation')
+                   || valueCalc();
+            const repEl = fr ? fr.querySelector('repetition') : null;
+            const repVal = repEl ? (repEl.getAttribute('value') || '') : '';
+            const repSuffix = (repVal && repVal !== '1') ? '[' + repVal + ']' : '';
+            return prefix + 'Set Field [ ' + (tbl ? tbl + '::' : '') + fld + repSuffix + ' ; ' + (c || '\u2026') + ' ]';
+        }
+        case 17: {
+            // Go to Field — same FieldReference shape as Set Field
+            const fr  = step.querySelector('FieldReference');
+            const tor = fr ? fr.querySelector('TableOccurrenceReference') : null;
+            const fld = fr ? (fr.getAttribute('name') || '?') : '?';
+            const tbl = tor ? (tor.getAttribute('name') || '') : '';
+            return prefix + 'Go to Field [ ' + (tbl ? tbl + '::' : '') + fld + ' ]';
+        }
+        case 16: {
+            // Go to Record/Request/Page — Parameter[type="Records"] > List
+            // carries FileMaker's own (localised) option label in the name
+            // attribute with a stable value code; a By Calculation option
+            // adds a Calculation child. Verified against real exports.
+            const list = step.querySelector('Parameter[type="Records"] > List');
+            const optName = list ? (list.getAttribute('name') || '') : '';
+            const c = list ? calcBody(list.querySelector('Calculation')) : '';
+            return prefix + 'Go to Record/Request/Page' +
+                (optName ? ' [ ' + optName + (c ? ' ; ' + c : '') + ' ]' : '');
         }
         case 147: {
-            const c = calc();
+            const c = calc('Value > Calculation') || valueCalc();
             return prefix + 'Set Field By Name [ ' + (c || '\u2026') + ' ]';
         }
 
@@ -7202,7 +7269,21 @@ function extractStepText(step) {
                 : '?';
             return prefix + 'Go to Layout [ ' + lname + ' ]';
         }
-        case 74: return prefix + 'Go to Related Records';
+        case 74: {
+            // GTRR — Parameter[type="Related"]: target table occurrence,
+            // optional layout, and a WindowReference when opening a new
+            // window. Verified against real exports.
+            const rel = step.querySelector('Parameter[type="Related"]');
+            if (!rel) return prefix + 'Go to Related Records';
+            const tor = rel.querySelector(':scope > TableOccurrenceReference');
+            const lay = rel.querySelector('LayoutReferenceContainer > LayoutReference');
+            const win = rel.querySelector(':scope > WindowReference');
+            const parts = [];
+            if (tor) parts.push('From: ' + (tor.getAttribute('name') || '?'));
+            if (lay) parts.push('Layout: ' + (lay.getAttribute('name') || '?'));
+            if (win) parts.push('New window');
+            return prefix + 'Go to Related Records' + (parts.length ? ' [ ' + parts.join(' ; ') + ' ]' : '');
+        }
 
         // ── Error / abort ────────────────────────────────────
         case 86: {
@@ -7219,16 +7300,46 @@ function extractStepText(step) {
         case 8:  return prefix + 'Duplicate Record/Request';
         case 9:  return prefix + 'Delete Record/Request';
         case 75: {
-            const ni     = step.querySelector('NoInteract');
-            const dialog = ni ? (ni.getAttribute('state') === 'True' ? 'No dialog' : 'With dialog') : '';
-            return prefix + 'Commit Records/Requests' + (dialog ? ' [ ' + dialog + ' ]' : '');
+            // SaXML stores the three Commit options as Boolean params with
+            // LOCALISED type labels but stable numeric ids (verified):
+            // id 128 = with dialog, id 512 = force commit,
+            // id 256 = skip data entry validation.
+            // Older/clipboard grammar uses NoInteract (state True = NO
+            // dialog) — kept as fallback.
+            const parts = [];
+            const dlgB   = step.querySelector('Boolean[id="128"]');
+            const forceB = step.querySelector('Boolean[id="512"]');
+            const skipB  = step.querySelector('Boolean[id="256"]');
+            if (dlgB) {
+                parts.push(dlgB.getAttribute('value') === 'True' ? 'With dialog' : 'No dialog');
+            } else {
+                const ni = step.querySelector('NoInteract');
+                if (ni) parts.push(ni.getAttribute('state') === 'True' ? 'No dialog' : 'With dialog');
+            }
+            if (forceB && forceB.getAttribute('value') === 'True') parts.push('Force commit');
+            if (skipB  && skipB.getAttribute('value')  === 'True') parts.push('Skip data entry validation');
+            return prefix + 'Commit Records/Requests' + (parts.length ? ' [ ' + parts.join(' ; ') + ' ]' : '');
         }
         case 28:  return prefix + 'Perform Find';
         case 39:  return prefix + 'Sort Records';
         case 182: return prefix + 'Truncate Table';
 
         // ── Windows ──────────────────────────────────────────
-        case 122: return prefix + 'New Window';
+        case 122: {
+            // New Window — Parameter[type="WindowReference"]: Style carries
+            // FileMaker's own (localised) style label, Name holds the window
+            // name calc, LayoutReference the target layout. Verified.
+            const wr = step.querySelector('Parameter[type="WindowReference"] > WindowReference');
+            if (!wr) return prefix + 'New Window';
+            const parts = [];
+            const style = wr.querySelector(':scope > Style');
+            if (style && style.getAttribute('name')) parts.push(style.getAttribute('name'));
+            const nm = calcBody(wr.querySelector(':scope > Name Calculation'));
+            if (nm) parts.push('Name: ' + nm);
+            const lay = wr.querySelector('LayoutReferenceContainer > LayoutReference');
+            if (lay && lay.getAttribute('name')) parts.push('Layout: ' + lay.getAttribute('name'));
+            return prefix + 'New Window' + (parts.length ? ' [ ' + parts.join(' ; ') + ' ]' : '');
+        }
         case 121: return prefix + 'Close Window';
         case 123: return prefix + 'Select Window';
 
@@ -7241,7 +7352,29 @@ function extractStepText(step) {
             const c = calc('URL > Calculation') || calc();
             return prefix + 'Open URL [ ' + (c || '\u2026') + ' ]';
         }
-        case 87: return prefix + 'Show Custom Dialog';
+        case 87: {
+            // Title and Message live in Parameter[type="Title"/"Message"]
+            // (verified against real exports) — so a dialog is findable by
+            // its content: "which script shows the dialog that just says
+            // Error" is a real forensic question. Generic calc scan kept
+            // as fallback for other grammar variants.
+            const parts = [];
+            const titleP = step.querySelector('Parameter[type="Title"]');
+            const msgP   = step.querySelector('Parameter[type="Message"]');
+            const titleT = titleP ? calcBody(titleP.querySelector('Calculation')) : '';
+            const msgT   = msgP   ? calcBody(msgP.querySelector('Calculation'))   : '';
+            if (titleT) parts.push(titleT.length > 60 ? titleT.slice(0, 57) + '\u2026' : titleT);
+            if (msgT)   parts.push(msgT.length > 60   ? msgT.slice(0, 57)   + '\u2026' : msgT);
+            if (!parts.length) {
+                for (const el of step.querySelectorAll('Calculation')) {
+                    if (el.closest('Repetition') || el.closest('repetition')) continue;
+                    const t = calcBody(el);
+                    if (t) parts.push(t.length > 60 ? t.slice(0, 57) + '\u2026' : t);
+                    if (parts.length >= 2) break;
+                }
+            }
+            return prefix + 'Show Custom Dialog' + (parts.length ? ' [ ' + parts.join(' ; ') + ' ]' : '');
+        }
         case 63: return prefix + 'Send Mail';
         case 35: return prefix + 'Import Records';
         case 36: return prefix + 'Export Records';
@@ -7284,6 +7417,147 @@ function extractScriptSteps(root, scriptName) {
         });
     }
     return null;
+}
+
+
+// ── Step Index (v2.5) ──────────────────────────────────────
+// Walk every script body once and build two structures:
+//   rows — one aggregated row per distinct step (Commit Records split by
+//          dialog state), with counts and the set of scripts using it
+//   occ  — one record per step occurrence with its rendered text, so the
+//          content search can answer "which script contains the dialog
+//          whose message is just Error"
+function buildStepIndex(root) {
+    const agg = new Map();
+    const occ = [];
+    let total = 0;
+    if (!root) return { rows: [], occ: occ, total: 0 };
+    const sfs = root.querySelector('StepsForScripts');
+    if (!sfs) return { rows: [], occ: occ, total: 0 };
+
+    for (const wrapper of sfs.querySelectorAll(':scope > Script')) {
+        const sRef = wrapper.querySelector(':scope > ScriptReference');
+        const scriptName = sRef ? (sRef.getAttribute('name') || '?') : '?';
+        const ol = wrapper.querySelector('ObjectList');
+        if (!ol) continue;
+        let lineNo = 0;
+        for (const step of ol.querySelectorAll(':scope > Step')) {
+            lineNo++;
+            total++;
+            const stepId = parseInt(step.getAttribute('id') || '', 10);
+            const dict = FM_STEP_IDS[stepId];
+            let name = dict ? dict.name : (step.getAttribute('name') || ('Step ' + stepId));
+            let key = String(stepId);
+            // Commit Records/Requests: count dialog-on and dialog-off as
+            // separate lines. SaXML: Boolean id 128 value True = WITH
+            // dialog (verified); clipboard fallback: NoInteract state
+            // True = NO dialog. Absent both, FileMaker's default is With
+            // dialog.
+            if (stepId === 75) {
+                const dlgB = step.querySelector('Boolean[id="128"]');
+                let noDialog;
+                if (dlgB) {
+                    noDialog = dlgB.getAttribute('value') !== 'True';
+                } else {
+                    const ni = step.querySelector('NoInteract');
+                    noDialog = !!(ni && ni.getAttribute('state') === 'True');
+                }
+                key = noDialog ? '75-nodialog' : '75-dialog';
+                name = 'Commit Records/Requests [ ' + (noDialog ? 'No dialog' : 'With dialog') + ' ]';
+            }
+            const enabled = step.getAttribute('enable') !== 'False';
+            let entry = agg.get(key);
+            if (!entry) {
+                entry = { key: key, name: name, count: 0, disabled: 0, scriptMap: new Map() };
+                agg.set(key, entry);
+            }
+            entry.count++;
+            if (!enabled) {
+                entry.disabled++;
+            }
+            entry.scriptMap.set(scriptName, (entry.scriptMap.get(scriptName) || 0) + 1);
+            // Occurrence record for content search — rendered text carries
+            // calc bodies, dialog text, field names, variable names
+            let text = extractStepText(step);
+            if (text.length > 220) {
+                text = text.slice(0, 217) + '\u2026';
+            }
+            occ.push({ key: key, name: name, script: scriptName, line: lineNo, text: text, enabled: enabled });
+        }
+    }
+    const rows = [...agg.values()].map(function(e) {
+        return { key: e.key, name: e.name, count: e.count, disabled: e.disabled, scripts: e.scriptMap.size, scriptMap: e.scriptMap };
+    });
+    return { rows: rows, occ: occ, total: total };
+}
+
+// Render the per-step drill-down: every script using this step, with
+// per-script counts, sorted heaviest first. Script names jump to the
+// script browser.
+function stepIndexShowDetail(key) {
+    const idx = window.__stepIndex;
+    const hostEl = document.getElementById('stepindex-detail');
+    if (!idx || !hostEl) return;
+    const row = idx.rows.find(function(r) { return r.key === key; });
+    if (!row) return;
+    const scripts = [...row.scriptMap.entries()].sort(function(a, b) { return b[1] - a[1]; });
+    let out = '<div class="section-title" style="font-size:14px">' + esc(row.name) +
+        ' — used ' + row.count + ' time' + (row.count === 1 ? '' : 's') +
+        ' in ' + scripts.length + ' script' + (scripts.length === 1 ? '' : 's') + '</div>' +
+        '<table class="dt-table"><thead><tr><th class="dt-th">Script</th><th class="dt-th" style="width:90px;text-align:right">Uses</th></tr></thead><tbody>';
+    for (const pair of scripts) {
+        out += '<tr><td class="dt-td"><a class="ux-link" onclick="scrJumpToFind(event,\'' +
+            esc(pair[0]).replace(/'/g, "\\'") + '\')">' + esc(pair[0]) + '</a></td>' +
+            '<td class="dt-td" style="text-align:right">' + pair[1] + '</td></tr>';
+    }
+    out += '</tbody></table>';
+    hostEl.innerHTML = out;
+    hostEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Content search across every step occurrence. Matches the rendered step
+// text (calc bodies, dialog messages, field and variable names) and lists
+// each hit with script, line and the step as rendered. Debounced.
+function stepIndexContentSearch(value) {
+    if (window.__stepIndexSearchTimer) {
+        clearTimeout(window.__stepIndexSearchTimer);
+    }
+    window.__stepIndexSearchTimer = setTimeout(function() {
+        const idx = window.__stepIndex;
+        const hostEl = document.getElementById('stepindex-detail');
+        if (!idx || !hostEl) return;
+        const term = (value || '').trim().toLowerCase();
+        if (!term) {
+            hostEl.innerHTML = '';
+            return;
+        }
+        const hits = [];
+        for (const o of idx.occ) {
+            if (o.text.toLowerCase().includes(term)) {
+                hits.push(o);
+                if (hits.length >= 300) break;
+            }
+        }
+        if (!hits.length) {
+            hostEl.innerHTML = '<div class="unref-empty">No step content matches \u201c' + esc(value) + '\u201d.</div>';
+            return;
+        }
+        let out = '<div class="section-title" style="font-size:14px">' + hits.length +
+            (hits.length >= 300 ? '+' : '') + ' step' + (hits.length === 1 ? '' : 's') +
+            ' matching \u201c' + esc(value) + '\u201d</div>' +
+            '<table class="dt-table"><thead><tr>' +
+            '<th class="dt-th" style="width:26%">Script</th>' +
+            '<th class="dt-th" style="width:52px">Line</th>' +
+            '<th class="dt-th">Step</th></tr></thead><tbody>';
+        for (const h of hits) {
+            out += '<tr><td class="dt-td"><a class="ux-link" onclick="scrJumpToFind(event,\'' +
+                esc(h.script).replace(/'/g, "\\'") + '\')">' + esc(h.script) + '</a></td>' +
+                '<td class="dt-td">' + h.line + '</td>' +
+                '<td class="dt-td" style="font-family:var(--mono,monospace);font-size:12px">' + esc(h.text) + '</td></tr>';
+        }
+        out += '</tbody></table>';
+        hostEl.innerHTML = out;
+    }, 200);
 }
 
 // Standard LCS diff on two [{text}] arrays.
@@ -9051,7 +9325,7 @@ function stripCDATAWrappers(input) {
     return { text: out.join(''), strippedCount: strippedCount };
 }
 
-// v2.7: BOM-aware encoding detection
+// v2.4: BOM-aware encoding detection
 // Strategy: read the first few bytes as a binary buffer, sniff for a BOM,
 // then dispatch to TextDecoder with the right encoding.  Fall back to the
 // v2.6 UTF-16-first / UTF-8-second heuristic if no BOM is present.
@@ -9144,7 +9418,7 @@ async function analyse(doc, root) {
     // v2.0: index the FM26 DDR_INFO pre-rendered text (Has_DDR_INFO="True").
     // Runs before deep analysis so downstream consumers can use it.
     ['Indexing DDR display text…',   function() { s.ddr        = buildDDRTextIndex(doc, root); }],
-    // v2.7: deep analysis (calc CDATA + script issues + dynamic refs) runs
+    // v2.4: deep analysis (calc CDATA + script issues + dynamic refs) runs
     // BEFORE unreferenced detection so the dynamic refs can suppress false
     // positives in the unreferenced tier classifier.
     ['Deep calculation analysis…',   function() { s.deep       = parseDeepAnalysis(doc, root, s); }],
@@ -10899,6 +11173,48 @@ function parseBrokenReferences(doc, root) {
         }
     }
 
+    // ── 2b. Value list source fields (dangling / fossil)
+    // Per the value list XML spec (§7): a FromField value list carries a
+    // broken source in two distinguishable forms. id="0" with an empty name
+    // is a paste-side dangle (FileMaker zeroed an unresolvable reference);
+    // a NONZERO id with an empty name is a deletion-side fossil — the field
+    // existed at that id and was later deleted. Both render as a normal
+    // dynamic list in Manage Value Lists but silently return nothing at
+    // runtime. Same failure shape as the broken Lookup source check above.
+    const vlCatBroken = root.querySelector('ValueListCatalog');
+    if (vlCatBroken) {
+        for (const vl of vlCatBroken.querySelectorAll(':scope > ValueList')) {
+            const vlName = vl.getAttribute('name') || '(value list)';
+            const vlSource = vl.querySelector(':scope > Source');
+            const vlSrcVal = vlSource ? (vlSource.getAttribute('value') || vlSource.getAttribute('type') || '') : '';
+            if (vlSrcVal !== 'FromField') continue;
+            // Check both arms: PrimaryField and SecondaryField each hold a
+            // FieldReference (structure parseValueLists already reads).
+            for (const armTag of ['PrimaryField', 'SecondaryField']) {
+                const arm = vl.querySelector(':scope > Field > ' + armTag);
+                if (!arm) continue;
+                const ref = arm.querySelector('FieldReference');
+                const refId   = ref ? (ref.getAttribute('id')   || '') : '';
+                const refName = ref ? (ref.getAttribute('name') || '') : '';
+                if (!ref || refId === '0' || refName === '') {
+                    const isFossil = ref && refId !== '' && refId !== '0' && refName === '';
+                    totalMissingField++;
+                    findings.push({
+                        parent: vlName,
+                        name:   armTag === 'PrimaryField' ? 'primary source field' : 'secondary display field',
+                        type:   'Value list source (broken)',
+                        calc:   isFossil
+                            ? 'Source field reference has a nonzero id with an empty name — a deletion-side fossil: the field existed at id ' + refId + ' and was later deleted. The list looks configured but silently returns nothing at runtime.'
+                            : 'Source field reference is missing or unresolved (id=0 / empty name). The list looks configured in Manage Value Lists but silently returns nothing at runtime.',
+                        missing_fields: 1,
+                        missing_tables: 0,
+                        alerts: 1,
+                    });
+                }
+            }
+        }
+    }
+
     // ── 3. Custom function bodies
     // CalcsForCustomFunctions > CustomFunction text content holds the body
     const cfCalcs = root.querySelectorAll('CalcsForCustomFunctions CustomFunction');
@@ -11001,6 +11317,56 @@ function parseBrokenReferences(doc, root) {
             for (const cf of layout.querySelectorAll('ConditionalFormat, ConditionalFormatting')) {
                 for (const calc of cf.querySelectorAll(':scope > Calculation, :scope > Condition > Calculation')) {
                     check(calc, layoutName, 'conditional format', 'Conditional format calc');
+                }
+                // Per the layout XML spec (§16.1, §16.3) — two "looks
+                // configured, is dead" traps on CF Items. Both checks are
+                // structural-signature only: if the Item/flags/op shape is
+                // absent in this export, nothing fires.
+                for (const item of cf.querySelectorAll('Item')) {
+                    // §16.1 — Item flags bitmask: bit 0 enabled, bit 1 Text
+                    // Color, bit 2 Fill Color, bit 7 Icon Color. Bit 0 set
+                    // with NO format bits means the row is ticked but no
+                    // format property is switched on — any LocalCSS under
+                    // the item is inert even though the swatch shows colour.
+                    const flagsRaw = item.getAttribute('flags');
+                    const itemFlags = flagsRaw === null ? NaN : parseInt(flagsRaw, 10);
+                    if (!isNaN(itemFlags) && (itemFlags & 1) && !(itemFlags & (2 | 4 | 128))) {
+                        const css = item.querySelector('Format LocalCSS');
+                        if (css && (css.textContent || '').trim() !== '') {
+                            findings.push({
+                                parent: layoutName,
+                                name:   'conditional format item',
+                                type:   'CF rule inert (flags)',
+                                calc:   'Item flags="' + flagsRaw + '": the rule is enabled but no format property bit (Text/Fill/Icon Color) is set, so the populated LocalCSS never applies. The colour shows in the dialog swatch with its checkbox unticked.',
+                                missing_fields: 0,
+                                missing_tables: 0,
+                                alerts: 1,
+                            });
+                        }
+                    }
+                    // §16.3 — value-comparison conditions (op 1–8) store the
+                    // operand twice: RangeBegin/RangeEnd feed the dialog, the
+                    // materialised Calculation is what actually runs. An item
+                    // with op 1–8 and an empty or bare-constant Calculation
+                    // is dialog-correct but runtime-dead (or always-true).
+                    const cond = item.querySelector(':scope > Condition');
+                    const opRaw = cond ? cond.getAttribute('op') : null;
+                    const op = opRaw === null ? NaN : parseInt(opRaw, 10);
+                    if (!isNaN(op) && op >= 1 && op <= 8) {
+                        const mCalc = cond.querySelector(':scope > Calculation');
+                        const mBody = mCalc ? (mCalc.textContent || '').trim() : '';
+                        if (mBody === '' || /^[\d.,\s]+$/.test(mBody)) {
+                            findings.push({
+                                parent: layoutName,
+                                name:   'conditional format item',
+                                type:   'CF condition dead (op)',
+                                calc:   'Value-comparison condition (op=' + op + ') with ' + (mBody === '' ? 'an empty' : 'a bare-constant') + ' materialised Calculation. The dialog reads RangeBegin/RangeEnd and looks correct, but runtime evaluates the Calculation — this rule ' + (mBody === '' ? 'never fires' : 'evaluates as an always-true constant') + '. Re-materialise via the dialog or emit the comparison formula.',
+                                missing_fields: 0,
+                                missing_tables: 0,
+                                alerts: 1,
+                            });
+                        }
+                    }
                 }
             }
             // Portal filter
@@ -12006,7 +12372,7 @@ function parseBitFlags(doc, root) {
 }
 
 // ── DEEP ANALYSIS HELPERS ──────────────────────────────────
-// v2.7: Helper — extract dynamic field references that don't emit
+// v2.4: Helper — extract dynamic field references that don't emit
 // <FieldReference> elements. These hide inside calculation CDATA and inside
 // layout text. Returns an array of raw strings; the caller resolves each
 // against the defined-field index.
@@ -12054,7 +12420,7 @@ function extractDynamicFieldRefs(text) {
     return refs;
 }
 
-// v2.7: Extract globals referenced via merge syntax <<$$name>>
+// v2.4: Extract globals referenced via merge syntax <<$$name>>
 // Variable names can contain spaces (see parseGlobalVars); inside merge
 // syntax the closing >> bounds the name unambiguously, so the capture
 // runs to the delimiter instead of stopping at the first non-word char.
@@ -12067,7 +12433,7 @@ function extractMergeGlobals(text) {
     return out;
 }
 
-// v2.7: List of FileMaker calc functions considered "expensive" when used in
+// v2.4: List of FileMaker calc functions considered "expensive" when used in
 // an unstored calculation. Used by the calc analyser to flag hot spots.
 const EXPENSIVE_CALC_FUNCS = new Set([
     'ExecuteSQL', 'ExecuteSQLe',
@@ -12135,7 +12501,7 @@ function scanUncertaintyPatterns(body, uncertainty) {
 }
 
 // ── DEEP ANALYSIS ──────────────────────────────────────────
-// v2.7: Cracks open Calculation CDATA across the file and detects script-level
+// v2.4: Cracks open Calculation CDATA across the file and detects script-level
 // issues that aren't visible in step counts alone. Adds:
 //   • Function usage tallies and hot/warm function flags
 //   • Unstored calcs that reference expensive functions
@@ -12392,25 +12758,98 @@ function parseDeepAnalysis(doc, root, allStats) {
     // Walk every script body and apply higher-order pattern checks.
     const sfs = root.querySelector('StepsForScripts');
     if (sfs) {
-        // PSoS-incompatible step IDs (client-only / interactive)
-        const PSOS_INCOMPATIBLE = new Set([
-            87,  // Show Custom Dialog
-            29,  // Show/Hide Toolbars
-            115, // Allow Formatting Bar
-            122, // New Window
-            121, // Close Window
-            123, // Select Window
-            119, // Move/Resize Window
-            120, // Arrange All Windows
-            66,  // Speak
-            93,  // Beep
-            111, // Open URL (interactive)
-            33,  // Open File (interactive)
-            42,  // Print Setup
-            43,  // Print
-            56,  // Insert Picture
-            131, // Insert File
-        ]);
+        // PSoS/Server-incompatible step IDs — GENERATED from the verified
+        // FileMaker AI Vocabulary platform matrix (clockwork_scriptsteps.md,
+        // github.com/andykear/FileMaker-AI-vocabulary, FileMaker 26 target).
+        // A step is listed when the vocabulary marks it Server:No or Cloud:No.
+        // Do not edit by hand — regenerate from the vocabulary when it updates.
+        // 83 steps, generated 2026-08-23.
+        const PSOS_INCOMPATIBLE_STEPS = {
+            11: 'Insert from Index',                    // Server:No, Cloud:No
+            18: 'Check Selection',                      // Server:No, Cloud:No
+            19: 'Check Record',                         // Server:No, Cloud:No
+            20: 'Check Found Set',                      // Server:No, Cloud:No
+            31: 'Adjust Window',                        // Server:No, Cloud:No
+            32: 'Open Help',                            // Server:No, Cloud:No
+            33: 'Open File',                            // Server:No, Cloud:No
+            34: 'Close File',                           // Server:No, Cloud:No
+            37: 'Save a Copy as',                       // Server:No, Cloud:No
+            38: 'Open Manage Database',                 // Server:No, Cloud:No
+            41: 'Enter Preview Mode',                   // Server:No, Cloud:No
+            43: 'Print',                                // Server:No, Cloud:No
+            56: 'Insert Picture',                       // Server:No, Cloud:No
+            57: 'Send Event',                           // Server:No, Cloud:No
+            64: 'Send DDE Execute (Windows)',           // Server:No, Cloud:No
+            65: 'Dial Phone',                           // Server:No, Cloud:No
+            66: 'Speak (macOS)',                        // Server:No, Cloud:No
+            67: 'Perform AppleScript (macOS)',          // Server:No, Cloud:No
+            79: 'Freeze Window',                        // Server:No, Cloud:No
+            81: 'Scroll Window',                        // Server:No, Cloud:No
+            82: 'New File',                             // Server:No, Cloud:No
+            84: 'Set Multi-User',                       // Server:No, Cloud:No
+            87: 'Show Custom Dialog',                   // Server:No, Cloud:No
+            88: 'Open Script Workspace',                // Server:No, Cloud:No
+            92: 'Show/Hide Text Ruler',                 // Server:No, Cloud:No
+            93: 'Beep',                                 // Server:No, Cloud:No
+            94: 'Set Use System Formats',               // Server:No, Cloud:No
+            95: 'Recover File',                         // Server:No, Cloud:No
+            96: 'Save a Copy as Add-on Package',        // Server:No, Cloud:No
+            97: 'Set Zoom Level',                       // Server:No, Cloud:No
+            102: 'Flush Cache to Disk',                 // Server:No, Cloud:No
+            105: 'Open Settings',                       // Server:No, Cloud:No
+            106: 'Correct Word',                        // Server:No, Cloud:No
+            107: 'Spelling Options',                    // Server:No, Cloud:No
+            108: 'Select Dictionaries',                 // Server:No, Cloud:No
+            109: 'Edit User Dictionary',                // Server:No, Cloud:No
+            111: 'Open URL',                            // Server:No, Cloud:No
+            112: 'Open Manage Value Lists',             // Server:No, Cloud:No
+            113: 'Open Sharing',                        // Server:No, Cloud:No
+            114: 'Open File Options',                   // Server:No, Cloud:No
+            115: 'Allow Formatting Bar',                // Server:No, Cloud:No
+            118: 'Open Hosts',                          // Server:No, Cloud:No
+            119: 'Move/Resize Window',                  // Server:No, Cloud:No
+            120: 'Arrange All Windows',                 // Server:No, Cloud:No
+            128: 'Perform Find/Replace',                // Server:No, Cloud:No
+            129: 'Open Find/Replace',                   // Server:No, Cloud:No
+            131: 'Insert File',                         // Server:No, Cloud:No
+            132: 'Export Field Contents',               // Cloud:No
+            138: 'Re-Login',                            // Server:Partial, Cloud:No
+            139: 'Convert File',                        // Server:No, Cloud:No
+            140: 'Open Manage Data Sources',            // Server:No, Cloud:No
+            142: 'Install Menu Set',                    // Server:No, Cloud:No
+            143: 'Save Records as Excel',               // Server:No, Cloud:No
+            146: 'Set Web Viewer',                      // Server:No, Cloud:No
+            148: 'Install OnTimer Script',              // Server:No, Cloud:No
+            149: 'Open Edit Saved Finds',               // Server:No, Cloud:No
+            151: 'Open Manage Layouts',                 // Server:No, Cloud:No
+            156: 'Open Manage Containers',              // Server:No, Cloud:No
+            158: 'Insert PDF',                          // Server:No, Cloud:No
+            159: 'Insert Audio/Video',                  // Server:No, Cloud:No
+            161: 'Insert from Device',                  // Server:No, Cloud:No
+            165: 'Open Manage Themes',                  // Server:No, Cloud:No
+            166: 'Show/Hide Menubar',                   // Server:No, Cloud:No
+            167: 'Refresh Object',                      // Server:No, Cloud:No
+            169: 'Close Popover',                       // Server:No, Cloud:No
+            172: 'Open Upload To Host',                 // Server:No, Cloud:No
+            174: 'Enable Touch Keyboard',               // Server:No, Cloud:No
+            175: 'Perform JavaScript in Web Viewer',    // Server:No, Cloud:No
+            177: 'AVPlayer Play',                       // Server:No, Cloud:No
+            178: 'AVPlayer Set Playback State',         // Server:No, Cloud:No
+            179: 'AVPlayer Set Options',                // Server:No, Cloud:No
+            180: 'Refresh Portal',                      // Server:No, Cloud:No
+            181: 'Get Folder Path',                     // Server:No, Cloud:No
+            183: 'Open Favorites',                      // Server:No, Cloud:No
+            185: 'Configure Region Monitor Script',     // Server:No, Cloud:No
+            187: 'Configure Local Notification',        // Server:No, Cloud:No
+            200: 'Set Error Logging',                   // Cloud:No
+            201: 'Configure NFC Reading',               // Server:No, Cloud:No
+            202: 'Configure Machine Learning Model',    // Server:Partial, Cloud:No
+            209: 'Set Dictionary',                      // Server:No, Cloud:No
+            210: 'Perform Script On Server with Callback',// Server:No, Cloud:No
+            237: 'Flush Web Viewer Cookies',            // Server:No, Cloud:No
+            242: 'Print PDF',                           // Server:No, Cloud:No
+        };
+        const PSOS_INCOMPATIBLE = new Set(Object.keys(PSOS_INCOMPATIBLE_STEPS).map(Number));
 
         for (const scriptWrap of sfs.querySelectorAll(':scope > Script')) {
             const sRef = scriptWrap.querySelector(':scope > ScriptReference');
@@ -12480,16 +12919,38 @@ function parseDeepAnalysis(doc, root, allStats) {
                     pSoSIncompatibleHits.push({ line: lineNo, stepId });
                 }
 
-                // Set Variable — track variable usage (dead-var detection)
+                // Set Variable — track variable usage (dead-var detection).
+                // The name lives in a Name VALUE ATTRIBUTE in real exports
+                // (Parameter[type="Variable"] > Name value="$x"); reading
+                // textContent instead reports every attribute-style step as
+                // blank and false-flags the whole file. Match the renderer.
                 if (stepId === 141) {
-                    const nameNode = step.querySelector('Name');
-                    if (nameNode) {
-                        const vname = (nameNode.textContent || '').trim();
-                        if (vname) {
-                            // Strip array index [n] for the lookup
-                            const baseName = vname.replace(/\[.+?\]$/, '').trim();
-                            setVarMap.set(baseName, { line: lineNo, used: false });
-                        }
+                    const varParam = step.querySelector('Parameter[type="Variable"]');
+                    let vname = '';
+                    if (varParam) {
+                        const nameEl = varParam.querySelector('Name');
+                        vname = (nameEl ? (nameEl.getAttribute('value') || nameEl.textContent || '') : '').trim();
+                    }
+                    if (!vname) {
+                        const nameNode = step.querySelector('Name');
+                        vname = (nameNode ? (nameNode.getAttribute('value') || nameNode.textContent || '') : '').trim();
+                    }
+                    if (vname) {
+                        // Strip array index [n] for the lookup
+                        const baseName = vname.replace(/\[.+?\]$/, '').trim();
+                        setVarMap.set(baseName, { line: lineNo, used: false });
+                    } else {
+                        // Genuinely blank name — the step assigns to nothing.
+                        // FileMaker allows this and raises no error, so it is a
+                        // silent no-op at runtime. Only flagged once the value
+                        // attribute has also been checked and found empty.
+                        result.script_issues.push({
+                            severity: 'high',
+                            kind: 'set-variable-blank-name',
+                            script: scriptName,
+                            line: lineNo,
+                            note: 'Set Variable step has no variable name (the Name value is empty). The step assigns to nothing and is a silent no-op at runtime.'
+                        });
                     }
                 }
 
@@ -12645,7 +13106,7 @@ function parseDeepAnalysis(doc, root, allStats) {
                     kind: 'psos-client-step',
                     script: scriptName,
                     line: pSoSIncompatibleHits[0].line,
-                    note: 'Calls Perform Script on Server and the same script body contains ' + pSoSIncompatibleHits.length + ' step' + (pSoSIncompatibleHits.length===1?'':'s') + ' known to be client-only (dialogs, window manipulation, etc.). These steps no-op on the server side. May be intentional if guarded by an If that the server path does not enter.'
+                    note: 'Calls Perform Script on Server and the same script body contains ' + pSoSIncompatibleHits.length + ' step' + (pSoSIncompatibleHits.length===1?'':'s') + ' the verified platform matrix marks Server:No or Cloud:No (' + [...new Set(pSoSIncompatibleHits.map(h => PSOS_INCOMPATIBLE_STEPS[h.stepId] || ('#'+h.stepId)))].slice(0,6).join(', ') + (new Set(pSoSIncompatibleHits.map(h=>h.stepId)).size > 6 ? ', …' : '') + '). These steps no-op or fail on the server side. May be intentional if guarded by an If that the server path does not enter.'
                 });
             }
 
@@ -12767,7 +13228,7 @@ function parseUnreferenced(doc, root, allStats) {
     }
   }
 
-  // v2.7: capture field type, storage flags, comment, and calc text into the
+  // v2.4: capture field type, storage flags, comment, and calc text into the
   // definedFields entries. These are used by the drill-down panel so the
   // developer can see what an unreferenced field actually is before deleting it.
   for (const fc of root.querySelectorAll('FieldCatalog')) {
@@ -13342,14 +13803,17 @@ function parseUnreferenced(doc, root, allStats) {
       // Lookup source findings have their own descriptive type — use it directly.
       // Calc-body findings (Field Missing / Table Missing tokens) get the
       // '(broken calc)' suffix to distinguish them from structural issues.
-      const isLookupBroken = f.type === 'Lookup source (broken)';
+      const isStructural = f.type === 'Lookup source (broken)'
+                        || f.type === 'Value list source (broken)'
+                        || f.type === 'CF rule inert (flags)'
+                        || f.type === 'CF condition dead (op)';
       const tokens = [];
       if (f.missing_fields) tokens.push(f.missing_fields + ' <Field Missing>');
       if (f.missing_tables) tokens.push(f.missing_tables + ' <Table Missing>');
       broken.push({
-        cat:    isLookupBroken ? f.type : f.type + ' (broken calc)',
+        cat:    isStructural ? f.type : f.type + ' (broken calc)',
         where:  f.parent + (f.name ? ' :: ' + f.name : ''),
-        detail: isLookupBroken ? f.calc : tokens.join(', ') + ' — ' + f.calc,
+        detail: isStructural ? f.calc : tokens.join(', ') + ' — ' + f.calc,
       });
     }
   }
@@ -13723,7 +14187,7 @@ function computeConfidenceTier(allStats) {
 
 
 
-// ── v2.7 RENDER HELPERS ────────────────────────────────────
+// ── v2.4 RENDER HELPERS ────────────────────────────────────
 // Builds the script-issues section appended to the Scripts tab. Renders
 // pattern-detected issues from parseDeepAnalysis with severity styling.
 function buildScriptIssuesSection(deep) {
@@ -13911,8 +14375,14 @@ function buildMethodologyTab(stats) {
 
       <div class="doc-finding-card">
         <div class="doc-finding-title">PSoS scripts containing client-only steps</div>
-        <div class="doc-finding-checks"><strong>What it inspects:</strong> scripts called via <code>Perform Script on Server</code> whose body contains steps known to be client-only or interactive (<code>Show Custom Dialog</code>, <code>Open File</code> in interactive mode, window-manipulation steps, <code>Speak</code>, <code>Insert Picture</code>, etc.).</div>
+        <div class="doc-finding-checks"><strong>What it inspects:</strong> scripts called via <code>Perform Script on Server</code> whose body contains steps marked <code>Server:No</code> or <code>Cloud:No</code> in the verified FileMaker AI Vocabulary platform matrix (83 steps for FileMaker 26, generated from the vocabulary rather than hand-maintained). This includes the ironic case of <code>Perform Script on Server with Callback</code> inside a PSoS context, where no client exists to receive the callback.</div>
         <div class="doc-finding-misses"><strong>What it does not assess:</strong> conditional execution &mdash; the offending step may sit inside an <code>If</code> that the server-side path never enters.</div>
+      </div>
+
+      <div class="doc-finding-card">
+        <div class="doc-finding-title">Set Variable with no variable name</div>
+        <div class="doc-finding-checks"><strong>What it inspects:</strong> Set Variable steps (id 141) whose <code>Name</code> element is missing or empty. Per the verified script XML spec, such a step can arrive via paste with no error and no visual anomaly in the Script Workspace &mdash; it assigns to nothing and is a silent no-op at runtime. Previously these steps were invisible to analysis entirely; they are now flagged directly.</div>
+        <div class="doc-finding-misses"><strong>What it does not assess:</strong> how the step came to lose its name, or whether the calculation it evaluates had side effects the author relied on.</div>
       </div>
 
       <div class="doc-finding-card">
@@ -13941,6 +14411,24 @@ function buildMethodologyTab(stats) {
         <div class="doc-finding-title">Broken lookup source fields</div>
         <div class="doc-finding-checks"><strong>What it inspects:</strong> fields with a Lookup auto-enter whose source field reference has <code>id=&ldquo;0&rdquo;</code> or an empty name. This is the Save-as-XML encoding of a lookup whose source field no longer exists. The lookup fires on commit but writes nothing &mdash; the field silently retains its previous value.</div>
         <div class="doc-finding-misses"><strong>What it does not assess:</strong> whether the field ever had a valid source, or why the source was removed.</div>
+      </div>
+
+      <div class="doc-finding-card">
+        <div class="doc-finding-title">Broken value list source fields</div>
+        <div class="doc-finding-checks"><strong>What it inspects:</strong> FromField value lists whose primary or secondary field reference has <code>id=&ldquo;0&rdquo;</code> or an empty name. Two forms are distinguished, per the verified value list XML spec: <code>id=&ldquo;0&rdquo;</code> with an empty name is a paste-side dangle (FileMaker zeroed an unresolvable reference); a nonzero id with an empty name is a deletion-side fossil &mdash; the source field once existed at that id and was later deleted. Either way the list appears configured in Manage Value Lists but silently returns nothing at runtime.</div>
+        <div class="doc-finding-misses"><strong>What it does not assess:</strong> whether a resolvable-looking reference points at the intended field, or hybrid fossils (inactive-arm data carried from a former source type), which are a clipboard-format concern rather than a Save-as-XML one.</div>
+      </div>
+
+      <div class="doc-finding-card">
+        <div class="doc-finding-title">Inert conditional formatting rules</div>
+        <div class="doc-finding-checks"><strong>What it inspects:</strong> conditional formatting Items whose <code>flags</code> bitmask has the enabled bit set (bit 0) but no format property bit (Text Color, Fill Color, Icon Color) alongside a populated <code>LocalCSS</code>. Per the verified layout XML spec (&sect;16.1), the CSS in that item never applies &mdash; the dialog shows the colour in the swatch with its checkbox unticked.</div>
+        <div class="doc-finding-misses"><strong>What it does not assess:</strong> exports where the Item/flags structure is absent &mdash; the check is structural-signature only and stays silent rather than guessing.</div>
+      </div>
+
+      <div class="doc-finding-card">
+        <div class="doc-finding-title">Dead value-comparison conditional formats</div>
+        <div class="doc-finding-checks"><strong>What it inspects:</strong> conditional formatting Items with a value-comparison condition (<code>op</code> 1&ndash;8) whose materialised <code>Calculation</code> is empty or a bare constant. Per the verified layout XML spec (&sect;16.3), the comparison is stored twice: <code>RangeBegin</code>/<code>RangeEnd</code> feed the dialog, the Calculation is what runtime evaluates. An empty Calculation never fires; a bare constant evaluates as always true. Both look perfectly configured in the dialog &mdash; only a structural check catches them.</div>
+        <div class="doc-finding-misses"><strong>What it does not assess:</strong> whether a present, non-constant Calculation matches the <code>op</code>/<code>RangeBegin</code> pair semantically.</div>
       </div>
 
       <h3>Schema — Field Dependencies</h3>
@@ -14922,7 +15410,7 @@ function renderResults(file, root, s, elapsed) {
   if (reportTitleEl) reportTitleEl.textContent = fname.replace(/\.xml$/i,'');
 
   // ── Health panel ───────────────────────────────────────
-  // v2.7: renders the composite health score and four sub-dimensions at
+  // v2.4: renders the composite health score and four sub-dimensions at
   // the top of the report. Clicking a sub-card opens an explanation modal
   // (TODO) — for now just shows the breakdown.
   // ── Observations panel ─────────────────────────────────
@@ -15989,6 +16477,57 @@ function renderResults(file, root, s, elapsed) {
     }, 0);
     return wrap;
   })() });
+
+  // ── Step Index tab ─────────────────────────────────────────
+  // Every script step used in the file, aggregated with usage counts,
+  // filterable by step name and searchable by step CONTENT (calc bodies,
+  // dialog text) — built to answer "which script shows the dialog that
+  // just says Error". Commit Records/Requests is split into With dialog
+  // and No dialog lines so both usages are countable separately.
+  tabDefs.push({ id:'tab-stepindex', label:'Step Index', icon:'#', contentEl: (function() {
+    const wrap = document.createElement('div');
+    const idx = buildStepIndex(window.__lastRoot);
+    window.__stepIndex = idx;
+    wrap.innerHTML =
+      '<div class="section"><div class="section-title"><span class="section-icon">#</span>Step Index — ' +
+      fmt(idx.rows.length) + ' distinct steps · ' + fmt(idx.total) + ' occurrences</div>' +
+      '<div style="margin:0 0 10px 0">' +
+      '<input id="stepindex-content-search" class="dt-filter-input" type="text" style="max-width:420px" ' +
+      'placeholder="Search step content (calc text, dialog messages)…" ' +
+      'oninput="stepIndexContentSearch(this.value)">' +
+      '</div>' +
+      '<div class="stepindex-host"></div>' +
+      '<div id="stepindex-detail" style="margin-top:14px"></div></div>';
+
+    const host = wrap.querySelector('.stepindex-host');
+    const maxCount = Math.max.apply(null, idx.rows.map(function(r){ return r.count; }).concat([1]));
+    setTimeout(function() {
+      renderDenseTable({
+        containerEl: host,
+        emptyMsg: 'No script steps found.',
+        rows: idx.rows,
+        columns: [
+          { key:'name',     label:'Step', width:'40%', mono:true,
+            renderCell: function(v, r) {
+              return '<a class="ux-link" onclick="stepIndexShowDetail(\'' + esc(r.key).replace(/'/g, "\\'") + '\')">' + esc(v) + '</a>';
+            } },
+          { key:'count',    label:'Uses', width:'22%',
+            renderCell: function(v) { return makeBar(Math.min(100, Math.round(v / maxCount * 100)), v, 101, 101); } },
+          { key:'scripts',  label:'Scripts', width:'12%', align:'right' },
+          { key:'disabled', label:'Disabled', width:'12%', align:'right',
+            renderCell: function(v) { return v ? String(v) : '<span class="dt-empty">—</span>'; } },
+        ],
+        defaultSort: 'count',
+      });
+      // Most-used first — the dense table defaults to ascending
+      if (host._denseTable) {
+        host._denseTable.sortDir = 'desc';
+        redrawDenseTable(host);
+      }
+    }, 0);
+    return wrap;
+  })() });
+
   const vld = (vl.detail || {});
   tabDefs.push({ id:'tab-valuelists', label:'Value Lists', icon:'≡', contentEl: (function() {
     const wrap = document.createElement('div');
@@ -16615,7 +17154,7 @@ function renderResults(file, root, s, elapsed) {
   }
 
   // ── Bit Flags — surfaced behind an "Advanced" toggle ────
-  // v2.7: previously parsed-but-hidden; now shown in a collapsible Advanced
+  // v2.4: previously parsed-but-hidden; now shown in a collapsible Advanced
   // tab. Useful when reverse-engineering FileMaker's packed option values
   // (matches Andrew's standalone Bit Flag Mapper tool).
   if (s.bitflags && s.bitflags.length > 0) {
@@ -16744,6 +17283,7 @@ function renderResults(file, root, s, elapsed) {
     'tab-wireframe':       'Schema',
     'tab-themes':      'Schema',
     'tab-scripts':          'Logic',
+    'tab-stepindex':        'Logic',
     'tab-valuelists':  'Logic',
     'tab-variables':       'Logic',
     'tab-custom-functions':'Logic',
@@ -16935,7 +17475,7 @@ function renderResults(file, root, s, elapsed) {
   updateContentTitle(defaultPaneId);
 
   // ── Issue banner (above the overview) ──────────────────
-  // v2.7: surfaces critical issues at the top of the report with click-to-jump
+  // v2.4: surfaces critical issues at the top of the report with click-to-jump
   // chips. Now sorted by severity (critical > high > medium > info) so the
   // most urgent items appear first.
   const banner = document.getElementById('issue-banner-host');
@@ -17503,9 +18043,16 @@ function redrawDenseTable(container) {
     const state = container._denseTable;
     if (!state) return;
 
-    // Apply filter (case-insensitive, matches across all rendered columns)
+    // Apply scope first (exact column match, set programmatically by
+    // jumps like Tables → Fields) so the free-text filter below searches
+    // WITHIN the scope instead of replacing it. Previously the table name
+    // was stuffed into the filter input, so typing a field name silently
+    // widened the view back to every table's fields.
     const term = state.filter.trim().toLowerCase();
     let rows = state.rows;
+    if (state.scope && state.scope.key) {
+        rows = rows.filter(r => String(r[state.scope.key] || '') === state.scope.value);
+    }
     if (term) {
         rows = rows.filter(r => state.columns.some(c => {
             const v = r[c.key];
@@ -17736,10 +18283,14 @@ function jumpToFieldBrowser(tableName) {
         if (pane) {
             const wrap = pane.querySelector('.dt-wrap');
             if (wrap) {
-                const input = wrap.querySelector('.dt-filter-input');
-                if (input) {
-                    input.value = tableName;
-                    filterDenseTable(wrap, tableName);
+                // Scope the table to this table's rows rather than putting
+                // the table name in the filter input — the input stays free
+                // for field-name searches WITHIN the table.
+                const state = wrap.parentNode._denseTable;
+                if (state) {
+                    state.scope = { key: 'table', value: tableName };
+                    state.filter = '';
+                    redrawDenseTable(wrap.parentNode);
                 }
             }
             const banner = document.getElementById('fields-filter-banner');
@@ -17761,6 +18312,11 @@ function fieldsBrowserClear() {
     if (pane) {
         const wrap = pane.querySelector('.dt-wrap');
         if (wrap) {
+            // Drop both the table scope and any typed filter
+            const state = wrap.parentNode._denseTable;
+            if (state) {
+                state.scope = null;
+            }
             const input = wrap.querySelector('.dt-filter-input');
             if (input) { input.value = ''; filterDenseTable(wrap, ''); }
         }
@@ -17843,6 +18399,21 @@ function filterDenseTable(wrap, value) {
     const state = container._denseTable;
     if (!state) return;
     state.filter = value;
+    // The step-index host shares its detail panel between three inputs: a
+    // row click (drill-down), this name filter, and the content search box.
+    // Precedence: content search owns the panel while it has a term. The
+    // name filter only clears the panel when content search is empty — and
+    // it must clear it, or filtering to a non-matching name leaves the last
+    // clicked step's detail stranded under a "0 of N" table.
+    const siDetail = document.getElementById('stepindex-detail');
+    const siTab = document.getElementById('tab-stepindex');
+    if (siDetail && siTab && siTab.contains(container)) {
+        const contentBox = document.getElementById('stepindex-content-search');
+        const contentActive = contentBox && contentBox.value.trim() !== '';
+        if (!contentActive) {
+            siDetail.innerHTML = '';
+        }
+    }
     // Reset the debounce timer on every keystroke; only redraw once the
     // user pauses for 120ms
     if (state.filterTimer) clearTimeout(state.filterTimer);
@@ -17859,7 +18430,7 @@ function filterDenseTable(wrap, value) {
 }
 
 
-// ── v2.7 UI HELPERS ────────────────────────────────────────
+// ── v2.4 UI HELPERS ────────────────────────────────────────
 
 // Toggle an advanced collapsed content block. Called from the Advanced tab.
 // The button label is saved into data-label before being replaced with
