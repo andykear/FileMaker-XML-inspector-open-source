@@ -3,7 +3,7 @@
 [![Stars](https://img.shields.io/github/stars/andykear/FileMaker-XML-inspector-open-source?style=social)](https://github.com/andykear/FileMaker-XML-inspector-open-source)
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-green)](https://creativecommons.org/licenses/by/4.0/)
 
-<img width="800" height="1107" alt="Screenshot 2026-09-05 at 14 30 14" src="https://github.com/user-attachments/assets/7aba25f4-c015-4b7b-b1ed-b96c90c09a7d" />
+<img width="855" height="553" alt="Screenshot 2026-09-05 at 14 30 14" src="https://github.com/user-attachments/assets/1d926a42-4e71-4d9d-a777-0ee1cc220d00" />
 
 
 **Full-solution analysis for FileMaker. Local, in the browser, open. No install, no licence, no cloud.**
