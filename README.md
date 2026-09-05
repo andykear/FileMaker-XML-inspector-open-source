@@ -3,10 +3,16 @@
 [![Stars](https://img.shields.io/github/stars/andykear/FileMaker-XML-inspector-open-source?style=social)](https://github.com/andykear/FileMaker-XML-inspector-open-source)
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-green)](https://creativecommons.org/licenses/by/4.0/)
 
+**Full-solution analysis for FileMaker. Local, in the browser, open. No install, no licence, no cloud.**
+
 <img width="855" height="553" alt="Screenshot 2026-09-05 at 14 30 14" src="https://github.com/user-attachments/assets/1d926a42-4e71-4d9d-a777-0ee1cc220d00" />
 
+<img width="855" height="553" alt="Screenshot 2026-09-05 at 14 21 15" src="https://github.com/user-attachments/assets/a21aad56-2a73-4919-b3f7-edd533e84e11" />
 
-**Full-solution analysis for FileMaker. Local, in the browser, open. No install, no licence, no cloud.**
+<img width="855" height="553" alt="Screenshot 2026-09-05 at 14 23 04" src="https://github.com/user-attachments/assets/5ecd84e2-fab6-4c11-aaba-0a9b9f30bfcb" />
+
+<img width="855" height="553" alt="Screenshot 2026-09-05 at 14 38 11" src="https://github.com/user-attachments/assets/8307084e-961a-4e0c-a2ab-85c63140b48f" />
+
 
 A modern alternative to the commercial FileMaker analysis tools that now exceeds most of them on usability, without asking you to install anything, license anything, or send your work to a server. Drop a Save as XML export onto the page and get a full structured analysis in seconds. It is a single self-contained HTML file: no dependencies, no build, nothing to wire up.
 
