@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Clockwork Inspector for FileMaker — v2.5
+  Clockwork Inspector for FileMaker — v2.6
   Single-file, browser-based audit tool for FileMaker Save as XML analysis.
   Runs entirely client-side. Nothing is uploaded.
   Developed by Andrew Kear, Clockwork Creative Technology (clockworkct.co.uk).
@@ -15,7 +15,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTcwMCAxNzAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHJvbGU9ImltZyIgYXJpYS1sYWJlbD0iQ2xvY2t3b3JrIj48ZGVmcz48Y2xpcFBhdGggaWQ9ImN3Y2xpcCI+PHBhdGggdHJhbnNmb3JtPSJtYXRyaXgoMSwwLDAsLTEsMCwxNzAwKSIgZD0iTTAgMTcwMEgxNzAwVjBIMFoiLz48L2NsaXBQYXRoPjwvZGVmcz48ZyBpbmtzY2FwZTpncm91cG1vZGU9ImxheWVyIiBpbmtzY2FwZTpsYWJlbD0iTGF5ZXIgMSI+PGcgY2xpcC1wYXRoPSJ1cmwoI2N3Y2xpcCkiPjxwYXRoIHRyYW5zZm9ybT0ibWF0cml4KDEsMCwwLC0xLDEzNTYuNDYxOCw0OTYuNjIwMTMpIiBkPSJNMCAwLTQwNi4xNzUtNDc2LjA1NkMtNDMzLjc3OS01MDguNDEtNDgyLjMzLTUxMi4zOTctNTE0Ljg0My00ODQuOThMLTU2Ni42NzMtNDQxLjI3M0MtNTk5LjMxOS00MTMuNzQzLTYwMy40NjctMzY0Ljk2MS01NzUuOTM3LTMzMi4zMTVMLTE2Ny4wMTUgMTUyLjYwOEMtMTM3LjEzNiAxODguMDQtODMuMDEyIDE4OS40MDctNTEuMzg0IDE1NS41MjdMLTIuMzAyIDEwMi45NTNDMjQuNTMgNzQuMjEyIDI1LjUyMSAyOS45MTEgMCAwIiBmaWxsPSIjNDlhZjVlIi8+PHBhdGggdHJhbnNmb3JtPSJtYXRyaXgoMSwwLDAsLTEsODU0LjE1MDksMTA2MC42NDUzKSIgZD0iTTAgMC0yNzYuNTI1IDIzMi4wOTNDLTI4My42MDggMjM4LjAzNy0yODQuNTMgMjQ4LjU5Ny0yNzguNTg2IDI1NS42OEwtMTU3LjM5MyA0MDAuMDc0Qy0xNTEuNDQ5IDQwNy4xNTYtMTQwLjg4OSA0MDguMDc5LTEzMy44MDYgNDAyLjEzNUwxNDIuNzE5IDE3MC4wNDJDMTQ5LjgwMiAxNjQuMDk4IDE1MC43MjQgMTUzLjUzNyAxNDQuNzggMTQ2LjQ1NUwyMy41ODcgMi4wNjFDMTcuNjQzLTUuMDIyIDcuMDgyLTUuOTQ0IDAgMCIgZmlsbD0iIzQ5YWY1ZSIvPjxwYXRoIHRyYW5zZm9ybT0ibWF0cml4KDEsMCwwLC0xLDE0MTUuNDY5OSw4NTQuNzgzOSkiIHN0cm9rZS13aWR0aD0iMjIwLjU0NyIgc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMmY0NDk1IiBkPSJNMCAwQzAtMzExLjY0OC0yNTIuNjQtNTY0LjI4OC01NjQuMjg4LTU2NC4yODgtODc1LjkzNi01NjQuMjg4LTExMjguNTc2LTMxMS42NDgtMTEyOC41NzYgMC0xMTI4LjU3NiAzMTEuNjQ4LTg3NS45MzYgNTY0LjI4OC01NjQuMjg4IDU2NC4yODgiLz48cGF0aCB0cmFuc2Zvcm09Im1hdHJpeCgxLDAsMCwtMSwxNDE1LjQ2OTksODU0Ljc4MzkpIiBzdHJva2Utd2lkdGg9IjIyMC41NDciIHN0cm9rZS1saW5lY2FwPSJidXR0IiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIHN0cm9rZS1saW5lam9pbj0ibWl0ZXIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzM5NDk5OSIgZD0iTTAgMEMwLTMxMS42NDgtMjUyLjY0LTU2NC4yODgtNTY0LjI4OC01NjQuMjg4LTg3NS45MzYtNTY0LjI4OC0xMTI4LjU3Ni0zMTEuNjQ4LTExMjguNTc2IDAtMTEyOC41NzYgMzExLjY0OC04NzUuOTM2IDU2NC4yODgtNTY0LjI4OCA1NjQuMjg4Ii8+PC9nPjwvZz48L3N2Zz4=">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     /* Foundation */
@@ -86,6 +86,19 @@
     /* Typography */
     --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif;
     --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+    /* Display face — Space Grotesk, a technical grotesque. Used only for
+       page titles and section eyebrows so it carries identity without
+       shouting. Body and data stay on Geist / Geist Mono. */
+    --font-display: 'Space Grotesk', var(--font-sans);
+
+    /* Type scale — a fixed ramp so nothing is a one-off pixel value.
+       Steps are deliberately close because this is a dense tool. */
+    --t-eyebrow: 11px;   /* section eyebrows, column heads */
+    --t-caption: 12px;   /* secondary labels, meta */
+    --t-body:    13px;   /* default table + prose */
+    --t-title:   15px;   /* card titles */
+    --t-h2:      19px;   /* section headings */
+    --t-h1:      26px;   /* page title */
 
     /* Motion */
     --ease:     cubic-bezier(0.4, 0, 0.2, 1);
@@ -440,9 +453,9 @@
   }
   .stat-card {
     background: var(--surface);
-    border: 1px solid var(--line);
+    border: 1px solid var(--line-soft);
     border-radius: var(--r-md);
-    padding: 14px 16px;
+    padding: 15px 16px 16px;
     cursor: default;
     transition: transform 0.15s var(--ease),
                 border-color 0.15s var(--ease),
@@ -458,22 +471,22 @@
     transition: transform 0.2s var(--ease);
   }
   .stat-card:hover {
-    border-color: var(--line-strong);
+    border-color: var(--line);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
   }
   .stat-card:hover::before { transform: scaleY(1); }
   .stat-card .label {
     font-size: 10px; color: var(--ink-4);
-    font-weight: 600; letter-spacing: 0.04em;
+    font-weight: 600; letter-spacing: 0.05em;
     text-transform: uppercase;
-    margin-bottom: 7px;
+    margin-bottom: 9px;
     font-family: var(--font-sans);
   }
   .stat-card .value {
-    font-family: var(--font-mono); font-size: 23px;
+    font-family: var(--font-mono); font-size: 26px;
     font-weight: 600; color: var(--ink);
-    line-height: 1; letter-spacing: -0.02em;
+    line-height: 1; letter-spacing: -0.035em;
     font-feature-settings: 'tnum';
   }
   /* Headline schema counts carry navy to anchor the grid */
@@ -481,7 +494,7 @@
   /* Zero-value cards recede so the eye lands on real counts */
   .stat-card.zero {
     background: var(--surface-soft);
-    border-color: var(--line-soft);
+    border-color: transparent;
     box-shadow: none;
   }
   .stat-card.zero .value { color: var(--ink-5); font-weight: 500; }
@@ -507,18 +520,18 @@
   /* ── ISSUE BANNER ───────────────────────────────────── */
   .issue-banner {
     margin: 14px 28px 0;
-    border: 1px solid var(--warn-bd);
+    border: 1px solid var(--line);
     border-left: 4px solid var(--warn);
-    background: var(--warn-tint);
+    background: var(--surface);
     border-radius: var(--r-md);
-    padding: 12px 16px;
+    padding: 13px 16px;
     box-shadow: var(--shadow-xs);
     animation: fadeIn 0.3s var(--ease-out) 0.05s both;
   }
   .issue-banner.severity-bad {
-    border-color: var(--bad-bd);
+    border-color: var(--line);
     border-left-color: var(--bad);
-    background: var(--bad-tint);
+    background: var(--surface);
   }
   .issue-banner-row {
     display: flex; align-items: center; gap: 12px;
@@ -776,7 +789,7 @@
     color: var(--ink);
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     outline: none;
     transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
     letter-spacing: -0.005em;
@@ -1154,7 +1167,7 @@
   .unref-tab-broken.active .unref-count {
     background: var(--bad-tint) !important; color: var(--bad) !important;
   }
-  .unref-pane { padding: 18px 22px; background: var(--surface); display: none; }
+  .unref-pane { padding: 4px 4px 0; background: transparent; display: none; }
   .unref-pane.active { display: block; }
   .unref-empty {
     color: var(--ink-3); font-size: 12.5px;
@@ -1448,26 +1461,31 @@
   .sections-label { display: none; }
   .sections-grid { display: block; }
 
+  /* Sections are semantic groupings, not visual cards. No border box —
+     content sits on the content plane and the section eyebrow does the
+     dividing. This is what stops the tool reading as boxes-in-boxes. */
   .section {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--r-lg);
-    overflow: hidden;
-    transition: border-color 0.15s var(--ease),
-                box-shadow 0.15s var(--ease);
-    box-shadow: var(--shadow-xs);
-  }
-  .section:hover {
-    border-color: var(--line);
-    box-shadow: var(--shadow-xs);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    margin-bottom: 8px;
   }
   .section-title {
-    font-size: 11.5px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.06em;
-    color: var(--ink-2); font-family: var(--font-sans);
-    padding: 13px 18px; border-bottom: 1px solid var(--line-soft);
-    background: var(--surface-soft);
-    display: flex; align-items: center; gap: 9px;
+    font-family: var(--font-display);
+    font-size: var(--t-eyebrow); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.10em;
+    color: var(--navy);
+    padding: 4px 4px 12px;
+    background: transparent;
+    display: flex; align-items: center; gap: 10px;
+  }
+  /* Brand tick before every section eyebrow — echoes the Clockwork mark,
+     ties the header rhythm to the identity without extra chrome. */
+  .section-title::before {
+    content: ''; width: 3px; height: 12px;
+    background: var(--brand); border-radius: 2px;
+    flex-shrink: 0;
   }
   .section-icon { display: none; }
 
@@ -1581,40 +1599,70 @@
   .security-alert strong { font-weight: 600; }
 
   /* ── DENSE TABLE (v1.0) ─────────────────────────────────── */
+  /* The table is the surface, not an object in a card. No border, radius,
+     or background box around it — rows and header sit directly on the
+     content plane, like a native app's data panel rather than a web card. */
   .dt-wrap {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--r-md);
-    overflow: hidden;
-    overflow-x: visible;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
   }
   .dt-filter-row {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--line-soft);
-    background: var(--surface-soft);
+    padding: 0 4px 14px;
+    background: transparent;
   }
   .dt-filter-input {
     flex: 1;
     border: 1px solid var(--line);
-    border-radius: var(--r-sm);
-    padding: 6px 10px;
-    font-size: 12.5px;
+    border-radius: var(--r-md);
+    padding: 7px 12px;
+    font-size: var(--t-body);
     font-family: inherit;
     background: var(--surface);
     color: var(--ink);
     outline: none;
+    transition: border-color 0.12s var(--ease), box-shadow 0.12s var(--ease);
   }
+  .dt-filter-input::placeholder { color: var(--ink-4); }
+  .dt-filter-input:hover { border-color: var(--ink-4); }
+  /* Focus ring in brand green — the one place green appears as an active
+     signal, consistent with the hover-bar accent. */
   .dt-filter-input:focus {
-    border-color: var(--brand-deep);
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-tint);
   }
   .dt-filter-meta {
     font-size: 11.5px;
     color: var(--ink-3);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+  }
+  /* Prominent content-search bar — the headline dialog-hunt feature gets a
+     search icon and full width so it reads as a primary action, not a
+     stray input. */
+  .stepindex-search-bar {
+    position: relative;
+    padding: 14px 0 12px;
+  }
+  .search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-left: 38px !important;
+  }
+  .stepindex-search-bar::before {
+    content: '';
+    position: absolute;
+    left: 13px; top: 50%;
+    width: 16px; height: 16px;
+    transform: translateY(-50%);
+    background: var(--ink-4);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") center/16px no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") center/16px no-repeat;
+    pointer-events: none;
   }
   .dt-row-clickable { cursor: pointer; }
   .dt-row-clickable:hover { background: var(--brand-tint) !important; }
@@ -1634,17 +1682,17 @@
   }
   .dt-th {
     text-align: left;
-    padding: 7px 12px;
+    padding: 8px 12px 9px;
     font-weight: 600;
-    color: var(--ink-2);
-    background: var(--surface-soft);
-    border-bottom: 1px solid var(--line);
+    color: var(--ink-4);
+    background: var(--bg);
+    border-bottom: 1.5px solid var(--line);
     position: sticky;
     top: 0;
     z-index: 1;
-    font-size: 11.5px;
+    font-size: var(--t-eyebrow);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.07em;
     user-select: none;
     white-space: nowrap;
   }
@@ -1653,16 +1701,20 @@
     transition: color 0.1s var(--ease);
   }
   .dt-th-sortable:hover { color: var(--ink); }
-  .dt-th-active { color: var(--brand-deep); }
+  /* Active sort keyed to navy, not green — green is reserved for the
+     data bars so the accent stays meaningful. */
+  .dt-th-active { color: var(--navy); }
   .dt-row td {
     border-bottom: 1px solid var(--line-soft);
   }
   .dt-row:last-child td { border-bottom: none; }
   .dt-row:nth-child(even) { background: var(--surface-soft); }
-  .dt-row:hover { background: var(--brand-tint) !important; }
-  .dt-row-clickable:hover { background: var(--brand-tint) !important; }
+  /* Hover keyed to navy tint — quiet, and keeps green exclusively on the
+     data bars so the one accent reads as signal. */
+  .dt-row:hover { background: var(--navy-tint) !important; }
+  .dt-row-clickable:hover { background: var(--navy-tint) !important; }
   .dt-td {
-    padding: 5px 12px;
+    padding: 7px 12px;
     color: var(--ink);
     vertical-align: middle;
   }
@@ -1676,33 +1728,57 @@
     font-size: 12px;
     font-variant-numeric: tabular-nums;
   }
-  .dt-empty { color: var(--ink-4); }
+  .dt-empty { color: var(--ink-5); }
   .dt-bar-wrap {
     display: flex; align-items: center; gap: 7px;
     width: 100%;
   }
   .dt-bar-track {
-    flex: 1; height: 5px; border-radius: 99px;
+    flex: 1; height: 5px; border-radius: 3px;
     background: var(--surface-mute);
     overflow: hidden;
-    min-width: 40px;
+    min-width: 44px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
   }
+  /* Neutral slate fill — the bar is a reading aid, so it stays quiet and
+     lets length alone carry the signal. On row hover it lights to brand
+     green, so green appears only where the eye is already resting — a
+     rare, earned accent rather than paint across every row. */
   .dt-bar-fill {
-    height: 100%; border-radius: 99px;
-    background: var(--brand);
-    transition: width 0.3s var(--ease-out);
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(180deg, #a3adba, #828d9b);
+    transition: width 0.4s var(--ease-out), background 0.12s var(--ease);
   }
-  .dt-bar-fill.warn  { background: var(--warn); }
-  .dt-bar-fill.bad   { background: var(--bad); }
+  .dt-row:hover .dt-bar-fill {
+    background: linear-gradient(180deg, var(--brand-bright), var(--brand));
+  }
+  /* Warn / bad carry genuine risk meaning (e.g. high unstored-calc %), so
+     unlike the neutral magnitude bars they keep colour — but muted and
+     gradient-refined, reading as considered alerts rather than alarm-clock
+     RAG. They hold their colour on hover because a risk stays a risk. */
+  .dt-bar-fill.warn,
+  .dt-row:hover .dt-bar-fill.warn {
+    background: linear-gradient(180deg, #e0a54a, #d18f2e);
+  }
+  .dt-bar-fill.bad,
+  .dt-row:hover .dt-bar-fill.bad {
+    background: linear-gradient(180deg, #d97066, #c9564a);
+  }
+  /* The count is the hero of a counting tool — give the figures real
+     presence: tabular mono, ink-strong, sized up a touch so the eye reads
+     the magnitude before anything else. This is the one deliberate
+     emphasis, drawn from what the tool is rather than decoration. */
   .dt-bar-label {
-    font-family: var(--font-mono); font-size: 11px;
-    color: var(--ink-3); white-space: nowrap;
-    min-width: 28px; text-align: right;
+    font-family: var(--font-mono); font-size: 12.5px;
+    color: var(--ink); white-space: nowrap; font-weight: 500;
+    min-width: 34px; text-align: right;
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
   }
   .dt-flag {
-    color: var(--brand-deep);
-    font-size: 11px;
+    color: var(--brand);
+    font-size: 13px;
+    font-weight: 700;
   }
   .dt-group-row td.dt-group-cell {
     padding: 8px 12px 6px;
@@ -1823,21 +1899,27 @@
     background: rgba(0,0,0,0.04);
   }
   .sidebar-item.active {
-    background: var(--brand-deep);
+    background: var(--navy);
     color: #fff;
   }
-  .sidebar-item.active .sidebar-icon,
+  .sidebar-item.active .sidebar-icon {
+    color: #fff;
+    opacity: 0.9;
+  }
   .sidebar-item.active .sidebar-count {
     color: rgba(255,255,255,0.85);
   }
   .sidebar-icon {
-    width: 16px;
+    width: 16px; height: 16px;
     flex-shrink: 0;
-    color: var(--ink-3);
-    font-size: 13px;
-    text-align: center;
-    line-height: 1;
+    color: var(--navy);
+    opacity: 0.72;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
+  .sidebar-icon svg { width: 16px; height: 16px; display: block; }
+  .sidebar-item:hover .sidebar-icon { opacity: 1; }
   .sidebar-label {
     flex: 1;
     white-space: nowrap;
@@ -1950,31 +2032,86 @@
   .content {
     flex: 1;
     min-width: 0;
-    padding: 24px 32px 48px;
+    padding: 28px 40px 56px;
     background: var(--bg);
+    background-image:
+      radial-gradient(1200px 600px at 50% -200px, rgba(57,73,153,0.035), transparent 70%);
+    background-attachment: local;
     overflow-y: auto;
     height: 100%;
   }
+  /* Constrained, centered content by default — pulls table columns back
+     into relationship with each other (far more legible than columns
+     stretched across a wide monitor) and gives every tab a composed,
+     designed frame. Vertical density is untouched: the same rows show
+     per scroll. A width toggle (data-width="full" on <html>) removes the
+     cap for anyone who prefers edge-to-edge; the choice persists. */
   .content-inner {
     width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  [data-width="full"] .content-inner {
+    max-width: none;
   }
   .content-header {
-    padding-bottom: 18px;
-    border-bottom: 1px solid var(--line-soft);
-    margin-bottom: 22px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 18px;
+  }
+  .content-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  /* A short navy rule sets the title — echoes the section tick and the
+     Clockwork mark, giving the page heading an anchor rather than floating
+     it in space. */
+  .content-title-row::before {
+    content: '';
+    width: 4px;
+    height: 26px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--brand), var(--navy));
+    flex-shrink: 0;
   }
   .content-title {
-    font-size: 22px;
+    font-family: var(--font-display);
+    font-size: var(--t-h1);
     font-weight: 600;
-    color: var(--ink);
-    letter-spacing: -0.02em;
-    line-height: 1.2;
+    color: var(--heading);
+    letter-spacing: -0.028em;
+    line-height: 1.08;
   }
   .content-sub {
-    font-size: 11.5px;
+    font-size: var(--t-caption);
     color: var(--ink-3);
-    margin-top: 4px;
+    margin-top: 10px;
+    margin-left: 16px;
     font-family: var(--font-mono);
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  /* Instrument status readout — a clean parse reported like an IDE / terminal
+     status bar. The green dot signals "analysis completed", leaning into the
+     tool's identity as an analysis engine rather than a web page. */
+  .content-sub .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--good);
+    box-shadow: 0 0 0 3px var(--good-tint);
+    flex-shrink: 0;
+  }
+  .content-sub .status-ok {
+    color: var(--good);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    font-size: 10.5px;
+  }
+  .content-sub .status-sep {
+    color: var(--ink-5);
+    margin: 0 1px;
   }
   /* Anything inside .content that used to sit in margined containers should
      stretch full-width now. Overrides for previously-margined components. */
@@ -2055,11 +2192,13 @@
     gap: 12px;
   }
   .obs-card {
-    padding: 14px 16px;
-    background: var(--surface-soft);
-    border: 1px solid var(--line-soft);
-    border-radius: var(--r-md);
-    transition: background 0.12s var(--ease), border-color 0.12s var(--ease), transform 0.12s var(--ease);
+    padding: 18px 18px 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-xs);
+    transition: background 0.12s var(--ease), border-color 0.12s var(--ease),
+                transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
   }
   .obs-card-clickable {
     cursor: pointer;
@@ -2068,10 +2207,10 @@
   .obs-card-clickable::after {
     content: '›';
     position: absolute;
-    top: 12px;
-    right: 14px;
+    top: 15px;
+    right: 16px;
     font-size: 20px;
-    color: var(--ink-3);
+    color: var(--ink-4);
     transition: color 0.12s var(--ease), transform 0.12s var(--ease);
     line-height: 1;
     font-weight: 400;
@@ -2079,35 +2218,39 @@
   .obs-card-clickable:hover {
     background: var(--surface);
     border-color: var(--brand);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-md);
   }
   .obs-card-clickable:hover::after {
-    color: var(--brand-deep);
+    color: var(--brand);
     transform: translateX(3px);
   }
   .obs-card-clickable:active {
     transform: translateY(0);
   }
+  /* The count is the hero of the landing view — large, tabular, navy, and
+     tightly set so the eye reads magnitude first. */
   .obs-card-count {
     font-family: var(--font-mono);
-    font-size: 26px;
+    font-size: 32px;
     font-weight: 600;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.035em;
     line-height: 1;
-    color: var(--ink);
+    color: var(--navy);
+    font-variant-numeric: tabular-nums;
   }
   .obs-card-label {
-    font-size: 12.5px;
+    font-size: var(--t-body);
     color: var(--ink);
     font-weight: 600;
-    margin-top: 10px;
+    margin-top: 12px;
+    letter-spacing: -0.01em;
   }
   .obs-card-sub {
-    font-size: 11px;
+    font-size: 11.5px;
     color: var(--ink-3);
     line-height: 1.45;
-    margin-top: 4px;
+    margin-top: 5px;
   }
 
   /* Issue chips — neutral look, no severity tinting */
@@ -2310,6 +2453,15 @@
   .rel-table-wrap { margin-top: 8px; }
 
 
+
+  /* Dark mode: the neutral bar slate is tuned down so it reads as quietly
+     on near-black as it does on light — a touch darker and less saturated. */
+  [data-theme="dark"] .dt-bar-fill {
+    background: linear-gradient(180deg, #5a6577, #48515f);
+  }
+  [data-theme="dark"] .dt-bar-track {
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+  }
 
   /* ── Dark mode ──────────────────────────────────────────────────────────── */
   [data-theme="dark"] {
@@ -2858,6 +3010,24 @@
     display: flex;
     align-items: center;
   }
+  /* Search icon inside the Reference Explorer input, matching the crafted
+     search bar on the Step Index so search affordances are consistent
+     across the tool. */
+  .ux-search-wrap::before {
+    content: '';
+    position: absolute;
+    left: 12px; top: 50%;
+    width: 16px; height: 16px;
+    transform: translateY(-50%);
+    background: var(--ink-4);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") center/16px no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") center/16px no-repeat;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .ux-search-wrap .find-script-input {
+    padding-left: 38px;
+  }
   .ux-search-dd {
     /* position: fixed, not absolute — the Impact Analysis section is a
        .section box (overflow:hidden, for its rounded corners) that's
@@ -2963,8 +3133,8 @@
   }
   .ux-ref-table td.ux-ref-where { font-family: var(--font-mono); width: 55%; }
   .ux-ref-table td.ux-ref-how   { color: var(--ink-3); }
-  .ux-link { color: var(--brand); cursor: pointer; text-decoration: none; }
-  .ux-link:hover { text-decoration: underline; }
+  .ux-link { color: var(--navy); cursor: pointer; text-decoration: none; font-weight: 500; }
+  .ux-link:hover { color: var(--navy-deep); text-decoration: underline; }
   .ux-detail-calc {
     margin-top: 6px;
     padding: 8px 10px;
@@ -2979,6 +3149,33 @@
     overflow-y: auto;
   }
   .ux-detail-steps { max-height: 420px; }
+  /* Line-numbered code inspector — a gutter of dim line numbers beside the
+     step text, the way an IDE presents code. This is the strongest single
+     signal that Clockwork is a code-analysis instrument, not a viewer. */
+  .sv-block .sv-line {
+    display: flex;
+    align-items: baseline;
+    line-height: 1.7;
+    white-space: pre;
+  }
+  .sv-block .sv-num {
+    flex-shrink: 0;
+    width: 3ch;
+    text-align: right;
+    margin-right: 14px;
+    padding-right: 12px;
+    border-right: 1px solid var(--line);
+    color: var(--ink-5);
+    user-select: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .sv-block .sv-code {
+    white-space: pre-wrap;
+    flex: 1;
+  }
+  .sv-block .sv-line-off .sv-code { opacity: 0.5; }
+  .sv-block .sv-line:hover { background: var(--surface-hover); }
+  .sv-block .sv-line:hover .sv-num { color: var(--brand); }
   .ux-collapse-header {
     display: flex;
     align-items: center;
@@ -3122,11 +3319,13 @@
   <div class="header-logo">
     <svg class="cw-mark" width="30" height="30" viewBox="0 0 1700 1700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Clockwork"><defs><clipPath id="cwclip"><path transform="matrix(1,0,0,-1,0,1700)" d="M0 1700H1700V0H0Z"/></clipPath></defs><g inkscape:groupmode="layer" inkscape:label="Layer 1"><g clip-path="url(#cwclip)"><path transform="matrix(1,0,0,-1,1356.4618,496.62013)" d="M0 0-406.175-476.056C-433.779-508.41-482.33-512.397-514.843-484.98L-566.673-441.273C-599.319-413.743-603.467-364.961-575.937-332.315L-167.015 152.608C-137.136 188.04-83.012 189.407-51.384 155.527L-2.302 102.953C24.53 74.212 25.521 29.911 0 0" fill="#49af5e"/><path transform="matrix(1,0,0,-1,854.1509,1060.6453)" d="M0 0-276.525 232.093C-283.608 238.037-284.53 248.597-278.586 255.68L-157.393 400.074C-151.449 407.156-140.889 408.079-133.806 402.135L142.719 170.042C149.802 164.098 150.724 153.537 144.78 146.455L23.587 2.061C17.643-5.022 7.082-5.944 0 0" fill="#49af5e"/><path transform="matrix(1,0,0,-1,1415.4699,854.7839)" stroke-width="220.547" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#2f4495" d="M0 0C0-311.648-252.64-564.288-564.288-564.288-875.936-564.288-1128.576-311.648-1128.576 0-1128.576 311.648-875.936 564.288-564.288 564.288"/><path transform="matrix(1,0,0,-1,1415.4699,854.7839)" stroke-width="220.547" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#394999" d="M0 0C0-311.648-252.64-564.288-564.288-564.288-875.936-564.288-1128.576-311.648-1128.576 0-1128.576 311.648-875.936 564.288-564.288 564.288"/></g></g></svg>
     <div>
-      <h1><span class="wm-clockwork">Clockwork</span> Inspector <span class="version">v2.5</span></h1>
+      <h1><span class="wm-clockwork">Clockwork</span> Inspector <span class="version">v2.6</span></h1>
       <div class="header-sub">Static analysis for FileMaker Save-as-XML</div>
     </div>
   </div>
   <div class="header-actions" id="header-actions" style="display:flex">
+    <button id="width-toggle" class="theme-toggle-btn" aria-label="Toggle content width" title="Toggle comfortable / full width"><span class="width-icon">▭</span><span class="width-text">Full width</span></button>
+    <span class="header-btn-sep"></span>
     <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme"><span class="theme-icon">🌙</span><span class="theme-text">Dark</span></button>
     <span class="header-btn-sep"></span>
     <button class="header-btn" onclick="showDiffScreen()" id="diff-mode-btn" title="Compare two XML files">⇄ Compare</button>
@@ -3170,7 +3369,7 @@
     </button>
     <input type="file" id="file-input" accept=".xml" multiple>
   </div>
-  <div class="hint">UTF-16 · UTF-8 · FileMaker Save-as-XML · FM26 split catalogs · v2.5 · All analysis runs locally in your browser</div>
+  <div class="hint">UTF-16 · UTF-8 · FileMaker Save-as-XML · FM26 split catalogs · v2.6 · All analysis runs locally in your browser</div>
 </div>
 
 <div id="loading-screen">
@@ -3294,7 +3493,9 @@
     <main class="content" id="content">
       <div class="content-inner">
       <div class="content-header">
-        <div class="content-title" id="report-title">—</div>
+        <div class="content-title-row">
+          <div class="content-title" id="report-title">—</div>
+        </div>
         <div class="content-sub" id="parse-meta"></div>
       </div>
 
@@ -4541,13 +4742,17 @@ function uxRenderScriptSteps(name) {
     if (isOpen) depth++;
     return { text: rendered, enabled: st.enabled };
   });
-  const body = lines.map(function(l) {
-    return '<span style="display:block' + (l.enabled ? '' : ';opacity:.55') + '">' + esc(l.text) + '</span>';
+  const body = lines.map(function(l, i) {
+    const num = String(i + 1).padStart(3, ' ');
+    return '<span class="sv-line' + (l.enabled ? '' : ' sv-line-off') + '">' +
+             '<span class="sv-num">' + num + '</span>' +
+             '<span class="sv-code">' + esc(l.text) + '</span>' +
+           '</span>';
   }).join('');
   const more = steps.length > MAX
-    ? '<span style="display:block;opacity:.6">…(+' + (steps.length - MAX) + ' more steps — open in Script Workspace for the full body)</span>'
+    ? '<span class="sv-line"><span class="sv-num">·</span><span class="sv-code" style="opacity:.6">…(+' + (steps.length - MAX) + ' more steps — open in Script Workspace for the full body)</span></span>'
     : '';
-  return uxCollapsibleBlock('Script steps (' + steps.length + '):', body + more, 'ux-detail-steps');
+  return uxCollapsibleBlock('Script steps (' + steps.length + '):', body + more, 'ux-detail-steps sv-block');
 }
 
 // Type-specific metadata rows for the top of the detail output.
@@ -7420,7 +7625,7 @@ function extractScriptSteps(root, scriptName) {
 }
 
 
-// ── Step Index (v2.5) ──────────────────────────────────────
+// ── Step Index (added in v2.5) ─────────────────────────────
 // Walk every script body once and build two structures:
 //   rows — one aggregated row per distinct step (Commit Records split by
 //          dialog state), with counts and the set of scripts using it
@@ -8507,7 +8712,7 @@ function computeDiff(sA, sB) {
         const namesB = (sB.tables.tables || []).map(function(t) { return t.name; });
         const r = diffNames(namesA, namesB);
         categories.push({
-            id: 'tables', label: 'Base Tables', icon: '▤',
+            id: 'tables', label: 'Base Tables', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>',
             added:    r.added.map(function(n) { return { name: n, detail: '' }; }),
             removed:  r.removed.map(function(n) { return { name: n, detail: '' }; }),
             modified: [],
@@ -8537,7 +8742,7 @@ function computeDiff(sA, sB) {
             return a !== b ? a + ' → ' + b : null;
         });
         categories.push({
-            id: 'fields', label: 'Fields', icon: '≡',
+            id: 'fields', label: 'Fields', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>',
             added:    r.added,
             removed:  r.removed,
             modified: r.modified,
@@ -8656,7 +8861,7 @@ function computeDiff(sA, sB) {
         }
 
         categories.push({
-            id: 'scripts', label: 'Scripts', icon: '▶',
+            id: 'scripts', label: 'Scripts', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
             added, removed, modified, unchanged,
         });
     }
@@ -8679,7 +8884,7 @@ function computeDiff(sA, sB) {
             return btoA !== btoB ? 'base TO: ' + (btoA || '—') + ' → ' + (btoB || '—') : null;
         });
         categories.push({
-            id: 'layouts', label: 'Layouts', icon: '▦',
+            id: 'layouts', label: 'Layouts', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
             added:    r.added.map(function(x) { return { name: x.name, detail: x.detail ? 'base TO: ' + x.detail : '' }; }),
             removed:  r.removed.map(function(x) { return { name: x.name, detail: x.detail ? 'base TO: ' + x.detail : '' }; }),
             modified: r.modified,
@@ -8706,7 +8911,7 @@ function computeDiff(sA, sB) {
             return noteA !== noteB ? 'predicate changed' : null;
         });
         categories.push({
-            id: 'relationships', label: 'Relationships', icon: '⇄',
+            id: 'relationships', label: 'Relationships', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 8.5 15 15"/></svg>',
             added:    r.added,
             removed:  r.removed,
             modified: r.modified,
@@ -8720,7 +8925,7 @@ function computeDiff(sA, sB) {
         const namesB = (sB.valueLists.detail.all || []).map(function(v) { return v.name; });
         const r = diffNames(namesA, namesB);
         categories.push({
-            id: 'valuelists', label: 'Value Lists', icon: '≡',
+            id: 'valuelists', label: 'Value Lists', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>',
             added:    r.added.map(function(n) { return { name: n, detail: '' }; }),
             removed:  r.removed.map(function(n) { return { name: n, detail: '' }; }),
             modified: [],
@@ -8734,7 +8939,7 @@ function computeDiff(sA, sB) {
         const namesB = ((sB.customs && sB.customs.detail && sB.customs.detail.all) || []).map(function(f) { return f.name; });
         const r = diffNames(namesA, namesB);
         categories.push({
-            id: 'customfns', label: 'Custom Functions', icon: 'ƒ',
+            id: 'customfns', label: 'Custom Functions', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M15 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/></svg>',
             added:    r.added.map(function(n) { return { name: n, detail: '' }; }),
             removed:  r.removed.map(function(n) { return { name: n, detail: '' }; }),
             modified: [],
@@ -8748,7 +8953,7 @@ function computeDiff(sA, sB) {
         const namesB = (sB.accounts.acc.detail.all || []).map(function(a) { return a.name; });
         const r = diffNames(namesA, namesB);
         categories.push({
-            id: 'accounts', label: 'Accounts', icon: '🔒',
+            id: 'accounts', label: 'Accounts', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
             added:    r.added.map(function(n) { return { name: n, detail: '' }; }),
             removed:  r.removed.map(function(n) { return { name: n, detail: '' }; }),
             modified: [],
@@ -8762,7 +8967,7 @@ function computeDiff(sA, sB) {
         const namesB = (sB.accounts.priv.detail.all || []).map(function(p) { return p.name; });
         const r = diffNames(namesA, namesB);
         categories.push({
-            id: 'privsets', label: 'Privilege Sets', icon: '🛡',
+            id: 'privsets', label: 'Privilege Sets', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
             added:    r.added.map(function(n) { return { name: n, detail: '' }; }),
             removed:  r.removed.map(function(n) { return { name: n, detail: '' }; }),
             modified: [],
@@ -8776,7 +8981,7 @@ function computeDiff(sA, sB) {
         const namesB = (sB.themes.detail.all || []).map(function(t) { return t.name; });
         const r = diffNames(namesA, namesB);
         categories.push({
-            id: 'themes', label: 'Themes', icon: '🎨',
+            id: 'themes', label: 'Themes', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4.9-4.5-9-10-9z"/></svg>',
             added:    r.added.map(function(n) { return { name: n, detail: '' }; }),
             removed:  r.removed.map(function(n) { return { name: n, detail: '' }; }),
             modified: [],
@@ -8790,7 +8995,7 @@ function computeDiff(sA, sB) {
         const toNamesB = ((sB.graph && sB.graph.detail && sB.graph.detail.tos_all) || []).map(function(t) { return t.name || t; });
         const r = diffNames(toNamesA, toNamesB);
         categories.push({
-            id: 'tos', label: 'Table Occurrences', icon: '⊡',
+            id: 'tos', label: 'Table Occurrences', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>',
             added:    r.added.map(function(n) { return { name: n, detail: '' }; }),
             removed:  r.removed.map(function(n) { return { name: n, detail: '' }; }),
             modified: [],
@@ -15404,8 +15609,12 @@ function renderResults(file, root, s, elapsed) {
   const lineCount = window.__lastLineCount ? window.__lastLineCount.toLocaleString() + ' lines · ' : '';
   const splitNote = (window.__fm26Manifest && window.__fm26Manifest.split && !window.__fm26Manifest.singleCatalog)
     ? ' · split export (' + (window.__fm26Manifest.files||[]).length + ' files merged)' : '';
-  if (parseMetaEl) parseMetaEl.textContent =
-    `FMSaveAsXML v${version} · FM ${source} · ${sizeMB} MB · ${lineCount}${elapsed}s${splitNote}`;
+  if (parseMetaEl) parseMetaEl.innerHTML =
+    `<span class="status-dot"></span>` +
+    `<span class="status-ok">PARSED</span>` +
+    `<span class="status-sep">·</span>${sizeMB} MB` +
+    `<span class="status-sep">·</span>${lineCount.replace(' · ','')}` +
+    `<span class="status-sep">·</span>${elapsed}s${splitNote}`;
   const reportTitleEl = document.getElementById('report-title');
   if (reportTitleEl) reportTitleEl.textContent = fname.replace(/\.xml$/i,'');
 
@@ -15753,7 +15962,7 @@ function renderResults(file, root, s, elapsed) {
   const gd = (rg.detail || {});
 
   // ── TABLES TAB ────────────────────────────────────────────────────────────
-  tabDefs.push({ id:'tab-tables', label:'Tables', icon:'⬡', contentEl: (function() {
+  tabDefs.push({ id:'tab-tables', label:'Tables', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>', contentEl: (function() {
 
     // Build TO count per base table from the tos_all detail list
     const toCountByBase = {};
@@ -15859,7 +16068,7 @@ function renderResults(file, root, s, elapsed) {
   })() });
 
   // ── FIELDS TAB ────────────────────────────────────────────────────────────
-  tabDefs.push({ id:'tab-fields', label:'Fields', icon:'≡', contentEl: (function() {
+  tabDefs.push({ id:'tab-fields', label:'Fields', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const fldUnrefNote = (u.fields && u.fields.length) ? ' · ' + u.fields.length + ' unreferenced' : '';
 
@@ -15944,7 +16153,7 @@ function renderResults(file, root, s, elapsed) {
   // "Used by" = fields whose calcs reference this field.
   // "Scripts" = count of scripts that reference this field (click to jump
   //   to the Scripts tab with that field pre-filled in Find References).
-  tabDefs.push({ id:'tab-field-deps', label:'Field Dependencies', icon:'⇄', contentEl: (function() {
+  tabDefs.push({ id:'tab-field-deps', label:'Field Dependencies', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const depRows = (u.calc_deps || []);
     const depNote = depRows.length ? ' — ' + depRows.length + ' fields' : '';
@@ -16026,7 +16235,7 @@ function renderResults(file, root, s, elapsed) {
   // ── CONTAINERS TAB (v1.5) ──────────────────────────────────────────────────
   // Three sections: (1) base directory definitions, (2) per-table summary,
   // (3) full field list with all Save-as-XML-derived storage attributes.
-  tabDefs.push({ id:'tab-containers', label:'Containers', icon:'▣', contentEl: (function() {
+  tabDefs.push({ id:'tab-containers', label:'Containers', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const allContainers = (tf.detail && tf.detail.fields_container) ? tf.detail.fields_container : [];
     const bd = s.baseDirs || { total: 0, relative: 0, absolute: 0, detail: { all: [] } };
@@ -16100,10 +16309,10 @@ function renderResults(file, root, s, elapsed) {
         field:         f.field || '',
         mode:          modeLabel,
         base_dir:      f.container_base    || '',
-        absolute:      f.container_absolute === 'True'  ? '●' :
+        absolute:      f.container_absolute === 'True'  ? '✓' :
                        f.container_absolute === 'False' ? ''  : '',
-        fewer_folders: f.fewer_folders     === 'True'  ? '●' : '',
-        global:        f.is_global                     ? '●' : '',
+        fewer_folders: f.fewer_folders     === 'True'  ? '✓' : '',
+        global:        f.is_global                     ? '✓' : '',
         reps:          f.reps > 1 ? String(f.reps) : '',
       };
     });
@@ -16197,7 +16406,7 @@ function renderResults(file, root, s, elapsed) {
   // when the parser hasn't populated that key. Keeps the row() calls
   // readable.
   const ld = (lay.detail || {});
-  tabDefs.push({ id:'tab-relationships', label:'Relationships', icon:'↔', contentEl: (function() {
+  tabDefs.push({ id:'tab-relationships', label:'Relationships', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 8.5 15 15"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const relRows = (rg && rg.detail && rg.detail.relationships_all) ? rg.detail.relationships_all : [];
     wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">↔</span>Relationships — ' + fmt(rg.relationship_count) + '</div><div class="rel-host"></div></div>';
@@ -16231,7 +16440,7 @@ function renderResults(file, root, s, elapsed) {
 
 
 
-  tabDefs.push({ id:'tab-layouts', label:'Layouts', icon:'▦', contentEl: (function() {
+  tabDefs.push({ id:'tab-layouts', label:'Layouts', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const layUnrefNote = (u.layouts && u.layouts.length) ? ' · ' + u.layouts.length + ' unreferenced' : '';
 
@@ -16253,21 +16462,21 @@ function renderResults(file, root, s, elapsed) {
       return {
         name:       name,
         base_to:    info.base_to      || '',
-        hidden:     info.hidden       ? '●' : '',
+        hidden:     info.hidden       ? '✓' : '',
         objects:    info.object_count || 0,
         portals:    info.portal_count || 0,
         buttons:    info.button_count || 0,
         charts:     info.chart_count  || 0,
         triggers:   info.triggers     || 0,
-        nav:        withNavPart.has(name)    ? '●' : '',
-        header:     withHeader.has(name)     ? '●' : '',
-        footer:     withFooter.has(name)     ? '●' : '',
-        subsummary: withSubsummary.has(name) ? '●' : '',
+        nav:        withNavPart.has(name)    ? '✓' : '',
+        header:     withHeader.has(name)     ? '✓' : '',
+        footer:     withFooter.has(name)     ? '✓' : '',
+        subsummary: withSubsummary.has(name) ? '✓' : '',
         local_css:  localCssCount[name]       || 0,
         theme:      info.theme        || '',
         menu_set:   info.menu_set && info.menu_set !== '[File Default]' ? info.menu_set : '',
-        no_save:    info.save_record  === false ? '●' : '',
-        no_qf:      info.quick_find   === false ? '●' : '',
+        no_save:    info.save_record  === false ? '✓' : '',
+        no_qf:      info.quick_find   === false ? '✓' : '',
         default_view: info.default_view && info.default_view !== 'Form' ? info.default_view : '',
         views:      [info.allow_form  === false ? '' : 'F',
                      info.allow_list  === false ? '' : 'L',
@@ -16316,7 +16525,7 @@ function renderResults(file, root, s, elapsed) {
   })() });
 
 
-  tabDefs.push({ id:'tab-portals', label:'Portals', icon:'⊞', contentEl: (function() {
+  tabDefs.push({ id:'tab-portals', label:'Portals', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 15h8"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const portalRows = (ld.portal_list || []);
     wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">⊞</span>Portals — ' + fmt(lay.portals_total) + '</div><div class="portals-host"></div></div>';
@@ -16350,7 +16559,7 @@ function renderResults(file, root, s, elapsed) {
     return wrap;
   })() });
 
-  tabDefs.push({ id:'tab-controls', label:'Controls', icon:'⊟', contentEl: (function() {
+  tabDefs.push({ id:'tab-controls', label:'Controls', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="4"/><circle cx="9" cy="12" r="2"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
 
     // Merge tab controls, button bars, popovers into one row per layout
@@ -16413,10 +16622,10 @@ function renderResults(file, root, s, elapsed) {
   })() });
 
   // Wireframe — visual layout preview drawn from object Bounds.
-  tabDefs.push({ id:'tab-wireframe', label:'Wireframe', icon:'⊡', contentEl: buildWireframeTab(lay) });
+  tabDefs.push({ id:'tab-wireframe', label:'Wireframe', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/><path d="M14 13h3M14 16h3"/></svg>', contentEl: buildWireframeTab(lay) });
 
   const sd = (scr.detail || {});
-  tabDefs.push({ id:'tab-scripts', label:'Scripts', icon:'▶', contentEl: (function() {
+  tabDefs.push({ id:'tab-scripts', label:'Scripts', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const scrUnrefNote = (u.scripts && u.scripts.length) ? ' · ' + u.scripts.length + ' unreferenced' : '';
     wrap.innerHTML =
@@ -16439,12 +16648,12 @@ function renderResults(file, root, s, elapsed) {
         steps:          info.step_count        || 0,
         complexity:     info.complexity        || 0,
         nesting:        info.nesting           || 0,
-        in_menu:        info.in_menu           ? '●' : '',
-        full_access:    info.full_access       ? '●' : '',
-        loops:          info.has_loops         ? '●' : '',
-        psos:           info.has_psos          ? '●' : '',
-        error_handling: info.has_error_capture ? '●' : '',
-        globals:        info.uses_globals      ? '●' : '',
+        in_menu:        info.in_menu           ? '✓' : '',
+        full_access:    info.full_access       ? '✓' : '',
+        loops:          info.has_loops         ? '✓' : '',
+        psos:           info.has_psos          ? '✓' : '',
+        error_handling: info.has_error_capture ? '✓' : '',
+        globals:        info.uses_globals      ? '✓' : '',
         inactive:       info.inactive           || 0,
         unref:          unrefScripts.has(name) ? '⚠' : '',
       };
@@ -16484,16 +16693,16 @@ function renderResults(file, root, s, elapsed) {
   // dialog text) — built to answer "which script shows the dialog that
   // just says Error". Commit Records/Requests is split into With dialog
   // and No dialog lines so both usages are countable separately.
-  tabDefs.push({ id:'tab-stepindex', label:'Step Index', icon:'#', contentEl: (function() {
+  tabDefs.push({ id:'tab-stepindex', label:'Step Index', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="1.5"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const idx = buildStepIndex(window.__lastRoot);
     window.__stepIndex = idx;
     wrap.innerHTML =
-      '<div class="section"><div class="section-title"><span class="section-icon">#</span>Step Index — ' +
+      '<div class="section"><div class="section-title">' +
       fmt(idx.rows.length) + ' distinct steps · ' + fmt(idx.total) + ' occurrences</div>' +
-      '<div style="margin:0 0 10px 0">' +
-      '<input id="stepindex-content-search" class="dt-filter-input" type="text" style="max-width:420px" ' +
-      'placeholder="Search step content (calc text, dialog messages)…" ' +
+      '<div class="stepindex-search-bar">' +
+      '<input id="stepindex-content-search" class="dt-filter-input search-input" type="text" ' +
+      'placeholder="Search step content — find a dialog by its message, a calc by its text…" ' +
       'oninput="stepIndexContentSearch(this.value)">' +
       '</div>' +
       '<div class="stepindex-host"></div>' +
@@ -16529,7 +16738,7 @@ function renderResults(file, root, s, elapsed) {
   })() });
 
   const vld = (vl.detail || {});
-  tabDefs.push({ id:'tab-valuelists', label:'Value Lists', icon:'≡', contentEl: (function() {
+  tabDefs.push({ id:'tab-valuelists', label:'Value Lists', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
 
     // Summary strip
@@ -16579,7 +16788,7 @@ function renderResults(file, root, s, elapsed) {
   const ad  = (acc.detail || {});
   const psd = (priv.detail || {});
   const epd = (ep.detail || {});
-  tabDefs.push({ id:'tab-security', label:'Accounts', icon:'🔒', contentEl: (function() {
+  tabDefs.push({ id:'tab-security', label:'Accounts', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const namesHiddenNote = acc.names_hidden ? ' · names not in export' : '';
     wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">🔒</span>Accounts — ' + fmt(acc.account_count) + namesHiddenNote + '</div><div class="accounts-host"></div></div>';
@@ -16605,7 +16814,7 @@ function renderResults(file, root, s, elapsed) {
     return wrap;
   })() });
 
-    tabDefs.push({ id:'tab-privilege-sets', label:'Privilege Sets', icon:'🛡', contentEl: (function() {
+    tabDefs.push({ id:'tab-privilege-sets', label:'Privilege Sets', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">🛡</span>Privilege Sets — ' + fmt(priv.privilege_set_count) + '</div><div class="priv-host"></div></div>';
     const host = wrap.querySelector('.priv-host');
@@ -16636,7 +16845,7 @@ function renderResults(file, root, s, elapsed) {
     return wrap;
   })() });
 
-  tabDefs.push({ id:'tab-extended-privileges', label:'Extended Privileges', icon:'🔑', contentEl: (function() {
+  tabDefs.push({ id:'tab-extended-privileges', label:'Extended Privileges', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.4-8.4"/><path d="m15 6 3 3M18 3l3 3"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const epRows = (epd.all || []).map(function(e) {
       const sets = parseInt((e.note||'').match(/^(\d+)/)?.[1]||'0');
@@ -16670,7 +16879,7 @@ function renderResults(file, root, s, elapsed) {
   const cmd = (cm.detail || {});
   const plgd = (plg && plg.detail) ? plg.detail : {};
   // ── VARIABLES TAB ───────────────────────────────────────────────────────────
-  tabDefs.push({ id:'tab-variables', label:'Variables', icon:'⊹', contentEl: (function() {
+  tabDefs.push({ id:'tab-variables', label:'Variables', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="m6 8 6-5 6 5"/><path d="M6 16h12"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     // Build a lookup of inconsistent-case entries for fast access to variant spellings
     const inconsistentMap = {};
@@ -16707,7 +16916,7 @@ function renderResults(file, root, s, elapsed) {
   })() });
 
   // ── CUSTOM FUNCTIONS TAB ─────────────────────────────────────────────────────
-  tabDefs.push({ id:'tab-custom-functions', label:'Custom Functions', icon:'ƒ', contentEl: (function() {
+  tabDefs.push({ id:'tab-custom-functions', label:'Custom Functions', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2"/><path d="M15 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const cfRows = (cfd.all || []).map(function(f) {
       return {
@@ -16715,7 +16924,7 @@ function renderResults(file, root, s, elapsed) {
         signature: f.signature || f.name || '',
         params:    f.params    || 0,
         refs:      f.refs      || 0,
-        recursive: f.recursive ? '●' : '',
+        recursive: f.recursive ? '✓' : '',
       };
     });
     wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">ƒ</span>Custom Functions — ' + (cf.custom_function_count||0).toLocaleString() + '</div><div class="cf-host"></div></div>';
@@ -16740,7 +16949,7 @@ function renderResults(file, root, s, elapsed) {
   })() });
 
   // ── PLUGINS TAB ─────────────────────────────────────────────────────────────
-  tabDefs.push({ id:'tab-plugins', label:'Plugins', icon:'⚡', contentEl: (function() {
+  tabDefs.push({ id:'tab-plugins', label:'Plugins', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const plugRows = (plgd.functions || []).map(function(f) {
       return { name: f.name || '', note: f.note || '' };
@@ -16772,7 +16981,7 @@ function renderResults(file, root, s, elapsed) {
   })() });
 
   // ── CUSTOM MENUS TAB ────────────────────────────────────────────────────────
-  tabDefs.push({ id:'tab-menus', label:'Custom Menus', icon:'☰', contentEl: (function() {
+  tabDefs.push({ id:'tab-menus', label:'Custom Menus', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h16"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
     const menuRows = (cmd.menus || []).map(function(m) {
       return {
@@ -16806,7 +17015,7 @@ function renderResults(file, root, s, elapsed) {
   })() });
 
   const thmd = (thm.detail || {});
-  tabDefs.push({ id:'tab-themes', label:'Themes', icon:'🎨', contentEl: (function() {
+  tabDefs.push({ id:'tab-themes', label:'Themes', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4.9-4.5-9-10-9z"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
 
     // Build per-theme layout usage count from lay.info
@@ -16826,7 +17035,7 @@ function renderResults(file, root, s, elapsed) {
     const themeRows = (thm.themes_detail || []).map(function(t) {
       return {
         name:    t.name,
-        custom:  t.custom ? '●' : '',
+        custom:  t.custom ? '✓' : '',
         styles:  t.styles  || 0,
         colors:  t.colors  || 0,
         unused:  unusedByTheme[t.name] || 0,
@@ -16942,7 +17151,7 @@ function renderResults(file, root, s, elapsed) {
 
   const extd = (ext.detail || {});
   // Use the same plg.detail alias for Plugins in File Config
-  tabDefs.push({ id:'tab-fileconfig', label:'File Config', icon:'⚙', contentEl: (function() {
+  tabDefs.push({ id:'tab-fileconfig', label:'File Config', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.2a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.4a2 2 0 0 1-1 1.7l-.2.2a2 2 0 0 0-.7 2.7l.2.3a2 2 0 0 0 2.7.8l.2-.1a2 2 0 0 1 2 0l.4.2a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.2a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.8l.2-.3a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.4a2 2 0 0 1 1-1.7l.2-.2a2 2 0 0 0 .7-2.7l-.2-.3a2 2 0 0 0-2.7-.8l-.2.1a2 2 0 0 1-2 0l-.4-.2a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
 
     // File settings as key-value rows
@@ -17079,7 +17288,7 @@ function renderResults(file, root, s, elapsed) {
     }
     cssColumns.push({ key: '_total', label: 'Total', width: '8%', align: 'right' });
 
-    tabDefs.push({ id:'tab-css', label:'Local CSS', icon:'◈', contentEl: (function() {
+    tabDefs.push({ id:'tab-css', label:'Local CSS', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3-6 9 6 9"/><path d="m16 3 6 9-6 9"/></svg>', contentEl: (function() {
       const wrap = document.createElement('div');
       wrap.innerHTML = '<div class="section"><div class="section-title"><span class="section-icon">◈</span>Local CSS Overrides — ' + cssItems.length.toLocaleString() + ' objects across ' + sortedLayouts.length.toLocaleString() + ' layouts</div><div class="css-host"></div></div>';
       const host = wrap.querySelector('.css-host');
@@ -17122,7 +17331,7 @@ function renderResults(file, root, s, elapsed) {
       tagRows += divider('Internal Tags');
       tagRows += tags.internal_tags.map(t => row(esc(t.tag), fmt(t.count), '', 1)).join('');
     }
-    tabDefs.push({ id:'tab-tags', label:'Developer Tags', icon:'🏷', content:
+    tabDefs.push({ id:'tab-tags', label:'Developer Tags', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.6 2.7a2 2 0 0 0-1.4-.6H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2 2 0 0 0 2.8 0l7.2-7.2a2 2 0 0 0 0-2.8z"/><circle cx="7.5" cy="7.5" r="1"/></svg>', content:
       `<div class="section"><div class="section-title"><span class="section-icon">🏷</span>Developer Tags</div>
         <table class="stats"><tbody>${tagRows}</tbody></table></div>`
     });
@@ -17147,7 +17356,7 @@ function renderResults(file, root, s, elapsed) {
         row(esc(m.name)||'(unnamed)', esc((m.timestamp||'').replace('T',' ').slice(0,16)), esc(m.category), 1)
       ).join('');
     }
-    tabDefs.push({ id:'tab-mods', label:'Activity', icon:'⟳', content:
+    tabDefs.push({ id:'tab-mods', label:'Activity', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>', content:
       `<div class="section"><div class="section-title"><span class="section-icon">⟳</span>Modification Activity</div>
         <table class="stats"><tbody>${modRows}</tbody></table></div>`
     });
@@ -17180,22 +17389,22 @@ function renderResults(file, root, s, elapsed) {
       bfHtml += '</div>';
     }
     bfHtml += '</div></div></div>';
-    tabDefs.push({ id: 'tab-bitflags', label: 'Bit Flag Decoder', icon: '⚙', content: bfHtml });
+    tabDefs.push({ id: 'tab-bitflags', label: 'Bit Flag Decoder', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>', content: bfHtml });
   }
 
   // v1.0: Methodology and About — always present, last in the bar. These
   // are the panels that make the analyser defensible: every finding
   // category is documented in Methodology, and About carries privacy
   // framing, attribution and feedback contact.
-    tabDefs.push({ id: 'tab-methodology', label: 'Methodology', icon: '📐', content: buildMethodologyTab(s) });
-  tabDefs.push({ id: 'tab-about',       label: 'About',       icon: 'ⓘ', content: buildAboutTab(s) });
+    tabDefs.push({ id: 'tab-methodology', label: 'Methodology', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M3 7.5 12 3l9 4.5"/><path d="M3 7.5v9L12 21l9-4.5v-9"/></svg>', content: buildMethodologyTab(s) });
+  tabDefs.push({ id: 'tab-about',       label: 'About',       icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>', content: buildAboutTab(s) });
 
   // ── v1.6: NEW FEATURE TABS ──────────────────────────────────
   // These are inserted into tabDefs and sidebar after the core tabs.
   // Call Graph, Dead Code Explorer, Impact Analysis, Mermaid Export.
   tabDefs.splice(tabDefs.length - 2, 0,
-    { id: 'tab-callgraph',   label: 'Call Graph',       icon: '⬡', contentEl: buildCallGraphTab(scr) },
-    { id: 'tab-relgraph',    label: 'Relationship Graph', icon: '⊞', contentEl: buildRelGraphTab() },
+    { id: 'tab-callgraph',   label: 'Call Graph',       icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10M6.5 7.7 10.5 16M17.5 7.7 13.5 16"/></svg>', contentEl: buildCallGraphTab(scr) },
+    { id: 'tab-relgraph',    label: 'Relationship Graph', icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="7" r="2.5"/><circle cx="12" cy="17" r="2.5"/><path d="M8.2 7.2 10 15M15.6 8.4 13.5 15.5M8.2 6.6 15.5 6.8"/></svg>', contentEl: buildRelGraphTab() },
     { id: 'tab-impact',      label: 'Reference Explorer', icon: '⚡', contentEl: buildImpactTab(s) },
     { id: 'tab-mermaid',     label: 'Mermaid Export',   icon: '⌗', contentEl: buildMermaidExport(s) }
   );
@@ -18100,8 +18309,9 @@ function redrawDenseTable(container) {
             const extraStyle = c.getCellStyle ? c.getCellStyle(v, r) : '';
             const styleAttr  = (alignStyle || extraStyle) ? ' style="' + [alignStyle, extraStyle].filter(Boolean).join(';') + '"' : '';
             let display;
-            if (v === true) display = '<span class="dt-flag">●</span>';
+            if (v === true) display = '<span class="dt-flag">✓</span>';
             else if (v === false || v === null || v === undefined || v === '') display = '<span class="dt-empty">—</span>';
+            else if (v === '✓') display = '<span class="dt-flag">✓</span>';
             else if (typeof v === 'number') display = v.toLocaleString();
             else display = esc(v);
             const cellClass = c.mono ? 'dt-td dt-mono' : 'dt-td';
@@ -18892,12 +19102,37 @@ function lsGet(key) {
 function lsSet(key, val) {
     try { localStorage.setItem(key, val); } catch (e) { /* storage unavailable — ignore */ }
 }
-(function initTheme() {    const savedTheme = lsGet('cw-inspector-theme');
-    let systemDark = false;
-    try { systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) {}
-    const theme = savedTheme || (systemDark ? 'dark' : 'light');
+(function initTheme() {
+    const savedTheme = lsGet('cw-inspector-theme');
+    // Default to light. A previously-saved choice is respected; the system
+    // dark-mode preference is deliberately NOT used as the default, so a
+    // first-time visitor always lands in light regardless of their OS.
+    const theme = savedTheme || 'light';
     applyTheme(theme);
 })();
+
+// Content width — constrained (comfortable) by default, full-width optional.
+// Persisted like the theme. Default is comfortable because it reads as
+// designed and is more legible for most; full width is one click away for
+// anyone who prefers edge-to-edge density.
+(function initWidth() {
+    const saved = lsGet('cw-inspector-width');
+    applyWidth(saved === 'full' ? 'full' : 'comfortable');
+})();
+
+function applyWidth(mode) {
+    if (mode === 'full') {
+        document.documentElement.setAttribute('data-width', 'full');
+    } else {
+        document.documentElement.removeAttribute('data-width');
+    }
+    lsSet('cw-inspector-width', mode);
+    const icons = document.querySelectorAll('.width-icon');
+    const texts = document.querySelectorAll('.width-text');
+    // Button offers the OTHER mode, matching the theme toggle's convention
+    icons.forEach(function(el) { el.textContent = mode === 'full' ? '▬' : '▭'; });
+    texts.forEach(function(el) { el.textContent = mode === 'full' ? 'Comfortable' : 'Full width'; });
+}
 
 function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
@@ -18915,9 +19150,17 @@ function toggleTheme() {
     applyTheme(current === 'dark' ? 'light' : 'dark');
 }
 
+function toggleWidth() {
+    const current = document.documentElement.getAttribute('data-width') === 'full' ? 'full' : 'comfortable';
+    applyWidth(current === 'full' ? 'comfortable' : 'full');
+}
+
 document.addEventListener('click', function(e) {
     if (e.target.closest('#theme-toggle')) {
         toggleTheme();
+    }
+    if (e.target.closest('#width-toggle')) {
+        toggleWidth();
     }
 });
 
@@ -18925,6 +19168,8 @@ document.addEventListener('click', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
     applyTheme(theme);
+    const width = document.documentElement.getAttribute('data-width') === 'full' ? 'full' : 'comfortable';
+    applyWidth(width);
     detectSavedReport();
 });
 
