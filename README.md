@@ -3,6 +3,9 @@
 [![Stars](https://img.shields.io/github/stars/andykear/FileMaker-XML-inspector-open-source?style=social)](https://github.com/andykear/FileMaker-XML-inspector-open-source)
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-green)](https://creativecommons.org/licenses/by/4.0/)
 
+<img width="800" height="1107" alt="Screenshot 2026-09-05 at 14 30 14" src="https://github.com/user-attachments/assets/7aba25f4-c015-4b7b-b1ed-b96c90c09a7d" />
+
+
 **Full-solution analysis for FileMaker. Local, in the browser, open. No install, no licence, no cloud.**
 
 A modern alternative to the commercial FileMaker analysis tools that now exceeds most of them on usability, without asking you to install anything, license anything, or send your work to a server. Drop a Save as XML export onto the page and get a full structured analysis in seconds. It is a single self-contained HTML file: no dependencies, no build, nothing to wire up.
