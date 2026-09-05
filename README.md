@@ -13,6 +13,11 @@
 
 <img width="855" height="553" alt="Screenshot 2026-09-05 at 14 38 11" src="https://github.com/user-attachments/assets/8307084e-961a-4e0c-a2ab-85c63140b48f" />
 
+<img width="855" height="553" alt="Screenshot 2026-09-05 at 14 43 20" src="https://github.com/user-attachments/assets/a1e12ac2-4f12-4bcb-b094-540aebb58e9a" />
+
+<img width="855" height="553" alt="Screenshot 2026-09-05 at 14 43 29" src="https://github.com/user-attachments/assets/b493f114-9baf-4c90-8284-c4db0f471b10" />
+
+
 
 
 A modern alternative to the commercial FileMaker analysis tools that now exceeds most of them on usability, without asking you to install anything, license anything, or send your work to a server. Drop a Save as XML export onto the page and get a full structured analysis in seconds. It is a single self-contained HTML file: no dependencies, no build, nothing to wire up.
