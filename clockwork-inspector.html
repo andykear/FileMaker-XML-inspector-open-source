@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Clockwork Inspector for FileMaker — v2.6
+  Clockwork Inspector for FileMaker — v2.7
   Single-file, browser-based audit tool for FileMaker Save as XML analysis.
   Runs entirely client-side. Nothing is uploaded.
   Developed by Andrew Kear, Clockwork Creative Technology (clockworkct.co.uk).
@@ -3319,7 +3319,7 @@
   <div class="header-logo">
     <svg class="cw-mark" width="30" height="30" viewBox="0 0 1700 1700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Clockwork"><defs><clipPath id="cwclip"><path transform="matrix(1,0,0,-1,0,1700)" d="M0 1700H1700V0H0Z"/></clipPath></defs><g inkscape:groupmode="layer" inkscape:label="Layer 1"><g clip-path="url(#cwclip)"><path transform="matrix(1,0,0,-1,1356.4618,496.62013)" d="M0 0-406.175-476.056C-433.779-508.41-482.33-512.397-514.843-484.98L-566.673-441.273C-599.319-413.743-603.467-364.961-575.937-332.315L-167.015 152.608C-137.136 188.04-83.012 189.407-51.384 155.527L-2.302 102.953C24.53 74.212 25.521 29.911 0 0" fill="#49af5e"/><path transform="matrix(1,0,0,-1,854.1509,1060.6453)" d="M0 0-276.525 232.093C-283.608 238.037-284.53 248.597-278.586 255.68L-157.393 400.074C-151.449 407.156-140.889 408.079-133.806 402.135L142.719 170.042C149.802 164.098 150.724 153.537 144.78 146.455L23.587 2.061C17.643-5.022 7.082-5.944 0 0" fill="#49af5e"/><path transform="matrix(1,0,0,-1,1415.4699,854.7839)" stroke-width="220.547" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#2f4495" d="M0 0C0-311.648-252.64-564.288-564.288-564.288-875.936-564.288-1128.576-311.648-1128.576 0-1128.576 311.648-875.936 564.288-564.288 564.288"/><path transform="matrix(1,0,0,-1,1415.4699,854.7839)" stroke-width="220.547" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#394999" d="M0 0C0-311.648-252.64-564.288-564.288-564.288-875.936-564.288-1128.576-311.648-1128.576 0-1128.576 311.648-875.936 564.288-564.288 564.288"/></g></g></svg>
     <div>
-      <h1><span class="wm-clockwork">Clockwork</span> Inspector <span class="version">v2.6</span></h1>
+      <h1><span class="wm-clockwork">Clockwork</span> Inspector <span class="version">v2.7</span></h1>
       <div class="header-sub">Static analysis for FileMaker Save-as-XML</div>
     </div>
   </div>
@@ -3369,7 +3369,7 @@
     </button>
     <input type="file" id="file-input" accept=".xml" multiple>
   </div>
-  <div class="hint">UTF-16 · UTF-8 · FileMaker Save-as-XML · FM26 split catalogs · v2.6 · All analysis runs locally in your browser</div>
+  <div class="hint">UTF-16 · UTF-8 · FileMaker Save-as-XML · FM26 split catalogs · v2.7 · All analysis runs locally in your browser</div>
 </div>
 
 <div id="loading-screen">
@@ -7338,15 +7338,19 @@ function extractStepText(step) {
     // a nested Text element, and the Calculation's OWN textContent also
     // includes a ChunkList that repeats the body token by token — so
     // reading textContent doubles every calc. Text-first, always.
+    // v2.7 fix: this used to hard-cut at 120 chars with a silent ellipsis.
+    // That's an unmarked lossy cut on the exact content the reference
+    // scanner and script viewer both read, and long Set Variable / Set
+    // Field formulas (nested Let()s, plugin calls) blow past 120 chars
+    // routinely, so the rendered step looked complete but wasn't. Show
+    // the full body; the script viewer already wraps long lines.
     function calcBody(el) {
         if (!el) return '';
         const textEl = el.querySelector('Text');
-        let t = ((textEl ? textEl.textContent : el.textContent) || '').trim();
-        if (t.length > 120) t = t.slice(0, 117) + '\u2026';
-        return t;
+        return ((textEl ? textEl.textContent : el.textContent) || '').trim();
     }
 
-    // Helper: get first Calculation text content, trimmed and capped
+    // Helper: get first Calculation text content, trimmed and untruncated
     function calc(sel) {
         return calcBody(step.querySelector(sel || 'Calculation'));
     }
@@ -7593,9 +7597,23 @@ function extractStepText(step) {
             // as garbage whenever the DDR-rendered text for this step was
             // itself an empty string (falsy, so the DDR-first branch above
             // fell through to this fallback).
-            const commentEl = step.querySelector('ParameterValues > Parameter[type="Comment"] > Comment');
-            const c = ((commentEl ? commentEl.textContent : '') || '').trim().replace(/\s+/g, ' ');
-            return '# ' + c.slice(0, 100);
+            // v2.7 fix: that selector found the right element but read the
+            // wrong place on it. Verified against a real export: the text
+            // sits in a value ATTRIBUTE — <Comment value="sgp"></Comment> —
+            // not the element's text content, which is empty. textContent
+            // is kept as a fallback in case another export grammar nests it
+            // there instead. Also dropped the 100-char cap and the
+            // whitespace collapse, which silently ate the rest of any
+            // longer comment.
+            const commentEl = step.querySelector('ParameterValues > Parameter[type="Comment"] > Comment')
+                            || step.querySelector('Parameter[type="Comment"] > Comment')
+                            || step.querySelector('Parameter[type="Comment"]')
+                            || step.querySelector('ParameterValues > Comment')
+                            || step.querySelector('Comment');
+            const c = commentEl
+                ? ((commentEl.getAttribute('value') || commentEl.textContent || '').trim())
+                : '';
+            return '# ' + c;
         }
 
         // ── Fallback: step name + any calc hint ───────────────
@@ -9614,6 +9632,7 @@ async function analyse(doc, root) {
     ['Parsing external sources…',    function() { s.ext        = parseExternalSources(doc, root); }],
     ['Parsing base directories…',    function() { s.baseDirs   = parseBaseDirectories(doc, root); }],
     ['Parsing plugins…',             function() { s.plugins    = parsePlugins(doc, root); }],
+    ['Parsing persistent stores…',   function() { s.persistent = parsePersistentStores(doc, root); }],
     ['Reading file metadata…',       function() { s.fileMeta   = parseFileMetadata(doc, root); }],
     ['Reading library…',             function() { s.library    = parseLibrary(doc, root); }],
     ['Collecting tags…',             function() { s.tags       = parseTags(doc, root); }],
@@ -11229,6 +11248,51 @@ function parseCustomFunctions(doc, root) {
   return s;
 }
 
+// ── PERSISTENT STORES (FileMaker 2026) ─────────────────────
+// PersistentStoreCatalog is new in FM26: named, file-level values that
+// survive across sessions — a solution-level persistent key/value store.
+// Each store carries a name, id/instanceID, a typed Value, and UUID
+// modification metadata (who last changed it and when). No other analysis
+// tool surfaces this yet. Parser is defensive: it renders whatever value
+// type is present rather than assuming Text, since FM26 likely supports
+// other types this single sample doesn't show.
+function parsePersistentStores(doc, root) {
+  const s = { count: 0, detail: { all: [] } };
+  const cat = qs(root, 'PersistentStoreCatalog');
+  if (!cat) return s;
+  const stores = qsa(cat, ':scope > PersistentStore');
+  s.count = stores.length;
+  for (const st of stores) {
+    const name       = attr(st, 'name') || '(unnamed)';
+    const id         = attr(st, 'id') || '';
+    const instanceID = attr(st, 'instanceID') || '';
+    // Value: the type attribute plus the payload. Data usually lives in a
+    // StyledText > Data (CDATA); fall back to the Value's text content.
+    const valueEl = qs(st, ':scope > Value');
+    const type    = valueEl ? (attr(valueEl, 'type') || '—') : '—';
+    let value = '';
+    if (valueEl) {
+      const dataEl = qs(valueEl, 'Data');
+      value = (dataEl ? dataEl.textContent : valueEl.textContent) || '';
+      value = value.trim();
+    }
+    // UUID element carries modification metadata (audit-style)
+    const uuidEl   = qs(st, ':scope > UUID');
+    const modifiedBy = uuidEl ? (attr(uuidEl, 'userName') || attr(uuidEl, 'accountName') || '') : '';
+    const account    = uuidEl ? (attr(uuidEl, 'accountName') || '') : '';
+    const modifiedAt = uuidEl ? (attr(uuidEl, 'timestamp') || '') : '';
+    const mods       = uuidEl ? (attr(uuidEl, 'modifications') || '') : '';
+    const uuid       = uuidEl ? (uuidEl.textContent || '').trim() : '';
+    s.detail.all.push({
+      name: name, id: id, instanceID: instanceID,
+      type: type, value: value, length: value.length,
+      modifiedBy: modifiedBy, account: account, modifiedAt: modifiedAt,
+      mods: mods, uuid: uuid,
+    });
+  }
+  return s;
+}
+
 // ── BROKEN CALCULATION REFERENCES (v1.0) ──────────────────
 //
 // Scans every <Calculation> element in the XML and identifies any
@@ -11499,88 +11563,47 @@ function parseBrokenReferences(doc, root) {
     }
 
     // ── 6. Layout object calculations
-    // Layout objects can carry HideCondition, ToolTip, ConditionalFormat,
-    // and Portal filter calculations. Group findings by layout.
+    // v2.7 fix: every selector in this section was matching against
+    // invented tag names that never appear in a real export — verified
+    // against a live Save-as-XML file, which changes the shape of all
+    // four cases below:
+    //   - Hide condition:        <Conditions><Hide><Calculation>
+    //   - Tooltip:                <Tooltip><Calculation>            (lowercase "ooltip" — NOT <ToolTip>)
+    //   - Conditional formatting: <Conditions><Formatting><Condition type="…" id="…"><Calculation>
+    //   - Portal filter:          <Portal><Calculation> directly, no wrapper element at all
+    // None of the four ever matched, so this whole section has been
+    // silently reporting zero findings from any layout object in any
+    // real file — group findings by layout.
     const layoutCat = root.querySelector('LayoutCatalog');
     if (layoutCat) {
         for (const layout of layoutCat.querySelectorAll('Layout')) {
             const layoutName = layout.getAttribute('name') || '(layout)';
-            // HideCondition — Calculation child
-            for (const hc of layout.querySelectorAll('HideCondition')) {
-                for (const calc of hc.querySelectorAll(':scope > Calculation')) {
+            // Hide condition — Conditions > Hide > Calculation
+            for (const hide of layout.querySelectorAll('Conditions > Hide')) {
+                for (const calc of hide.querySelectorAll(':scope > Calculation')) {
                     check(calc, layoutName, 'hide condition', 'Layout hide calc');
                 }
             }
-            // ToolTip
-            for (const tt of layout.querySelectorAll('ToolTip')) {
-                for (const calc of tt.querySelectorAll(':scope > Calculation')) {
+            // Tooltip — note the real tag is "Tooltip", not "ToolTip"
+            for (const tooltip of layout.querySelectorAll('Tooltip')) {
+                for (const calc of tooltip.querySelectorAll(':scope > Calculation')) {
                     check(calc, layoutName, 'tooltip', 'Tooltip calc');
                 }
             }
-            // Conditional formatting (path varies — match any ConditionalFormat
-            // descendant with a Calculation child)
-            for (const cf of layout.querySelectorAll('ConditionalFormat, ConditionalFormatting')) {
-                for (const calc of cf.querySelectorAll(':scope > Calculation, :scope > Condition > Calculation')) {
-                    check(calc, layoutName, 'conditional format', 'Conditional format calc');
-                }
-                // Per the layout XML spec (§16.1, §16.3) — two "looks
-                // configured, is dead" traps on CF Items. Both checks are
-                // structural-signature only: if the Item/flags/op shape is
-                // absent in this export, nothing fires.
-                for (const item of cf.querySelectorAll('Item')) {
-                    // §16.1 — Item flags bitmask: bit 0 enabled, bit 1 Text
-                    // Color, bit 2 Fill Color, bit 7 Icon Color. Bit 0 set
-                    // with NO format bits means the row is ticked but no
-                    // format property is switched on — any LocalCSS under
-                    // the item is inert even though the swatch shows colour.
-                    const flagsRaw = item.getAttribute('flags');
-                    const itemFlags = flagsRaw === null ? NaN : parseInt(flagsRaw, 10);
-                    if (!isNaN(itemFlags) && (itemFlags & 1) && !(itemFlags & (2 | 4 | 128))) {
-                        const css = item.querySelector('Format LocalCSS');
-                        if (css && (css.textContent || '').trim() !== '') {
-                            findings.push({
-                                parent: layoutName,
-                                name:   'conditional format item',
-                                type:   'CF rule inert (flags)',
-                                calc:   'Item flags="' + flagsRaw + '": the rule is enabled but no format property bit (Text/Fill/Icon Color) is set, so the populated LocalCSS never applies. The colour shows in the dialog swatch with its checkbox unticked.',
-                                missing_fields: 0,
-                                missing_tables: 0,
-                                alerts: 1,
-                            });
-                        }
-                    }
-                    // §16.3 — value-comparison conditions (op 1–8) store the
-                    // operand twice: RangeBegin/RangeEnd feed the dialog, the
-                    // materialised Calculation is what actually runs. An item
-                    // with op 1–8 and an empty or bare-constant Calculation
-                    // is dialog-correct but runtime-dead (or always-true).
-                    const cond = item.querySelector(':scope > Condition');
-                    const opRaw = cond ? cond.getAttribute('op') : null;
-                    const op = opRaw === null ? NaN : parseInt(opRaw, 10);
-                    if (!isNaN(op) && op >= 1 && op <= 8) {
-                        const mCalc = cond.querySelector(':scope > Calculation');
-                        const mBody = mCalc ? (mCalc.textContent || '').trim() : '';
-                        if (mBody === '' || /^[\d.,\s]+$/.test(mBody)) {
-                            findings.push({
-                                parent: layoutName,
-                                name:   'conditional format item',
-                                type:   'CF condition dead (op)',
-                                calc:   'Value-comparison condition (op=' + op + ') with ' + (mBody === '' ? 'an empty' : 'a bare-constant') + ' materialised Calculation. The dialog reads RangeBegin/RangeEnd and looks correct, but runtime evaluates the Calculation — this rule ' + (mBody === '' ? 'never fires' : 'evaluates as an always-true constant') + '. Re-materialise via the dialog or emit the comparison formula.',
-                                missing_fields: 0,
-                                missing_tables: 0,
-                                alerts: 1,
-                            });
-                        }
+            // Conditional formatting — Conditions > Formatting holds one or
+            // more Condition rules, each with its own Calculation
+            for (const formatting of layout.querySelectorAll('Conditions > Formatting')) {
+                for (const condition of formatting.querySelectorAll(':scope > Condition')) {
+                    for (const calc of condition.querySelectorAll(':scope > Calculation')) {
+                        check(calc, layoutName, 'conditional format', 'Conditional format calc');
                     }
                 }
             }
-            // Portal filter
+            // Portal filter — a bare Calculation is a direct child of
+            // Portal itself; no FilterCalculation/Filter wrapper exists
             for (const portal of layout.querySelectorAll('Portal')) {
-                const filter = portal.querySelector(':scope > FilterCalculation, :scope > Filter');
-                if (filter) {
-                    for (const calc of filter.querySelectorAll(':scope > Calculation')) {
-                        check(calc, layoutName, 'portal filter', 'Portal filter calc');
-                    }
+                for (const calc of portal.querySelectorAll(':scope > Calculation')) {
+                    check(calc, layoutName, 'portal filter', 'Portal filter calc');
                 }
             }
         }
@@ -13873,6 +13896,224 @@ function parseUnreferenced(doc, root, allStats) {
     toCtxAdd(toId, 'other');
   }
 
+  // ── v2.7: text-based field/TO reference scan ────────────────────
+  // FileMaker's Save-as-XML does not emit a structural FieldReference or
+  // TableOccurrenceReference element for a field mentioned INSIDE a
+  // calculation's formula text — verified against a real export: a
+  // calculated field whose formula is "Sum ( order_values::OrderValue )"
+  // carries only the raw <Text> CDATA, with no reference element for
+  // "order_values::OrderValue" anywhere nearby. The structural passes
+  // above can only see schema-driven pickers: a field dropped on a
+  // layout, a Set Field/Go to Field target, a relationship join
+  // predicate, a sort/import mapping. Anything referenced purely inside a
+  // formula — a Hide condition, a conditional format, a dialog message, a
+  // Set Variable value, a field passed straight to a custom function
+  // inside ExecuteSQL, or a merge field/merge-formula tag on a layout
+  // label — is invisible to everything above this point. This section
+  // adds a second, text-based pass over every calculation body and every
+  // layout label's text, matching real "TOName::FieldName" pairs from the
+  // schema, so a field genuinely used only inside a formula counts as
+  // referenced instead of showing up as a false-positive unreferenced
+  // field or table occurrence.
+  //
+  // Known limitation: this only catches a QUALIFIED "TOName::FieldName"
+  // mention. A table occurrence named only as a bare identifier with no
+  // "::field" after it (for example a table name passed alone into a
+  // custom function that builds a FROM clause) is not matched here, to
+  // avoid false-positives from ordinary words that happen to collide with
+  // a table occurrence's name.
+
+  // definedFields is keyed by BASE TABLE name, not TO name, since a
+  // formula can reach the same field through any TO built on that table.
+  // Group field names by base table first so a per-TO lookup can be built
+  // without rescanning definedFields for every table occurrence.
+  const fieldNamesByBaseTable = new Map();
+  for (const definedFieldKey of definedFields.keys()) {
+      const separatorIndex = definedFieldKey.indexOf('::');
+      if (separatorIndex === -1) continue;
+      const baseTableUpper = definedFieldKey.slice(0, separatorIndex);
+      const fieldNameUpper = definedFieldKey.slice(separatorIndex + 2);
+      let fieldNameSet = fieldNamesByBaseTable.get(baseTableUpper);
+      if (!fieldNameSet) {
+          fieldNameSet = new Set();
+          fieldNamesByBaseTable.set(baseTableUpper, fieldNameSet);
+      }
+      fieldNameSet.add(fieldNameUpper);
+  }
+
+  // Map every "TOName::FieldName" (uppercase) a real formula could type to
+  // the base-table lookup key(s) it resolves to, plus the TO's own id, so
+  // a single text match can mark both the field and its table occurrence
+  // as live in one step.
+  const qualifiedNameToTarget = new Map();
+  for (const [toId, toName] of definedTOs) {
+      const toNameUpper = (toName || '').toUpperCase();
+      const baseNameUpper = toBaseMap[toNameUpper] || toNameUpper;
+      const fieldNameSet = fieldNamesByBaseTable.get(baseNameUpper);
+      if (!fieldNameSet) continue;
+      for (const fieldNameUpper of fieldNameSet) {
+          const lookupKeys = [baseNameUpper + '::' + fieldNameUpper];
+          if (toNameUpper !== baseNameUpper) lookupKeys.push(toNameUpper + '::' + fieldNameUpper);
+          // Also include the field's own UUID, when it has one. definedFieldsList
+          // keys fields by UUID first (falling back to table::field only when a
+          // field has none), so calcParents and fieldContexts have to be
+          // reachable under that same UUID key or the dead-chain resolver and
+          // the tier lookup silently miss each other despite both holding the
+          // right data.
+          const fieldEntry = definedFields.get(baseNameUpper + '::' + fieldNameUpper);
+          if (fieldEntry && fieldEntry.uuid) lookupKeys.push(fieldEntry.uuid);
+          qualifiedNameToTarget.set(toNameUpper + '::' + fieldNameUpper, { toId: toId, lookupKeys: lookupKeys });
+      }
+  }
+
+  // Pull every "left::right" candidate out of a raw formula or label
+  // string. FileMaker names can contain spaces, so a candidate runs up to
+  // the nearest character that can never appear inside a bare field/table
+  // name — parentheses, formula operators, quotes and other punctuation.
+  // This is intentionally permissive: a candidate that doesn't resolve
+  // against qualifiedNameToTarget below is just ignored, so casting a
+  // wide net here costs nothing.
+  const QUALIFIED_NAME_PATTERN = /([A-Za-z0-9_ ]+)::([A-Za-z0-9_ ]+)/g;
+  function findQualifiedNameCandidates(text) {
+      const candidates = [];
+      if (!text) return candidates;
+      QUALIFIED_NAME_PATTERN.lastIndex = 0;
+      let match = QUALIFIED_NAME_PATTERN.exec(text);
+      while (match !== null) {
+          const leftSide = match[1].trim().toUpperCase();
+          const rightSide = match[2].trim().toUpperCase();
+          if (leftSide && rightSide) candidates.push(leftSide + '::' + rightSide);
+          match = QUALIFIED_NAME_PATTERN.exec(text);
+      }
+      return candidates;
+  }
+
+  // Record every real match found in one calc/label body against the same
+  // fieldContexts/toContexts maps the structural pass above feeds, so a
+  // text-based finding slots into the existing confidence tiers and
+  // removability logic without a separate reporting path. hostFieldKey is
+  // only needed for a 'calc' context match: it feeds the same calcParents
+  // dead-chain tracking the structural pass uses, so a field referenced
+  // only inside another field's formula is anchored correctly instead of
+  // reading as calc-context with no known parent (which the dead-chain
+  // resolver otherwise treats as unreachable, i.e. still dead).
+  function recordTextReference(text, fieldContext, toContext, hostFieldKey) {
+      const candidates = findQualifiedNameCandidates(text);
+      for (const candidate of candidates) {
+          const target = qualifiedNameToTarget.get(candidate);
+          if (!target) continue;
+          for (const lookupKey of target.lookupKeys) ctxAdd(lookupKey, fieldContext);
+          toCtxAdd(target.toId, toContext);
+          if (fieldContext === 'calc' && hostFieldKey) {
+              for (const childKey of target.lookupKeys) {
+                  if (childKey === hostFieldKey) continue;
+                  let parents = calcParents.get(childKey);
+                  if (!parents) { parents = new Set(); calcParents.set(childKey, parents); }
+                  parents.add(hostFieldKey);
+              }
+          }
+      }
+  }
+
+  // Read a calculation element's formula the same way calcBody() does
+  // elsewhere in this file: the body lives in a nested Text element, and
+  // reading the Calculation's own textContent risks doubling the body if
+  // a ChunkList sits alongside it. Text-first, always.
+  function calculationText(calcEl) {
+      if (!calcEl) return '';
+      const textEl = calcEl.querySelector('Text');
+      return (textEl ? textEl.textContent : calcEl.textContent) || '';
+  }
+
+  // 1. Field calcs, auto-enter and validation formulas on OTHER fields —
+  // the same locations parseBrokenReferences already walks for
+  // <Field Missing> tokens. hostFieldKey identifies the field whose
+  // formula this is, so a match feeds calcParents exactly like the
+  // structural pass does for its own dead-chain tracking.
+  for (const fieldCatalog of root.querySelectorAll('FieldCatalog')) {
+      const hostBaseTableRef = fieldCatalog.querySelector(':scope > BaseTableReference');
+      const hostTableName = hostBaseTableRef ? (hostBaseTableRef.getAttribute('name') || '') : '';
+      for (const fieldEl of fieldCatalog.querySelectorAll(':scope > ObjectList > Field, :scope > Field')) {
+          const hostUuidEl = fieldEl.querySelector(':scope > UUID');
+          const hostFieldName = fieldEl.getAttribute('name') || '';
+          const hostFieldKey = (hostUuidEl && hostUuidEl.textContent.trim())
+              || (hostTableName && hostFieldName ? hostTableName.toUpperCase() + '::' + hostFieldName.toUpperCase() : null);
+          for (const calc of fieldEl.querySelectorAll(':scope > Calculation')) {
+              recordTextReference(calculationText(calc), 'calc', 'calc', hostFieldKey);
+          }
+          const autoEnter = fieldEl.querySelector(':scope > AutoEnter');
+          if (autoEnter) {
+              for (const calc of autoEnter.querySelectorAll('Calculation')) {
+                  recordTextReference(calculationText(calc), 'calc', 'calc', hostFieldKey);
+              }
+          }
+          const validation = fieldEl.querySelector(':scope > Validation');
+          if (validation) {
+              for (const calc of validation.querySelectorAll(':scope > Calculation')) {
+                  recordTextReference(calculationText(calc), 'calc', 'calc', hostFieldKey);
+              }
+          }
+      }
+  }
+
+  // 2. Custom function bodies — a field passed directly to a custom
+  // function (bug report: fSQLRef(ATB__atb::orden; 3) inside ExecuteSQL)
+  // is a plain qualified name in this text, matched the same way.
+  for (const customFunctionCalc of root.querySelectorAll('CalcsForCustomFunctions CustomFunction')) {
+      recordTextReference(customFunctionCalc.textContent || '', 'other', 'other');
+  }
+
+  // 3. Script step calculations — Set Variable values, If/Exit Loop If
+  // conditions, Show Custom Dialog title/message, Insert/Open URL, etc.
+  const stepsForTextScan = root.querySelector('StepsForScripts');
+  if (stepsForTextScan) {
+      for (const calc of stepsForTextScan.querySelectorAll('Step Calculation')) {
+          recordTextReference(calculationText(calc), 'script', 'script');
+      }
+  }
+
+  // 4. Calc-based relationship predicates (rare, but possible).
+  const relationshipCatalogForTextScan = root.querySelector('RelationshipCatalog');
+  if (relationshipCatalogForTextScan) {
+      for (const calc of relationshipCatalogForTextScan.querySelectorAll('Relationship Calculation')) {
+          recordTextReference(calculationText(calc), 'relationship', 'calc');
+      }
+  }
+
+  // 5. Layout object calcs that carry no structural field reference at
+  // all. Verified against a real export — none of these sit under the
+  // tag names a naive reading of the format would suggest:
+  //   Hide condition:        Conditions > Hide > Calculation
+  //   Tooltip:                Tooltip > Calculation      (lowercase "ooltip")
+  //   Conditional formatting: Conditions > Formatting > Condition > Calculation
+  //   Portal filter:          Portal > Calculation directly, no wrapper
+  if (lc2) {
+      for (const layout of lc2.querySelectorAll('Layout')) {
+          for (const calc of layout.querySelectorAll('Conditions > Hide > Calculation')) {
+              recordTextReference(calculationText(calc), 'layout', 'layout_field');
+          }
+          for (const calc of layout.querySelectorAll('Tooltip > Calculation')) {
+              recordTextReference(calculationText(calc), 'layout', 'layout_field');
+          }
+          for (const calc of layout.querySelectorAll('Conditions > Formatting > Condition > Calculation')) {
+              recordTextReference(calculationText(calc), 'layout', 'layout_field');
+          }
+          for (const calc of layout.querySelectorAll('Portal > Calculation')) {
+              recordTextReference(calculationText(calc), 'layout', 'layout_field');
+          }
+
+          // 6. Merge fields and merge-formula tags on labels/buttons. Both
+          // live as plain "<<...>>" text inside <StyledText><Data> CDATA —
+          // "<<purchases::delivery_due>>" for a plain merge field, or
+          // "<<ƒ:some formula referencing Table::Field>>" for a merge
+          // formula. Scanning the whole Data block (rather than parsing
+          // the merge-tag syntax itself) catches both in one pass.
+          for (const dataEl of layout.querySelectorAll('StyledText > Data')) {
+              recordTextReference(dataEl.textContent || '', 'layout', 'layout_field');
+          }
+      }
+  }
+
   // 3. Build relationship graph for each TO
   const toRelationships = new Map(); // to_id → [{relName, otherToId, otherToName, otherBase, predicates}]
   const relCat = qs(root,'RelationshipCatalog');
@@ -14003,25 +14244,12 @@ function parseUnreferenced(doc, root, allStats) {
   // <Table Missing> tokens inside calculation bodies) from the dedicated
   // broken-references parser. Each finding becomes a row in the same
   // "broken" list so users see one consolidated view.
-  if (allStats && allStats.brokenRefs && allStats.brokenRefs.findings) {
-    for (const f of allStats.brokenRefs.findings) {
-      // Lookup source findings have their own descriptive type — use it directly.
-      // Calc-body findings (Field Missing / Table Missing tokens) get the
-      // '(broken calc)' suffix to distinguish them from structural issues.
-      const isStructural = f.type === 'Lookup source (broken)'
-                        || f.type === 'Value list source (broken)'
-                        || f.type === 'CF rule inert (flags)'
-                        || f.type === 'CF condition dead (op)';
-      const tokens = [];
-      if (f.missing_fields) tokens.push(f.missing_fields + ' <Field Missing>');
-      if (f.missing_tables) tokens.push(f.missing_tables + ' <Table Missing>');
-      broken.push({
-        cat:    isStructural ? f.type : f.type + ' (broken calc)',
-        where:  f.parent + (f.name ? ' :: ' + f.name : ''),
-        detail: isStructural ? f.calc : tokens.join(', ') + ' — ' + f.calc,
-      });
-    }
-  }
+  //
+  // v2.7: the downgrade for a broken calc hosted on an unreferenced field
+  // (see below) needs tierBase, which isn't built until further down this
+  // function — so the raw findings are stashed here and turned into
+  // "broken" rows in a second pass once tierBase exists.
+  const pendingBrokenCalcFindings = (allStats && allStats.brokenRefs && allStats.brokenRefs.findings) || [];
 
   // ── Theme styles ─────────────────────────────────────────
   // ── Unused theme styles detection ────────────────────────
@@ -14219,6 +14447,42 @@ function parseUnreferenced(doc, root, allStats) {
     } else {
       tieredFields.other.push(fe);
     }
+  }
+
+  // v2.7 fix: a "Calc field" / "Auto-enter calc" / "Validation calc"
+  // broken-reference finding lives ON a field (parent = table, name =
+  // that field). If that HOST field is itself unreferenced or fully
+  // calc-dead, its calc never actually runs, so the broken reference
+  // inside it can't cause a real problem at runtime — it just looks
+  // urgent next to ones that fire on every record. Downgrade rather than
+  // drop it: a typo'd field name sitting in dead weight is still worth
+  // cleaning up, just not with the same priority.
+  const deadFieldKeys = new Set([...tieredFields.unreferenced, ...tieredFields.calc_dead].map(fe => fe.key));
+  const FIELD_HOSTED_BROKEN_TYPES = new Set(['Calc field', 'Field calc', 'Auto-enter calc', 'Validation calc']);
+  function hostFieldIsDead(tableName, fieldName) {
+    if (!tableName || !fieldName) return false;
+    const fieldEntry = definedFields.get(tableName.toUpperCase() + '::' + fieldName.toUpperCase());
+    const key = (fieldEntry && fieldEntry.uuid) || (tableName.toUpperCase() + '::' + fieldName.toUpperCase());
+    return deadFieldKeys.has(key);
+  }
+  for (const f of pendingBrokenCalcFindings) {
+    // Lookup source findings have their own descriptive type — use it directly.
+    // Calc-body findings (Field Missing / Table Missing tokens) get the
+    // '(broken calc)' suffix to distinguish them from structural issues.
+    const isStructural = f.type === 'Lookup source (broken)'
+                      || f.type === 'Value list source (broken)'
+                      || f.type === 'CF rule inert (flags)'
+                      || f.type === 'CF condition dead (op)';
+    const tokens = [];
+    if (f.missing_fields) tokens.push(f.missing_fields + ' <Field Missing>');
+    if (f.missing_tables) tokens.push(f.missing_tables + ' <Table Missing>');
+    const isDeadHost = FIELD_HOSTED_BROKEN_TYPES.has(f.type) && hostFieldIsDead(f.parent, f.name);
+    const baseDetail = isStructural ? f.calc : tokens.join(', ') + ' — ' + f.calc;
+    broken.push({
+      cat:    (isStructural ? f.type : f.type + ' (broken calc)') + (isDeadHost ? ' — low impact' : ''),
+      where:  f.parent + (f.name ? ' :: ' + f.name : ''),
+      detail: baseDetail + (isDeadHost ? ' (this field is itself unreferenced elsewhere, so this calc never runs)' : ''),
+    });
   }
 
   // Backwards-compat flat list (kept so the rest of the renderer / counts that
@@ -16953,6 +17217,65 @@ function renderResults(file, root, s, elapsed) {
     return wrap;
   })() });
 
+  // ── PERSISTENT STORES TAB (FM26) ────────────────────────────────────────────
+  // Only shown when the file actually has a PersistentStoreCatalog, so it
+  // stays invisible for pre-FM26 solutions.
+  if (s.persistent && s.persistent.count > 0) {
+  tabDefs.push({ id:'tab-persistent', label:'Persistent Data', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>', contentEl: (function() {
+    const wrap = document.createElement('div');
+    const rows = (s.persistent.detail.all || []).map(function(p) {
+      return {
+        name:       p.name || '',
+        instance:   p.instanceID || '',
+        type:       p.type || '—',
+        value:      p.value || '',
+        length:     p.length || 0,
+        modifiedBy: p.modifiedBy || '',
+        modifiedAt: p.modifiedAt ? p.modifiedAt.replace('T', ' ') : '',
+      };
+    });
+    // A store name can hold multiple instances, each an independent value.
+    const nameCount = {};
+    rows.forEach(function(r) { nameCount[r.name] = (nameCount[r.name] || 0) + 1; });
+    const distinctNames = Object.keys(nameCount).length;
+    const multiInstance = rows.length > distinctNames;
+    wrap.innerHTML =
+      '<div class="section"><div class="section-title">Persistent Stores — ' + distinctNames.toLocaleString() +
+        (multiInstance ? ' (' + rows.length.toLocaleString() + ' instances)' : '') + '</div>' +
+      '<div style="padding:0 4px 12px;color:var(--ink-3);font-size:12.5px;max-width:820px">' +
+      'File-level values that persist across sessions (FileMaker 2026). Each named store can hold multiple instances, ' +
+      'each an independent value with its own change history. The value shown is the stored content as of this export.' +
+      '</div>' +
+      '<div class="ps-host"></div></div>';
+    const host = wrap.querySelector('.ps-host');
+    setTimeout(function() {
+      renderDenseTable({
+        containerEl: host,
+        emptyMsg: 'No persistent stores found.',
+        rows: rows,
+        columns: [
+          { key: 'name',       label: 'Store',       width: '16%', mono: true,
+            renderCell: function(v) { return '<span style="color:var(--navy);font-weight:500">' + esc(v) + '</span>'; } },
+          { key: 'instance',   label: 'Instance',    width: '8%',  align: 'right', hideIfAllEmpty: true },
+          { key: 'type',       label: 'Type',        width: '9%' },
+          { key: 'value',      label: 'Value',       width: '37%', mono: true,
+            renderCell: function(v) {
+              if (!v) return '<span class="dt-empty">(empty)</span>';
+              var shown = v.length > 160 ? v.slice(0, 157) + '…' : v;
+              return '<span title="' + esc(v) + '">' + esc(shown) + '</span>';
+            } },
+          { key: 'length',     label: 'Chars',       width: '7%',  align: 'right' },
+          { key: 'modifiedBy', label: 'Last changed by', width: '11%', hideIfAllEmpty: true },
+          { key: 'modifiedAt', label: 'When',        width: '14%', mono: true, hideIfAllEmpty: true },
+        ],
+        defaultSort: 'name',
+        noScroll: true,
+      });
+    }, 0);
+    return wrap;
+  })() });
+  }
+
   // ── PLUGINS TAB ─────────────────────────────────────────────────────────────
   tabDefs.push({ id:'tab-plugins', label:'Plugins', icon:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>', contentEl: (function() {
     const wrap = document.createElement('div');
@@ -17502,6 +17825,7 @@ function renderResults(file, root, s, elapsed) {
     'tab-variables':       'Logic',
     'tab-custom-functions':'Logic',
     'tab-plugins':         'Configuration',
+    'tab-persistent':      'Configuration',
     'tab-menus':           'Logic',
     'tab-security':           'Configuration',
     'tab-privilege-sets':     'Configuration',
