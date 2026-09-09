@@ -161,6 +161,7 @@ Strips API keys, passwords and internal hostnames out of FileMaker XML before yo
 
 | Version | Notes |
 |---|---|
+| 2.7 | New Persistent Data tab surfaces FileMaker 2026's persistent data store. Script bodies no longer truncate long formulas or drop comment text. Unreferenced Fields/Table Occurrences now catches usage inside formulas — Hide conditions, conditional formatting, dialog text, merge fields, custom functions. Broken Refs now checks hide conditions, tooltips, conditional formatting and portal filters. |
 | 2.6 | Visual redesign; script bodies now show line numbers. Minimal functional changes otherwise. |
 | 2.5 | New Step Index tab — every step used in the file with usage counts, Commit Records split by dialog on/off, drill-down to the scripts using each step, and a content search to find a dialog by its message. Script steps now render their real content (Set Variable, Set Field, Commit, and more). New checks for broken value list sources, dead conditional formatting, and blank-name Set Variables. |
 | 2.4 | Theme mood board — every named style rendered as the object it styles (button, field, text, portal, part band) from its own fill, border, corners and font, so a theme can be seen whole. Colour palette indexed to the styles using each colour, with WCAG contrast checks. Plus a field performance risk score, clearer Tables to Fields navigation, and more legible wireframe hidden panels. |
