@@ -65,7 +65,6 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseTablesAndFields | qsa:':scope > FieldCatalog' |  |  |  |
 | parseTablesAndFields | qsa:':scope > Field[fieldtype]' |  |  |  |
 | parseTablesAndFields | qsa:'FieldCatalog' |  |  |  |
-| parseRelationships | attr:'TableOccurrenceReference' |  |  |  |
 | parseRelationships | attr:'baseTable' |  |  |  |
 | parseRelationships | attr:'blue' |  |  |  |
 | parseRelationships | attr:'cascadeCreate' |  |  |  |
@@ -262,9 +261,9 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseGlobalVars | attr:'value' |  |  |  |
 | parseGlobalVars | qsa:'Chunk[type="VariableReference"]' |  |  |  |
 | parseGlobalVars | qsa:'StepsForScripts Parameter[type="Variable"] > Name[value]' |  |  |  |
-| parseCustomMenus | attr:':scope > Base' |  |  |  |
 | parseCustomMenus | attr:'membercount' |  |  |  |
 | parseCustomMenus | attr:'name' |  |  |  |
+| parseCustomMenus | attr:'value' |  |  |  |
 | parseCustomMenus | qs:':scope > Base' |  |  |  |
 | parseCustomMenus | qs:':scope > ObjectList' |  |  |  |
 | parseCustomMenus | qs:'CustomMenuCatalog' |  |  |  |

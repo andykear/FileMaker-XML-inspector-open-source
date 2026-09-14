@@ -36,22 +36,53 @@ function topLevelFunctions(source) {
   return bodies;
 }
 
-const ACCESS_PATTERNS = [
-  [/\bqsa\(\s*[^,]+,\s*'([^']+)'/g, 'qsa'],
-  [/\bqs\(\s*[^,]+,\s*'([^']+)'/g, 'qs'],
-  [/\battr\(\s*[^,]+,\s*'([^']+)'/g, 'attr'],
+// One level of nested parentheses is allowed in a call's first argument, so
+// `attr(qs(menu, ':scope > Base'), 'value')` doesn't stop at the comma
+// *inside* `qs(...)` and misread the CSS selector as the attribute name.
+const NESTED_ARG = "(?:[^,()]|\\([^()]*\\))+";
+
+// `qs`, `qsa` and `attr` calls can nest inside one another (including inside
+// themselves: `qs(qs(root, 'A'), 'B')`). A single matchAll pass over a call
+// pattern only ever finds the outermost call at a given position - matching
+// the outer call's first argument consumes the inner call's text too, so the
+// inner call's own start position is never tried. To find every call,
+// including nested ones, first collect every occurrence of the bare call
+// head (`qs(`, `qsa(`, `attr(`), then, independently at each of those
+// positions, match the full first-argument-aware pattern anchored (sticky)
+// to that exact position.
+const CALL_PATTERNS = [
+  ['qsa', /\bqsa\(/g, new RegExp(`\\bqsa\\(\\s*${NESTED_ARG},\\s*'([^']+)'`, 'y')],
+  ['qs', /\bqs\(/g, new RegExp(`\\bqs\\(\\s*${NESTED_ARG},\\s*'([^']+)'`, 'y')],
+  ['attr', /\battr\(/g, new RegExp(`\\battr\\(\\s*${NESTED_ARG},\\s*'([^']+)'`, 'y')],
+];
+
+// These patterns capture a string literal that is itself the call's own
+// argument (no sibling argument to skip past first), so they have no
+// nested-call ambiguity and a plain matchAll is enough.
+const SIMPLE_PATTERNS = [
   [/\.getAttribute\(\s*'([^']+)'/g, 'attr'],
   [/\.getElementsByTagName\(\s*'([^']+)'/g, 'tag'],
   [/\.querySelectorAll\(\s*'([^']+)'/g, 'qsa'],
   [/\.querySelector\(\s*'([^']+)'/g, 'qs'],
 ];
 
+function addCallAccesses(body, found) {
+  for (const [kind, headRe, argRe] of CALL_PATTERNS) {
+    for (const head of body.matchAll(headRe)) {
+      argRe.lastIndex = head.index;
+      const m = argRe.exec(body);
+      if (m) found.add(`${kind}:'${m[1]}'`);
+    }
+  }
+}
+
 export function extractParserAccesses(source) {
   const out = new Map();
   for (const [name, body] of topLevelFunctions(source)) {
     if (!/^(parse[A-Z]|buildDDRTextIndex)/.test(name)) continue;
     const found = new Set();
-    for (const [re, kind] of ACCESS_PATTERNS) {
+    addCallAccesses(body, found);
+    for (const [re, kind] of SIMPLE_PATTERNS) {
       for (const m of body.matchAll(re)) found.add(`${kind}:'${m[1]}'`);
     }
     out.set(name, [...found].sort());

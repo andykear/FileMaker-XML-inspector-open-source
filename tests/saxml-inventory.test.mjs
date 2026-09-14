@@ -35,6 +35,14 @@ function renderResults(file, root, s, elapsed) {
 function renderDenseTable(opts) {}
 `;
 
+const NESTED_SAMPLE = `
+function parseNested(doc, root) {
+  const v = attr(qs(menu, ':scope > Base'), 'value');
+  const w = qs(qs(root, 'A'), 'B');
+  return s;
+}
+`;
+
 test('extractParserAccesses keys by parser and lists unique XML accesses', () => {
   const m = extractParserAccesses(SAMPLE);
   assert.deepEqual([...m.keys()], ['parseTablesAndFields', 'parseLayouts']);
@@ -47,6 +55,16 @@ test('extractParserAccesses keys by parser and lists unique XML accesses', () =>
     "tag:'Field'",
   ]);
   assert.deepEqual(m.get('parseLayouts'), ["qs:'LayoutCatalog'"]);
+});
+
+test('extractParserAccesses uses the first argument only across nested calls', () => {
+  const m = extractParserAccesses(NESTED_SAMPLE);
+  assert.deepEqual(m.get('parseNested'), [
+    "attr:'value'",
+    "qs:':scope > Base'",
+    "qs:'A'",
+    "qs:'B'",
+  ]);
 });
 
 test('extractRenderAccesses resolves aliases back to s.<catalog>', () => {
