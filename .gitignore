@@ -1,0 +1,4 @@
+node_modules/
+.local/
+.superpowers/
+.DS_Store
