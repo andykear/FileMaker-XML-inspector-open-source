@@ -139,7 +139,16 @@ Deferred, not dropped: compare mode (two solution snapshots can be diffed later 
   "description": "read:layout reports a theme name and per-object style names only; no style definitions.",
   "status": "open",
   "firstSeen": "0.6.0",
-  "lastChecked": { "version": "0.6.0", "date": "2026-09-14", "outcome": "open" },
+  "lastChecked": {
+    "version": "0.6.0", "build": "29816214", "date": "2026-09-14", "outcome": "open",
+    "command": "fm --file=fmnet://localhost/ooe --username=admin --keychain --no-prompt --abort-on-error=false --out=/tmp/fm-gaps-1.out.ndjson /tmp/fm-gaps-1.ops.ndjson",
+    "ops": [ { "op": "read:layout", "id": 11, "detail": true } ],
+    "response": {
+      "stdout": [ { "op": "read:layout", "status": "ok", "result": { "...": "verbatim result line" } } ],
+      "stderr": [ { "type": "summary", "total": 1, "ok": 1, "errors": 0, "dryRun": false, "rolledBack": false } ],
+      "exitCode": 0
+    }
+  },
   "reportedToClaris": null,
   "blocks": [
     { "app": "inspector", "feature": "theme-moodboard", "where": "ui/tabs/themes.js" }
@@ -152,13 +161,15 @@ Deferred, not dropped: compare mode (two solution snapshots can be diffed later 
 }
 ```
 
+Evidence is mandatory. `lastChecked.command` is the exact command line the checker ran, including the temp file paths it used, and `lastChecked.ops` is the exact NDJSON batch written to that ops file. `lastChecked.response` is fm's response verbatim: every stdout line and every stderr line as parsed JSON objects, in order, plus the exit code. Nothing is summarised or trimmed; a large result stays large, because the point is that Claris sees exactly what we saw. The checker overwrites this block on every run, and the git history of `register.json` is the record of how each gap behaved across builds. The `fm-gaps report` output includes the command and the response for every open entry.
+
 `status` is `open`, `fixed`, or `wontfix`. `area` is `catalog:<name>`, `step:<step name>`, or `cli`. Check kinds, implemented as small functions in `gaps/checks.mjs`: `keyPresent`, `opAccepted`, `stepNotOpaque`, `valueEquals`. A gap that needs more gets a named function in the same file, not a new mechanism.
 
 Seeded from: fm-ai's backlog (five confirmed gaps; one entry per opaque step kind), the inventory rows classified as gap, the refusals and "not reported" notes in `fm help --json --all`, and `unmodelledCount` or `unresolved` values observed on ooe.
 
 The intake loop per fm build:
 
-1. `fm-gaps check --file=<reference> --username=<account>` runs every probe in one read-only fm invocation, evaluates the checks, updates `lastChecked`, prints three lists: still open, newly passing, errored. Newly passing entries print with their `blocks` rows, which is the to-do list for re-enabling features, pointing at the file where each is stubbed.
+1. `fm-gaps check --file=<reference> --username=<account>` runs every probe in one read-only fm invocation, evaluates the checks, writes each entry's `lastChecked` with the command, ops, and verbatim response, prints three lists: still open, newly passing, errored. Newly passing entries print with their `blocks` rows, which is the to-do list for re-enabling features, pointing at the file where each is stubbed.
 2. `fm-gaps report` renders the open entries as Markdown for Claris, grouped by area, each with its probe op and the observed output from the last check.
 3. The inspector page runs the same probes against the connected root file at startup and evaluates the same check functions. Its Gaps tab shows every register entry with its registered status against the running fm version. A probe that passes live while the entry is still `open` is flagged "readable in this build, feature not yet enabled". Every stubbed feature renders its note from its register entry, so the UI never keeps its own list of what is missing. The direction register-to-HTML is therefore visible before anyone edits the register.
 
