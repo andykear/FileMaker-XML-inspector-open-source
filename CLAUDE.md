@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-The Clockwork Inspector is being rewritten to read live FileMaker files through the Claris ADT `fm` CLI instead of parsing Save as XML. Design: `docs/superpowers/specs/2026-09-14-fm-cli-rewrite-design.md`. Plans: `docs/superpowers/plans/`. The old single-file inspector is kept unchanged at `legacy/clockwork-inspector.html` until every row of `docs/saxml-inventory.md` is covered, derived, or registered as a gap.
+The Clockwork Inspector is being rewritten to read live FileMaker files through the Claris ADT `fm` CLI instead of parsing Save as XML. Design: `docs/superpowers/specs/2026-09-14-fm-cli-rewrite-design.md`. Plans: `docs/superpowers/plans/`. The old single-file inspector is kept unchanged at `legacy/clockwork-inspector.html` until every row of `docs/saxml-inventory.md` is covered, derived, dropped by owner decision, or registered as a gap.
 
 ## Commands
 

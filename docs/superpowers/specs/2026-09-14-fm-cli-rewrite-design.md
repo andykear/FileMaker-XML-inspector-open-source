@@ -176,7 +176,7 @@ The intake loop per fm build:
 
 ## 5. Inventory, porting order, testing
 
-Inventory first. A script-assisted pass over `legacy/clockwork-inspector.html` produces `docs/saxml-inventory.md`: one row per XML element or attribute a `parseXxx` reads and per `s.<catalog>.<field>` a tab renders, each classified covered (fm catalog and key named), derived, or gap. The owner reviews it before any tab is ported. Gap rows become register entries.
+Inventory first. A script-assisted pass over `legacy/clockwork-inspector.html` produces `docs/saxml-inventory.md`: one row per XML element or attribute a `parseXxx` reads and per `s.<catalog>.<field>` a tab renders, each classified covered (fm catalog and key named), derived, gap, or dropped (a datum the new inspector does not need, by owner decision; not a gap, not reported to Claris). The owner reviews it before any tab is ported. Gap rows become register entries.
 
 Porting order:
 
@@ -185,7 +185,7 @@ Porting order:
 3. Tabs: tables and fields; occurrences and relations with the graph; scripts with the shared renderer and step index; layouts with wireframe; security; remaining catalogs; then the derived analyses (unreferenced, broken references, risk, reference explorer); then exports and the Gaps tab.
 4. Register seeded, `fm-gaps check` and `report` working against ooe.
 5. Throwaway count cross-check: old inspector on ooe's SaXML export versus the new one on the live file. Mismatches are either gaps or bugs; resolve each, then discard the comparison.
-6. Delete `legacy/` when every inventory row is covered, derived, or registered.
+6. Delete `legacy/` when every inventory row is covered, derived, dropped, or registered.
 
 Testing:
 

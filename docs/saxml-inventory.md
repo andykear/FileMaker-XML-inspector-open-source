@@ -1,14 +1,14 @@
 # SaXML inventory
 
 One row per datum the legacy inspector reads from Save as XML (parser rows) or renders from the stats object (render rows).
-Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and key that supplies it, or the register id for a gap.
+Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks a datum the new inspector does not need, by owner decision; it is not a gap and is not reported to Claris. `fm` names the catalog and key that supplies it, or the register id for a gap.
 
 | Source | Datum | Classification | fm | Notes |
 |---|---|---|---|---|
 | parseXMLToStats | qs:'parsererror' | covered | runner: parse pipeline replaced by fm NDJSON, no datum | DOMParser error probe. fm returns parsed JSON per op with its own status/error line; there is no XML text to fail on. |
-| buildDDRTextIndex | attr:'datatype' | gap | catalog-calculation-tokens | Chunk datatype in the DDR_INFO token stream. fm returns calculation bodies as plain text only; no tokenised reference index. |
-| buildDDRTextIndex | qsa:':scope > DDR_INFO' | gap | catalog-calculation-tokens | The DDR_INFO sidecar under every Calculation. No fm catalog exposes it. |
-| buildDDRTextIndex | tag:'*' | gap | catalog-calculation-tokens | Walks every element of the DDR_INFO subtree to build the text index that Reference Explorer, plugin and global-variable detection all read. |
+| buildDDRTextIndex | attr:'datatype' | dropped | owner ruling 2026-09-14 | The DDR_INFO display-text index existed to show FileMaker's own pre-rendered text in the Reference Explorer. Not needed in the new inspector, which renders from fm's JSON. (The tokenised references inside DDR_INFO are a separate matter: see catalog-calculation-tokens.) |
+| buildDDRTextIndex | qsa:':scope > DDR_INFO' | dropped | owner ruling 2026-09-14 | The DDR_INFO sidecar under every Calculation, used only for the display-text index. Not needed. |
+| buildDDRTextIndex | tag:'*' | dropped | owner ruling 2026-09-14 | Walked every element of the DDR_INFO subtree to build the display-text index. Not needed. |
 | parseFileMetadata | attr:'action' | gap | catalog-file-metadata | ScriptTrigger action on the file (OnFirstWindowOpen etc.). fm reports layout triggers only. |
 | parseFileMetadata | attr:'enable' | gap | catalog-file-metadata | enable on HideToolbars / HideWebDirectSharing / HideClientSharing. No fm catalog for File Options. |
 | parseFileMetadata | attr:'keychain' | gap | catalog-file-metadata | SavePassword keychain flag (File Options > log in using). |
@@ -26,8 +26,8 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseFileMetadata | qs:'SavePassword' | gap | catalog-file-metadata | File Options save-password element. |
 | parseFileMetadata | qs:'ScriptReference' | gap | catalog-file-metadata | Script bound to a file-level trigger. |
 | parseFileMetadata | qsa:'ScriptTrigger' | gap | catalog-file-metadata | The list of file-level script triggers; drives s.fileMeta.file_triggers. |
-| parseLibrary | qs:'LibraryCatalog' | gap | catalog-library | The image/binary library. fm names library members by id (layout object iconId, pictureId) but has no catalog that lists or describes them. |
-| parseLibrary | qsa:'BinaryData' | gap | catalog-library | Counts stored binary payloads (button icons, pictures) for the file-weight stat. |
+| parseLibrary | qs:'LibraryCatalog' | dropped | owner ruling 2026-09-14 | The image/binary library (button icons, pictures). Not relevant to the analysis; layout objects still name their icon or picture by id. |
+| parseLibrary | qsa:'BinaryData' | dropped | owner ruling 2026-09-14 | Binary payload count for the old file-weight stat. Not relevant. |
 | parseTablesAndFields | attr:'absolute' | covered | baseDirectory.relative | BaseDirectoryReference absolute on a container's external-storage path; fm reports the inverse boolean on read:baseDirectory, with field.options.container.baseDirectory naming which one. |
 | parseTablesAndFields | attr:'comment' | covered | table.description + field.options.comment | Table comment needs a read:table describe (by name); the listing carries only name/id. |
 | parseTablesAndFields | attr:'datatype' | covered | field.type | Text/Number/Date/Time/Timestamp/Container; fm uses lowercase words for the same set. |
@@ -433,7 +433,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseUnreferenced | qsa:'LayoutObject LocalCSS' | gap | catalog-object-styles | Collects the style names layout objects actually use. layout.contents.objects[].style gives the display name for an object wearing a named style, but an object carrying local CSS and no style name is silent, so the used-style set is incomplete. |
 | parseUnreferenced | qsa:'Part LocalCSS' | gap | catalog-layout-parts | Styles used by layout part bands. Parts are not reported at all. |
 | parseUnreferenced | qsa:'Portal > Calculation' | gap | catalog-portal-setup | The portal filter calculation. A field referenced only from a portal filter will be reported unreferenced. |
-| parseUnreferenced | qsa:'Relationship Calculation' | covered | n/a: construct does not exist in FileMaker; the legacy query never matched | The legacy code speculatively queried a Calculation element under Relationship ("rare, but possible"). FileMaker has no calculation-based join predicates (owner confirmed 2026-09-14), so nothing is lost. relation.predicates[] carries leftField, op, rightField. |
+| parseUnreferenced | qsa:'Relationship Calculation' | dropped | owner ruling 2026-09-14 | The legacy code speculatively queried a Calculation element under Relationship ("rare, but possible"). FileMaker has no calculation-based join predicates (owner confirmed), so the query never matched and nothing is lost. relation.predicates[] carries leftField, op, rightField. |
 | parseUnreferenced | qsa:'Relationship' | covered | read:relation items[] |  |
 | parseUnreferenced | qsa:'Script' | covered | read:script items[] |  |
 | parseUnreferenced | qsa:'ScriptReference' | covered | script.body[].script + layout.contents.objects[].action.script + layout.scriptTriggers[].script |  |
@@ -454,7 +454,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | render | s.accounts.priv.detail | covered | privilegeSet.{name,fileOptions.*} | printAllowed, exportAllowed, canManageDatabase, noIdleDisconnect, menuCommands, dataEntryOverride. |
 | render | s.accounts.priv.privilege_set_count | derived | derived from read:privilegeSet listing total |  |
 | render | s.baseDirs | covered | read:baseDirectory items[] | path, absolutePath, relative, id. |
-| render | s.bitflags | covered | n/a: tab retired | The Bit Flags tab existed to catalogue SaXML's undecoded option words for format reverse-engineering. fm decodes every option into named keys (raw word kept only on layouts), so the tab has no purpose in the new inspector and is dropped as obsolete, not as a gap. |
+| render | s.bitflags | dropped | owner ruling 2026-09-14 | The Bit Flags tab catalogued SaXML's undecoded option words for format reverse-engineering. fm decodes every option into named keys (raw word kept only on layouts), so the tab has no purpose in the new inspector. |
 | render | s.customs.custom_function_count | derived | derived from read:customFunction listing, items with type customFunction |  |
 | render | s.customs.custom_function_references | derived | derived from calculation text across catalogs + customFunction.name index |  |
 | render | s.customs.detail | covered | customFunction.{id,name,prototype,arity,parameters,body,comment,availableToUser} | Recursion is a substring test on body, as before. |
@@ -494,7 +494,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | render | s.layouts.slide_controls | derived | derived from layout.contents.objects[].type = slideControl |  |
 | render | s.layouts.tab_controls | derived | derived from layout.contents.objects[].type = tabControl |  |
 | render | s.layouts.web_viewers | derived | derived from layout.contents.webViewerCount |  |
-| render | s.library.binary_data_count | gap | catalog-library |  |
+| render | s.library.binary_data_count | dropped | owner ruling 2026-09-14 | Library section of the overview. Not relevant. |
 | render | s.menus.custom_menu_count | derived | derived from read:customMenu listing total |  |
 | render | s.menus.custom_menu_set_count | derived | derived from read:customMenuSet listing total |  |
 | render | s.menus.detail | covered | customMenu.{name,items[],baseMenuID} + customMenuSet.name | Item count is items.length; modified-built-in vs new is baseMenuID. |
@@ -573,11 +573,12 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 
 | Classification | Rows |
 |---|---|
-| covered | 388 |
+| covered | 386 |
 | derived | 66 |
-| gap | 109 |
+| gap | 103 |
+| dropped | 8 |
 
-Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 388 + 66 + 109 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
+Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 386 + 66 + 103 + 8 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
 
 ## Gap ids introduced
 
@@ -585,7 +586,7 @@ From the brief's list:
 
 - `catalog-theme-styles` (23 rows): fm has no theme catalog. A layout reports `theme{id,name,displayName,group}` and an object a `style` display name, but nothing enumerates the themes in the file, their named styles, their palettes or their CSS. The Themes tab, the unused-style report and the style columns of the Reference Explorer all depend on it.
 - `catalog-file-metadata` (24 rows): no catalog for File Options. Login mode, saved password, minimum FileMaker version, the three hide-sharing checkboxes, the startup layout and file-level script triggers have no read op and no Get() function (fm help: file-level options are deliberately not members of any catalog). Encryption state, file name, path, size, persistent ID and locale ARE readable through evaluate:calculation with Get() functions, so those rows are covered.
-- `catalog-calculation-tokens` (7 rows): FileMaker's tokenised form of every calculation. A FileMaker 2026 SaXML export with DDR info carries each formula twice: as text and as FileMaker's own parse of it, a list of Chunk elements typed FieldReference, VariableReference, FunctionRef, CustomFunctionRef, ScriptRef and so on, which says exactly what a formula references. fm reports the text only; no read op and not validate:calculation exposes the tokens. Every cross-reference analysis (unreferenced fields and occurrences, broken references, global variables, custom function usage) therefore has to scan calculation text, which is approximate where FileMaker's parser is exact: variable names with spaces, references inside comments or string literals, `::` inside quoted text.
+- `catalog-calculation-tokens` (4 rows): FileMaker's tokenised form of every calculation. A FileMaker 2026 SaXML export with DDR info carries each formula twice: as text and as FileMaker's own parse of it, a list of Chunk elements typed FieldReference, VariableReference, FunctionRef, CustomFunctionRef, ScriptRef and so on, which says exactly what a formula references. fm reports the text only; no read op and not validate:calculation exposes the tokens. Every cross-reference analysis (unreferenced fields and occurrences, broken references, global variables, custom function usage) therefore has to scan calculation text, which is approximate where FileMaker's parser is exact: variable names with spaces, references inside comments or string literals, `::` inside quoted text.
 - `catalog-plugins` (7 rows): nothing marks a calculation call site as a plugin function call. The Plugins tab and the plugin-call uncertainty signal behind the Fields confidence tier depend on it.
 - `catalog-modification-info` (14 rows): no object reports a modification count, and only a layout reports who and when (`layout.modified`). The Modification Hotspots tab and the audit columns of the Persistent Data tab depend on it.
 - `catalog-relation-sort` (1 row): `relation.leftToRight.sortRelated` says a relationship sorts related records but not on which fields or in which direction. The relationship detail pane depends on it.
@@ -595,7 +596,6 @@ From the brief's list:
 New in this pass:
 
 - `catalog-tags` (8 rows): fm reports tags on fields, table occurrences, custom menus and custom menu sets, but not on layouts or scripts. The Tags tab's `tagged_layouts` and `tagged_scripts`, and their share of every tag total, have no source.
-- `catalog-library` (3 rows): no catalog for the image/binary library. fm names members by id (`iconId`, `pictureId`) but nothing lists or describes them, so the stored-binary count on the Overview tab has no source.
 - `catalog-portal-setup` (4 rows): the portal's filter calculation, its stored sort order and its allow-create bit. The layout describe notes state outright that the sort and the filter are reported nowhere. `portals_with_filter`, `portals_with_sort` and `portals_allow_create` depend on them, and a field referenced only from a portal filter becomes a false positive in the unreferenced-fields report.
 - `catalog-conditional-formatting` (3 rows): no layout object key reports conditional formatting at all. The broken-reference scan over conditional-format calculations, and any field referenced only from one, depend on it.
 - `catalog-layout-options` (2 rows): the layout-level Save-record-changes-automatically and Quick-Find settings from Layout Setup. Neither appears in `layout.flags.set` nor anywhere else. The layout dense table shows both columns.
