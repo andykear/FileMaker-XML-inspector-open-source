@@ -179,11 +179,15 @@ Evidence is mandatory and verbatim, stored once per distinct probe (decided 2026
 
 ### The attribute reference
 
-"What the object has" is enumerated, not remembered. The primary source is the Save as XML export of Ooe: for each kind, every element and attribute that appears under it, named by its SaXML path. The FileMaker help and the Inspector supply the human names. Andrew Kear's clipboard-format repos (Script XML, Layout XML, field/table/value list definitions) are a cross-check for kinds whose clipboard form is richer than SaXML. The inventory (`docs/saxml-inventory.md`) is a third input: its gap rows are attributes the legacy inspector consumed, so every one of them must appear in some entry's `attributes` with `reported: false`.
+"What the object has" is enumerated from the Save as XML export of Ooe, not remembered and not transcribed from clipboard XML, which does not express everything in FileMaker's schema. SaXML is FileMaker's own complete object export, and Ooe is built to contain one of everything, so for each kind the attribute list is: every element and attribute that appears under that kind in the export, named by its SaXML path (`Field > Usage @type`, `Portal > Options @show`, `Part > Definition @type`). The FileMaker help and the Inspector supply the human names.
+
+This makes the matrix testable end to end: the same object exists in the export and behind the fm read op, so a script can enumerate the SaXML side per kind, read the fm side for the same instance, and a human maps each SaXML path to the `fmKey` that carries it or marks it missing. When a new fm build lands, the SaXML side is unchanged and the fm side is re-read, so the diff is exactly what changed. The export is regenerated only when Ooe itself grows (a new kind added so a probe has an instance), and its FileMaker version is recorded with it.
+
+The inventory (`docs/saxml-inventory.md`) is the acceptance check on top: its gap rows are attributes the legacy inspector consumed, so every one of them must appear in some entry's `attributes` with `reported: false`.
 
 ### Seeding and reconciliation
 
-Plan 2's first task builds the matrix kind by kind: enumerate the kind's attributes from the Ooe export, read one instance through fm, mark each attribute reported or missing with its `fmKey`, and record evidence. The twelve entries seeded in Plan 1 fold into it (opaque step kinds become `read:script · step:<name>` entries whose every option is missing; the catalog-level gaps become `none` subjects or attribute rows on the kind they belong to). The inventory's 103 gap rows are the acceptance check: each must map to an attribute row.
+Plan 2's first task builds the matrix kind by kind with a script over the Ooe export and fm: enumerate the kind's attributes from SaXML, read one instance through fm, mark each attribute reported or missing with its `fmKey`, and record evidence. The twelve entries seeded in Plan 1 fold into it (opaque step kinds become `read:script · step:<name>` entries whose every option is missing; the catalog-level gaps become `none` subjects or attribute rows on the kind they belong to). The inventory's 103 gap rows are the acceptance check: each must map to an attribute row.
 
 ### The intake loop per fm build
 
