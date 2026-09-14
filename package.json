@@ -6,7 +6,7 @@
   "description": "Live FileMaker solution analysis through the Claris ADT fm CLI",
   "engines": { "node": ">=22.18" },
   "scripts": {
-    "test": "node --test tests/",
+    "test": "node --test 'tests/*.test.mjs'",
     "inventory": "node scripts/saxml-inventory.mjs"
   },
   "license": "CC-BY-4.0"
