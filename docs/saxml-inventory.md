@@ -105,7 +105,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseLayouts | attr:'right' | derived | derived from layout.contents.objects[].bounds.left + bounds.width | fm reports width, not a right edge; objects_outside_bounds compares left+width against geometry.baseWidth. |
 | parseLayouts | attr:'rowLimit' | covered | layout.contents.objects[].rows | Portal row count. |
 | parseLayouts | attr:'rowsperpage' | covered | layout.contents.objects[].rows | Alternate spelling of the same portal row count. |
-| parseLayouts | attr:'saveRecord' | gap | catalog-layout-options | Layout Setup 'Save record changes automatically'. layout.flags.set carries 23 layout bits but none of them, and there is no other layout-level options key. |
+| parseLayouts | attr:'saveRecord' | gap | catalog-layout-options | Layout Setup 'Save record changes automatically'. layout.flags.set carries 22 layout bits but none of them, and there is no other layout-level options key. |
 | parseLayouts | attr:'show' | gap | catalog-portal-setup | Portal Options show bitmask. Bit 2 (allow delete) is covered by layout.contents.objects[].allowDelete; bits 1 (allow create), 8 (sorted) and 16 (filtered) have no fm key - confirmed by the layout describe notes, which say the portal's sort and filter are reported nowhere. |
 | parseLayouts | attr:'startrow' | covered | layout.contents.objects[].initialRow |  |
 | parseLayouts | attr:'type' | covered | layout.contents.objects[].type | 19 object type words cover every LayoutObject type the legacy counts. The Part type reading of this same attribute is a gap, registered on qs:':scope > PartsList'. |
@@ -118,7 +118,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseLayouts | qs:':scope > Options' | covered | layout.viewStyles + layout.hidden + layout.flags | saveRecord and the layout-level quickFind inside this element are not reported: catalog-layout-options. |
 | parseLayouts | qs:':scope > PartsList' | gap | catalog-layout-parts | Layout part bands. Verified on the samples: layout.contents.objects[] carries 19 object types and none is a part; only geometry.bodyHeight survives. Header/Footer/Top Navigation/Sub-summary presence, part count and part geometry are all unavailable. |
 | parseLayouts | qs:':scope > Portal' | covered | layout.contents.objects[].type = portal |  |
-| parseLayouts | qs:':scope > ScriptTriggers' | covered | layout.scriptTriggers[] + layout.contents.objects[].scriptTriggers[] | Layout describe also gives scriptTriggerCount directly. The object-level key is present on every object in the samples but empty throughout: no object in the reference solution carries a trigger, so its shape was read from the layout describe notes rather than observed. |
+| parseLayouts | qs:':scope > ScriptTriggers' | covered | layout.scriptTriggers[] + layout.contents.objects[].scriptTriggers[] | Layout describe also gives scriptTriggerCount directly. The object-level key is present on 206 of 473 objects in the samples — absent on object kinds that cannot hold a trigger, `[]` when a kind can and has none — so consumers must guard for its absence rather than assume it is always there. |
 | parseLayouts | qs:':scope > Table' | covered | layout.contents.objects[].tableOccurrence | The portal's table occurrence. |
 | parseLayouts | qs:':scope > TableOccurrenceReference' | covered | layout.tableOccurrence | Present on the listing as well as the describe. |
 | parseLayouts | qs:':scope > Theme' | covered | layout.theme |  |
@@ -283,7 +283,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseThemes | qsa:':scope > Theme' | gap | catalog-theme-styles |  |
 | parseThemes | qsa:'color,Color' | gap | catalog-theme-styles | The theme palette. |
 | parseExternalSources | attr:'direction' | covered | authorization.type | inbound / outbound. |
-| parseExternalSources | attr:'driver' | covered | externalDataSource.dsn | With sourceType 'odbc' naming the kind. |
+| parseExternalSources | attr:'driver' | covered | externalDataSource.dsn (DSN, not the ODBC driver name) | fm reports the ODBC data source name, not the driver; sourceType 'odbc' still names the kind. |
 | parseExternalSources | attr:'file' | covered | authorization.filenames[] | Plus filenamesRaw. |
 | parseExternalSources | attr:'name' | covered | externalDataSource.name + authorization.filenames[] |  |
 | parseExternalSources | attr:'source' | covered | authorization.authorizedBy |  |
@@ -324,7 +324,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseBitFlags | attr:'show' | gap | catalog-bit-flags | Portal Options show bitmask, raw. The decoded delete bit is covered (objects[].allowDelete); the create, sort and filter bits are catalog-portal-setup. |
 | parseBitFlags | attr:'type' | gap | catalog-bit-flags | Subtype label on a flag group. Layout object types are covered by objects[].type, but Field Usage type and Part type are not. |
 | parseBitFlags | qs:':scope > Field' | gap | catalog-bit-flags | Reaches the field's raw Options and Usage values on a layout object. |
-| parseBitFlags | qs:':scope > Options' | gap | catalog-bit-flags | The raw numeric option word on a Layout, LayoutObject, Portal, Field or AccountsCatalog. fm decodes these into named booleans and reports the raw number only for a layout (layout.flags.raw, with layout.flags.set naming the 23 bits it recognises). |
+| parseBitFlags | qs:':scope > Options' | gap | catalog-bit-flags | The raw numeric option word on a Layout, LayoutObject, Portal, Field or AccountsCatalog. fm decodes these into named booleans and reports the raw number only for a layout (layout.flags.raw, with layout.flags.set naming the 22 bits it recognises). |
 | parseBitFlags | qs:':scope > Portal' | gap | catalog-bit-flags | Reaches the portal's raw inner Options and show values. |
 | parseBitFlags | qs:':scope > Usage' | gap | catalog-bit-flags | Field Usage raw inputMode and type values. |
 | parseBitFlags | qs:'AccountsCatalog' | gap | catalog-bit-flags | The catalog-level Options word. read:account reports no raw flags. |
@@ -586,7 +586,7 @@ From the brief's list:
 - `catalog-theme-styles` (23 rows): fm has no theme catalog. A layout reports `theme{id,name,displayName,group}` and an object a `style` display name, but nothing enumerates the themes in the file, their named styles, their palettes or their CSS. The Themes tab, the unused-style report and the style columns of the Reference Explorer all depend on it.
 - `catalog-file-metadata` (26 rows): no catalog for File Options. Encryption state, login mode, minimum FileMaker version, the three hide-sharing checkboxes, save-password, the startup layout and file-level script triggers have no fm source. The Overview tab's file-security block depends on it.
 - `catalog-ddr-text` (7 rows): no tokenised reference index. Calculations come back as plain text, so the `Chunk` stream that tells a plugin call from a native function, and that yields `$$` variable names containing spaces, is gone. The Globals tab and the plugin tally depend on it.
-- `catalog-bit-flags` (15 rows): fm decodes stored option words into named booleans and enums and reports the raw number only for a layout (`layout.flags.raw`, with `flags.set` naming 23 bits). The Bit Flags tab catalogues the raw numeric word per context - its `addFlag` drops anything non-numeric and its rows are decimal, binary and bits-set - so a decoded word is not a substitute for it.
+- `catalog-bit-flags` (15 rows): fm decodes stored option words into named booleans and enums and reports the raw number only for a layout (`layout.flags.raw`, with `flags.set` naming 22 bits). The Bit Flags tab catalogues the raw numeric word per context - its `addFlag` drops anything non-numeric and its rows are decimal, binary and bits-set - so a decoded word is not a substitute for it.
 - `catalog-plugins` (7 rows): nothing marks a calculation call site as a plugin function call. The Plugins tab and the plugin-call uncertainty signal behind the Fields confidence tier depend on it.
 - `catalog-modification-info` (14 rows): no object reports a modification count, and only a layout reports who and when (`layout.modified`). The Modification Hotspots tab and the audit columns of the Persistent Data tab depend on it.
 - `catalog-relation-sort` (1 row): `relation.leftToRight.sortRelated` says a relationship sorts related records but not on which fields or in which direction. The relationship detail pane depends on it.
