@@ -1,0 +1,13 @@
+{
+  "name": "fm-inspector",
+  "version": "3.0.0-dev",
+  "private": true,
+  "type": "module",
+  "description": "Live FileMaker solution analysis through the Claris ADT fm CLI",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "test": "node --test tests/",
+    "inventory": "node scripts/saxml-inventory.mjs"
+  },
+  "license": "CC-BY-4.0"
+}
