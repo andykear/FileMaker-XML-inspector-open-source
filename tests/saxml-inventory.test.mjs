@@ -4,6 +4,7 @@ import {
   extractParserAccesses,
   extractRenderAccesses,
   buildInventoryMarkdown,
+  mergeInventory,
 } from '../scripts/saxml-inventory.mjs';
 
 const SAMPLE = `
@@ -84,4 +85,73 @@ test('buildInventoryMarkdown emits one row per datum with empty classification',
   assert.match(md, /^# SaXML inventory/m);
   assert.match(md, /\| parseLayouts \| qs:'LayoutCatalog' \| {2}\| {2}\| {2}\|/);
   assert.match(md, /\| render \| s\.layouts\.local_css_objects \| {2}\| {2}\| {2}\|/);
+});
+
+const EXISTING = [
+  '# SaXML inventory',
+  '',
+  'One row per datum the legacy inspector reads from Save as XML (parser rows) or renders from the stats object (render rows).',
+  'Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and key that supplies it, or the register id for a gap.',
+  '',
+  '| Source | Datum | Classification | fm | Notes |',
+  '|---|---|---|---|---|',
+  "| parseLayouts | qs:'LayoutCatalog' | covered | read:layout listing | Already classified by hand. |",
+  "| parseLayouts | qs:'StaleDatum' | gap | catalog-stale | This datum no longer appears in the source. |",
+  '| render | s.layouts.local_css_objects | covered | layout.contents.objects[].style |  |',
+  '',
+  '## Summary',
+  '',
+  '| Classification | Rows |',
+  '|---|---|',
+  '| covered | 2 |',
+  '| gap | 1 |',
+  '',
+  '## Gap ids introduced',
+  '',
+  '- `catalog-stale` (1 row): a stale entry kept only to prove removal.',
+].join('\n');
+
+test('mergeInventory keeps a classified row, adds a new one blank, drops a stale one, and preserves trailing sections', () => {
+  const parsers = new Map([['parseLayouts', ["qs:'LayoutCatalog'", "qs:'NewDatum'"]]]);
+  const renders = ['s.layouts.local_css_objects'];
+  const { markdown, kept, added, removed } = mergeInventory(EXISTING, parsers, renders);
+
+  assert.equal(kept, 2);
+  assert.equal(added, 1);
+  assert.equal(removed, 1);
+
+  // The classified row survives untouched.
+  assert.match(markdown, /\| parseLayouts \| qs:'LayoutCatalog' \| covered \| read:layout listing \| Already classified by hand\. \|/);
+  assert.match(markdown, /\| render \| s\.layouts\.local_css_objects \| covered \| layout\.contents\.objects\[\]\.style \| {2}\|/);
+  // The new datum is appended blank.
+  assert.match(markdown, /\| parseLayouts \| qs:'NewDatum' \| {2}\| {2}\| {2}\|/);
+  // The stale row is gone.
+  assert.doesNotMatch(markdown, /StaleDatum/);
+  // Everything after the table survives verbatim, stale-gap prose included:
+  // this function does not recompute the Summary or rewrite the gap-id notes.
+  assert.match(markdown, /## Summary/);
+  assert.match(markdown, /\| covered \| 2 \|/);
+  assert.match(markdown, /## Gap ids introduced/);
+  assert.match(markdown, /`catalog-stale` \(1 row\): a stale entry kept only to prove removal\./);
+});
+
+test('mergeInventory preserves an escaped pipe inside a Notes cell', () => {
+  const existing = [
+    '# SaXML inventory',
+    '',
+    'One row per datum...',
+    'Classification...',
+    '',
+    '| Source | Datum | Classification | fm | Notes |',
+    '|---|---|---|---|---|',
+    "| parseBrokenReferences | qs:':scope > Field > ' | covered | valueList.field + valueList.secondField | Truncated selector for ':scope > Field > PrimaryField\\|SecondaryField'; fm reports both arms. |",
+    '',
+    '## Summary',
+  ].join('\n');
+  const parsers = new Map([['parseBrokenReferences', ["qs:':scope > Field > '"]]]);
+  const { markdown, kept, added, removed } = mergeInventory(existing, parsers, []);
+  assert.equal(kept, 1);
+  assert.equal(added, 0);
+  assert.equal(removed, 0);
+  assert.match(markdown, /PrimaryField\\\|SecondaryField/);
 });
