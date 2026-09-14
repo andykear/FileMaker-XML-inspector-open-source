@@ -6,9 +6,9 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | Source | Datum | Classification | fm | Notes |
 |---|---|---|---|---|
 | parseXMLToStats | qs:'parsererror' | covered | runner: parse pipeline replaced by fm NDJSON, no datum | DOMParser error probe. fm returns parsed JSON per op with its own status/error line; there is no XML text to fail on. |
-| buildDDRTextIndex | attr:'datatype' | gap | catalog-ddr-text | Chunk datatype in the DDR_INFO token stream. fm returns calculation bodies as plain text only; no tokenised reference index. |
-| buildDDRTextIndex | qsa:':scope > DDR_INFO' | gap | catalog-ddr-text | The DDR_INFO sidecar under every Calculation. No fm catalog exposes it. |
-| buildDDRTextIndex | tag:'*' | gap | catalog-ddr-text | Walks every element of the DDR_INFO subtree to build the text index that Reference Explorer, plugin and global-variable detection all read. |
+| buildDDRTextIndex | attr:'datatype' | gap | catalog-calculation-tokens | Chunk datatype in the DDR_INFO token stream. fm returns calculation bodies as plain text only; no tokenised reference index. |
+| buildDDRTextIndex | qsa:':scope > DDR_INFO' | gap | catalog-calculation-tokens | The DDR_INFO sidecar under every Calculation. No fm catalog exposes it. |
+| buildDDRTextIndex | tag:'*' | gap | catalog-calculation-tokens | Walks every element of the DDR_INFO subtree to build the text index that Reference Explorer, plugin and global-variable detection all read. |
 | parseFileMetadata | attr:'action' | gap | catalog-file-metadata | ScriptTrigger action on the file (OnFirstWindowOpen etc.). fm reports layout triggers only. |
 | parseFileMetadata | attr:'enable' | gap | catalog-file-metadata | enable on HideToolbars / HideWebDirectSharing / HideClientSharing. No fm catalog for File Options. |
 | parseFileMetadata | attr:'keychain' | gap | catalog-file-metadata | SavePassword keychain flag (File Options > log in using). |
@@ -259,7 +259,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseBrokenReferences | qsa:'Script' | covered | read:script items[] |  |
 | parseBrokenReferences | qsa:'Tooltip' | covered | layout.contents.objects[].tooltip | Reported as the calculation text. |
 | parseGlobalVars | attr:'value' | covered | script.body[].name | The Set Variable target name, including names containing spaces. |
-| parseGlobalVars | qsa:'Chunk[type="VariableReference"]' | gap | catalog-ddr-text | Every $$ read inside a calculation, pre-tokenised by FileMaker. Without it the page must regex calculation text, which the legacy comment documents as unreliable for variable names containing spaces ($$SMTP Server). |
+| parseGlobalVars | qsa:'Chunk[type="VariableReference"]' | gap | catalog-calculation-tokens | FileMaker's own parse of each calculation (the FM 2026 DDR_INFO chunk list) names every $$ variable a formula reads. fm returns calculation text only, and validate:calculation reports valid/invalid plus one error position, not the tokens. So the global-variables tab must find $$ names by scanning text, which is approximate for names with spaces ($$SMTP Server, valid in FileMaker), names inside comments, and names inside string literals. |
 | parseGlobalVars | qsa:'StepsForScripts Parameter[type="Variable"] > Name[value]' | covered | script.body[].name | Set Variable targets; confirmed on step 141 in the samples. |
 | parseCustomMenus | attr:'membercount' | derived | derived from read:customMenuSet listing total | Legacy fallback when the catalog lists no members. |
 | parseCustomMenus | attr:'name' | covered | customMenu.name + customMenuSet.name |  |
@@ -474,9 +474,9 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | render | s.fileMeta.min_fm_version | gap | catalog-file-metadata |  |
 | render | s.fileMeta.save_password | gap | catalog-file-metadata |  |
 | render | s.fileMeta.startup_layout | gap | catalog-file-metadata |  |
-| render | s.globals.detail | gap | catalog-ddr-text | Per-variable contact counts. Set Variable targets are covered (script.body[].name) but every $$ READ inside a calculation needs the tokenised chunk stream; a regex over calculation text mis-splits names containing spaces. |
-| render | s.globals.global_variable_count | gap | catalog-ddr-text | Same source problem; the count would be low by every read-only variable. |
-| render | s.globals.max_global_contacts | gap | catalog-ddr-text | Same source problem. |
+| render | s.globals.detail | gap | catalog-calculation-tokens | Per-variable contact counts. Set Variable targets are covered (script.body[].name) but every $$ READ inside a calculation needs the tokenised chunk stream; a regex over calculation text mis-splits names containing spaces. |
+| render | s.globals.global_variable_count | gap | catalog-calculation-tokens | Same source problem; the count would be low by every read-only variable. |
+| render | s.globals.max_global_contacts | gap | catalog-calculation-tokens | Same source problem. |
 | render | s.graph.cascade_delete | derived | derived from relation.leftToRight.cascadeDelete + relation.rightToLeft.cascadeDelete |  |
 | render | s.graph.detail.relationships_all | covered | relation.{left,right,predicates[],leftToRight,rightToLeft} | Every column including the sorted tick (sortRelated); only the sort's field list is missing (catalog-relation-sort). |
 | render | s.graph.detail.tos_all | covered | tableOccurrence.{name,table.name} |  |
@@ -585,7 +585,7 @@ From the brief's list:
 
 - `catalog-theme-styles` (23 rows): fm has no theme catalog. A layout reports `theme{id,name,displayName,group}` and an object a `style` display name, but nothing enumerates the themes in the file, their named styles, their palettes or their CSS. The Themes tab, the unused-style report and the style columns of the Reference Explorer all depend on it.
 - `catalog-file-metadata` (24 rows): no catalog for File Options. Login mode, saved password, minimum FileMaker version, the three hide-sharing checkboxes, the startup layout and file-level script triggers have no read op and no Get() function (fm help: file-level options are deliberately not members of any catalog). Encryption state, file name, path, size, persistent ID and locale ARE readable through evaluate:calculation with Get() functions, so those rows are covered.
-- `catalog-ddr-text` (7 rows): no tokenised reference index. Calculations come back as plain text, so the `Chunk` stream that tells a plugin call from a native function, and that yields `$$` variable names containing spaces, is gone. The Globals tab and the plugin tally depend on it.
+- `catalog-calculation-tokens` (7 rows): FileMaker's tokenised form of every calculation. A FileMaker 2026 SaXML export with DDR info carries each formula twice: as text and as FileMaker's own parse of it, a list of Chunk elements typed FieldReference, VariableReference, FunctionRef, CustomFunctionRef, ScriptRef and so on, which says exactly what a formula references. fm reports the text only; no read op and not validate:calculation exposes the tokens. Every cross-reference analysis (unreferenced fields and occurrences, broken references, global variables, custom function usage) therefore has to scan calculation text, which is approximate where FileMaker's parser is exact: variable names with spaces, references inside comments or string literals, `::` inside quoted text.
 - `catalog-bit-flags` (15 rows): fm decodes stored option words into named booleans and enums and reports the raw number only for a layout (`layout.flags.raw`, with `flags.set` naming 22 bits). The Bit Flags tab catalogues the raw numeric word per context - its `addFlag` drops anything non-numeric and its rows are decimal, binary and bits-set - so a decoded word is not a substitute for it.
 - `catalog-plugins` (7 rows): nothing marks a calculation call site as a plugin function call. The Plugins tab and the plugin-call uncertainty signal behind the Fields confidence tier depend on it.
 - `catalog-modification-info` (14 rows): no object reports a modification count, and only a layout reports who and when (`layout.modified`). The Modification Hotspots tab and the audit columns of the Persistent Data tab depend on it.
