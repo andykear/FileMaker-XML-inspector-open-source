@@ -145,11 +145,8 @@ Deferred, not dropped: compare mode (two solution snapshots can be diffed later 
     "version": "0.6.0", "build": "29816214", "date": "2026-09-14", "outcome": "open",
     "command": "fm --file=fmnet://localhost/ooe --username=admin --keychain --no-prompt --abort-on-error=false --out=/tmp/fm-gaps-1.out.ndjson /tmp/fm-gaps-1.ops.ndjson",
     "ops": [ { "op": "read:layout", "id": 11, "detail": true } ],
-    "response": {
-      "stdout": [ { "op": "read:layout", "status": "ok", "result": { "...": "verbatim result line" } } ],
-      "stderr": [ { "type": "summary", "total": 1, "ok": 1, "errors": 0, "dryRun": false, "rolledBack": false } ],
-      "exitCode": 0
-    }
+    "batch": { "size": 11, "position": 7 },
+    "evidence": "gaps/evidence/0.6.0/5f2a9c1e.ndjson"
   },
   "reportedToClaris": null,
   "blocks": [
@@ -163,7 +160,9 @@ Deferred, not dropped: compare mode (two solution snapshots can be diffed later 
 }
 ```
 
-Evidence is mandatory. `lastChecked.command` is the exact command line the checker ran, including the temp file paths it used, and `lastChecked.ops` is the exact NDJSON batch written to that ops file. `lastChecked.response` is fm's response verbatim: every stdout line and every stderr line as parsed JSON objects, in order, plus the exit code. Nothing is summarised or trimmed; a large result stays large, because the point is that Claris sees exactly what we saw. The checker overwrites this block on every run, and the git history of `register.json` is the record of how each gap behaved across builds. The `fm-gaps report` output includes the command and the response for every open entry.
+Evidence is mandatory. `lastChecked.command` is the exact command line the checker ran, including the temp file paths it used, and `lastChecked.ops` is the exact NDJSON batch written to that ops file. `lastChecked.response` is fm's response verbatim: every stdout line and every stderr line as parsed JSON objects, in order, plus the exit code. Nothing is summarised or trimmed; a large result stays large, because the point is that Claris sees exactly what we saw. The checker overwrites this block on every run, and the git history is the record of how each gap behaved across builds. The `fm-gaps report` output includes the command and the response for every open entry.
+
+**Evidence is stored once per distinct probe, not once per entry** (decided 2026-09-14). Many entries share one probe: every opaque step kind probes the same `read:script` on the one-of-everything script, whose result is about 230 KB, and storing it per entry made the register 3.3 MB for eleven entries and would make it about 19 MB for the 81 opaque kinds, rewritten on every weekly check. So `lastChecked.response` on an entry is replaced by `lastChecked.evidence`, the id of a file under `gaps/evidence/<version>/<probe-id>.ndjson` that holds the verbatim response for that probe op (stdout lines, stderr lines, exit code, and the command and ops that produced it). The probe id is a stable hash of the probe op. Evidence files are committed like the register. Nothing is summarised or trimmed: `fm-gaps report` inlines the referenced evidence under every open entry, so Claris still sees exactly what we saw. Entries keep their own `outcome`, `reason`, `version`, `build`, `date`, and `batch` position. The first task of Plan 2 makes this change together with the register reconciliation (one entry per inventory gap id and per opaque step kind).
 
 `status` is `open`, `fixed`, or `wontfix`. `area` is `catalog:<name>`, `step:<step name>`, or `cli`. Check kinds, implemented as small functions in `gaps/checks.mjs`: `keyPresent`, `opAccepted`, `stepNotOpaque`, `valueEquals`. A gap that needs more gets a named function in the same file, not a new mechanism.
 
