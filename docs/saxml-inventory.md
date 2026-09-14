@@ -101,11 +101,11 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseLayouts | attr:'isFolder' | covered | layout.type | fm reports type 'folder' vs 'layout' in both tree and flatten modes. |
 | parseLayouts | attr:'left' | covered | layout.contents.objects[].bounds.left |  |
 | parseLayouts | attr:'name' | covered | layout.name + layout.contents.objects[].name + layout.tableOccurrence.name |  |
-| parseLayouts | attr:'quickFind' | covered | layout.contents.objects[].quickFind | Object-level Quick Find. The layout-level quickFind option is not reported: see attr:'saveRecord' / catalog-layout-options. |
+| parseLayouts | attr:'quickFind' | covered | layout.contents.objects[].quickFind | Object-level Quick Find. The layout-level Quick Find option is layout.flags.set "disableQuickFind" (bit 15, 0x8000; set when quick find is off). |
 | parseLayouts | attr:'right' | derived | derived from layout.contents.objects[].bounds.left + bounds.width | fm reports width, not a right edge; objects_outside_bounds compares left+width against geometry.baseWidth. |
 | parseLayouts | attr:'rowLimit' | covered | layout.contents.objects[].rows | Portal row count. |
 | parseLayouts | attr:'rowsperpage' | covered | layout.contents.objects[].rows | Alternate spelling of the same portal row count. |
-| parseLayouts | attr:'saveRecord' | gap | catalog-layout-options | Layout Setup 'Save record changes automatically'. layout.flags.set carries 22 layout bits but none of them, and there is no other layout-level options key. |
+| parseLayouts | attr:'saveRecord' | covered | layout.flags.set contains "confirmRecordSave" (bit 4, 0x10) | Layout Setup > General > Save record changes automatically. fm's own layout flag table (34 names, register Task 6) names the bit confirmRecordSave: set when the confirmation dialog is asked for, i.e. auto-save off. Not exercised on the reference layouts (bit clear on all), reported when set. |
 | parseLayouts | attr:'show' | gap | catalog-portal-setup | Portal Options show bitmask. Bit 2 (allow delete) is covered by layout.contents.objects[].allowDelete; bits 1 (allow create), 8 (sorted) and 16 (filtered) have no fm key - confirmed by the layout describe notes, which say the portal's sort and filter are reported nowhere. |
 | parseLayouts | attr:'startrow' | covered | layout.contents.objects[].initialRow |  |
 | parseLayouts | attr:'type' | covered | layout.contents.objects[].type | 19 object type words cover every LayoutObject type the legacy counts. The Part type reading of this same attribute is a gap, registered on qs:':scope > PartsList'. |
@@ -115,7 +115,7 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseLayouts | qs:':scope > LayoutThemeReference' | covered | layout.theme |  |
 | parseLayouts | qs:':scope > LocalCSS' | gap | catalog-object-styles | The per-object local CSS override text and its property count (s.layouts.objects_with_local_css, local_css_node_count, local_css_objects). fm reports only the named style under objects[].style. |
 | parseLayouts | qs:':scope > MenuSetReference' | gap | catalog-layout-menuset | Which custom menu set a layout installs. read:customMenuSet lists the sets and read:layout describes the layout, but no key joins them. |
-| parseLayouts | qs:':scope > Options' | covered | layout.viewStyles + layout.hidden + layout.flags | saveRecord and the layout-level quickFind inside this element are not reported: catalog-layout-options. |
+| parseLayouts | qs:':scope > Options' | covered | layout.viewStyles + layout.hidden + layout.flags | saveRecord and the layout-level quickFind inside this element are flags.set names confirmRecordSave and disableQuickFind (fm's 34-name layout flag table). |
 | parseLayouts | qs:':scope > PartsList' | gap | catalog-layout-parts | Layout part bands. Verified on the samples: layout.contents.objects[] carries 19 object types and none is a part; only geometry.bodyHeight survives. Header/Footer/Top Navigation/Sub-summary presence, part count and part geometry are all unavailable. |
 | parseLayouts | qs:':scope > Portal' | covered | layout.contents.objects[].type = portal |  |
 | parseLayouts | qs:':scope > ScriptTriggers' | covered | layout.scriptTriggers[] + layout.contents.objects[].scriptTriggers[] | Layout describe also gives scriptTriggerCount directly. The object-level key is present on 206 of 473 objects in the samples — absent on object kinds that cannot hold a trigger, `[]` when a kind can and has none — so consumers must guard for its absence rather than assume it is always there. |
@@ -485,7 +485,7 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | render | s.graph.to_zero_relationships | derived | derived from tableOccurrence.related[] (empty) or the union of relation.left/right |  |
 | render | s.layouts.button_bars | derived | derived from layout.contents.objects[].type = buttonBar |  |
 | render | s.layouts.detail | gap | catalog-layout-parts | Most sublists are covered (all, hidden, in_sidebar, with_triggers, with_portals, with_charts, with_buttons, with_tab_controls, with_slide_controls, with_web_viewers, with_popovers, with_button_bars, dividers). with_header, with_footer, with_subsummary and with_nav_part need part bands; with_local_css needs catalog-object-styles; with_filtered_portals needs catalog-portal-setup. |
-| render | s.layouts.info | gap | catalog-layout-options | id, theme, base_to, triggers, hidden, default_view and allow_form/list/table are covered by layout.{id,theme,tableOccurrence,scriptTriggerCount,hidden,viewStyles}. menu_set is catalog-layout-menuset; save_record and the layout-level quick_find are catalog-layout-options. |
+| render | s.layouts.info | covered | layout.{id,theme,tableOccurrence,scriptTriggerCount,hidden,viewStyles,flags.set} | id, theme, base_to, triggers, hidden, default_view, allow_form/list/table, save_record (flags.set confirmRecordSave) and quick_find (flags.set disableQuickFind) are covered; menu_set is catalog-layout-menuset. |
 | render | s.layouts.layout_count | derived | derived from read:layout {flatten:true} items with type = layout | Minus the hyphen-named dividers, same rule as today. |
 | render | s.layouts.local_css_objects | gap | catalog-object-styles | Per-layout, per-object-type counts of local CSS overrides. |
 | render | s.layouts.objects_total | derived | derived from layout.contents.objects[] counted recursively | layout.contents also reports fieldCount, portalCount, webViewerCount and unmodelledCount directly. |
@@ -573,12 +573,12 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 
 | Classification | Rows |
 |---|---|
-| covered | 385 |
+| covered | 387 |
 | derived | 66 |
-| gap | 104 |
+| gap | 102 |
 | dropped | 8 |
 
-Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 385 + 66 + 104 + 8 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
+Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 387 + 66 + 102 + 8 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
 
 ## Gap ids introduced
 
@@ -598,5 +598,4 @@ New in this pass:
 - `catalog-tags` (8 rows): fm reports tags on fields, table occurrences, custom menus and custom menu sets, but not on layouts or scripts. The Tags tab's `tagged_layouts` and `tagged_scripts`, and their share of every tag total, have no source.
 - `catalog-portal-setup` (4 rows): the portal's filter calculation, its stored sort order and its allow-create bit. The layout describe notes state outright that the sort and the filter are reported nowhere. `portals_with_filter`, `portals_with_sort` and `portals_allow_create` depend on them, and a field referenced only from a portal filter becomes a false positive in the unreferenced-fields report.
 - `catalog-conditional-formatting` (3 rows): no layout object key reports conditional formatting at all. The broken-reference scan over conditional-format calculations, and any field referenced only from one, depend on it.
-- `catalog-layout-options` (2 rows): the layout-level Save-record-changes-automatically and Quick-Find settings from Layout Setup. Neither appears in `layout.flags.set` nor anywhere else. The layout dense table shows both columns.
 - `catalog-layout-menuset` (2 rows): which custom menu set a layout installs. `read:customMenuSet` lists the sets and `read:layout` describes the layout, but no key joins them.

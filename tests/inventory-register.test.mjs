@@ -15,7 +15,7 @@ const REGISTER_PATH = path.join(ROOT, 'node_modules', 'fm-adt-toolkit', 'gaps', 
 // exists for that gap in the register today. See docs/inventory-to-register.md
 // for the reasoning behind each one. Any other gap id must resolve to at least
 // one real pair.
-const DOCUMENTED_OPEN_ITEMS = new Set(['catalog-calculation-tokens', 'catalog-layout-options']);
+const DOCUMENTED_OPEN_ITEMS = new Set(['catalog-calculation-tokens']);
 
 function parseInventoryGapIds(markdown) {
   const section = markdown.split('## Gap ids introduced')[1];
