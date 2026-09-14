@@ -319,7 +319,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseModifications | attr:'userName' | gap | catalog-modification-info | Last-modifying user. Covered for layouts only, by layout.modified.by / layout.modified.account. |
 | parseModifications | qsa:'UUID[modifications]' | gap | catalog-modification-info | The audit element on fields, tables, layouts, scripts, TOs, themes, custom functions, custom menus, value lists and privilege sets. Only layouts have an fm equivalent (layout.modified), and it carries no count. |
 | parseBitFlags | attr:'Options' | gap | catalog-bit-flags | Part Definition Options bitmask. Doubly unavailable: the raw value is not reported and neither are layout parts (catalog-layout-parts). |
-| parseBitFlags | attr:'inputMode' | covered | layout.contents.objects[].inputMode | fm reports the decoded word rather than the raw value, which is what this tab catalogues. |
+| parseBitFlags | attr:'inputMode' | gap | catalog-bit-flags | Field Usage inputMode is a raw option word in SaXML, and the raw number is the datum this tab catalogues: addFlag drops any non-numeric value through its isNaN guard, and every output row is {decimal, binary, bits_set, count}. fm reports the decoded enum instead (only 'automatic' and 'roman' appear in the samples), and the layout describe notes say the key is absent when the stored byte names none of its options, so the raw word cannot be recovered. |
 | parseBitFlags | attr:'name' | covered | layout.name | Only used as the source label on a flag row. |
 | parseBitFlags | attr:'show' | gap | catalog-bit-flags | Portal Options show bitmask, raw. The decoded delete bit is covered (objects[].allowDelete); the create, sort and filter bits are catalog-portal-setup. |
 | parseBitFlags | attr:'type' | gap | catalog-bit-flags | Subtype label on a flag group. Layout object types are covered by objects[].type, but Field Usage type and Part type are not. |
@@ -573,11 +573,11 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 
 | Classification | Rows |
 |---|---|
-| covered | 373 |
+| covered | 372 |
 | derived | 66 |
-| gap | 124 |
+| gap | 125 |
 
-Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 373 + 66 + 124 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
+Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 372 + 66 + 125 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
 
 ## Gap ids introduced
 
@@ -586,7 +586,7 @@ From the brief's list:
 - `catalog-theme-styles` (23 rows): fm has no theme catalog. A layout reports `theme{id,name,displayName,group}` and an object a `style` display name, but nothing enumerates the themes in the file, their named styles, their palettes or their CSS. The Themes tab, the unused-style report and the style columns of the Reference Explorer all depend on it.
 - `catalog-file-metadata` (26 rows): no catalog for File Options. Encryption state, login mode, minimum FileMaker version, the three hide-sharing checkboxes, save-password, the startup layout and file-level script triggers have no fm source. The Overview tab's file-security block depends on it.
 - `catalog-ddr-text` (7 rows): no tokenised reference index. Calculations come back as plain text, so the `Chunk` stream that tells a plugin call from a native function, and that yields `$$` variable names containing spaces, is gone. The Globals tab and the plugin tally depend on it.
-- `catalog-bit-flags` (14 rows): fm decodes stored option words into named booleans and reports the raw number only for a layout (`layout.flags.raw`, with `flags.set` naming 23 bits). The Bit Flags tab, which catalogues raw values per context, depends on the rest.
+- `catalog-bit-flags` (15 rows): fm decodes stored option words into named booleans and enums and reports the raw number only for a layout (`layout.flags.raw`, with `flags.set` naming 23 bits). The Bit Flags tab catalogues the raw numeric word per context - its `addFlag` drops anything non-numeric and its rows are decimal, binary and bits-set - so a decoded word is not a substitute for it.
 - `catalog-plugins` (7 rows): nothing marks a calculation call site as a plugin function call. The Plugins tab and the plugin-call uncertainty signal behind the Fields confidence tier depend on it.
 - `catalog-modification-info` (14 rows): no object reports a modification count, and only a layout reports who and when (`layout.modified`). The Modification Hotspots tab and the audit columns of the Persistent Data tab depend on it.
 - `catalog-relation-sort` (1 row): `relation.leftToRight.sortRelated` says a relationship sorts related records but not on which fields or in which direction. The relationship detail pane depends on it.
