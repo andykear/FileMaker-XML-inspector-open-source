@@ -19,6 +19,8 @@ Principle stated by the owner: favour simplicity over abstraction. Gating and tr
 | Multi-file | Follow each file's externalDataSource catalog. Reuse the root account with `--keychain --prompt`. Unreachable files are recorded, not fatal. |
 | Safety net for "did we miss something" | A mechanical inventory of every datum the current code consumes, classified covered / derived / gap before porting. One throwaway count cross-check on the reference solution. |
 | Reference solution | `fmnet://localhost/ooe`, account `admin`, one related file (`BrojDva`). Read only, always. |
+| Register shape | A per-kind coverage matrix: for each fm read op and object kind, every attribute the kind has, marked reported or missing, with evidence. Framed for Claris as "what the read op omits", not as inspector features (decided 2026-09-14). |
+| Inventory classes | covered, derived, gap, dropped (retired by owner decision; not a gap). |
 
 ## 1. Repos and the shared package
 
