@@ -5,566 +5,601 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 
 | Source | Datum | Classification | fm | Notes |
 |---|---|---|---|---|
-| parseXMLToStats | qs:'parsererror' |  |  |  |
-| buildDDRTextIndex | attr:'datatype' |  |  |  |
-| buildDDRTextIndex | qsa:':scope > DDR_INFO' |  |  |  |
-| buildDDRTextIndex | tag:'*' |  |  |  |
-| parseFileMetadata | attr:'action' |  |  |  |
-| parseFileMetadata | attr:'enable' |  |  |  |
-| parseFileMetadata | attr:'keychain' |  |  |  |
-| parseFileMetadata | attr:'name' |  |  |  |
-| parseFileMetadata | attr:'type' |  |  |  |
-| parseFileMetadata | attr:'version' |  |  |  |
-| parseFileMetadata | qs:'Encryption' |  |  |  |
-| parseFileMetadata | qs:'HideClientSharing' |  |  |  |
-| parseFileMetadata | qs:'HideToolbars' |  |  |  |
-| parseFileMetadata | qs:'HideWebDirectSharing' |  |  |  |
-| parseFileMetadata | qs:'LayoutReference' |  |  |  |
-| parseFileMetadata | qs:'Login' |  |  |  |
-| parseFileMetadata | qs:'Metadata' |  |  |  |
-| parseFileMetadata | qs:'Minimum' |  |  |  |
-| parseFileMetadata | qs:'SavePassword' |  |  |  |
-| parseFileMetadata | qs:'ScriptReference' |  |  |  |
-| parseFileMetadata | qsa:'ScriptTrigger' |  |  |  |
-| parseLibrary | qs:'LibraryCatalog' |  |  |  |
-| parseLibrary | qsa:'BinaryData' |  |  |  |
-| parseTablesAndFields | attr:'absolute' |  |  |  |
-| parseTablesAndFields | attr:'comment' |  |  |  |
-| parseTablesAndFields | attr:'datatype' |  |  |  |
-| parseTablesAndFields | attr:'existing' |  |  |  |
-| parseTablesAndFields | attr:'fieldtype' |  |  |  |
-| parseTablesAndFields | attr:'global' |  |  |  |
-| parseTablesAndFields | attr:'id' |  |  |  |
-| parseTablesAndFields | attr:'index' |  |  |  |
-| parseTablesAndFields | attr:'maxRepetitions' |  |  |  |
-| parseTablesAndFields | attr:'name' |  |  |  |
-| parseTablesAndFields | attr:'notEmpty' |  |  |  |
-| parseTablesAndFields | attr:'prohibitModification' |  |  |  |
-| parseTablesAndFields | attr:'storeCalculationResults' |  |  |  |
-| parseTablesAndFields | attr:'type' |  |  |  |
-| parseTablesAndFields | attr:'unique' |  |  |  |
-| parseTablesAndFields | attr:'withFewerFolders' |  |  |  |
-| parseTablesAndFields | qs:':scope > AutoEnter' |  |  |  |
-| parseTablesAndFields | qs:':scope > BaseDirectoryReference' |  |  |  |
-| parseTablesAndFields | qs:':scope > BaseTableReference' |  |  |  |
-| parseTablesAndFields | qs:':scope > Calculation' |  |  |  |
-| parseTablesAndFields | qs:':scope > ObjectList' |  |  |  |
-| parseTablesAndFields | qs:':scope > Remote' |  |  |  |
-| parseTablesAndFields | qs:':scope > Storage' |  |  |  |
-| parseTablesAndFields | qs:':scope > Text' |  |  |  |
-| parseTablesAndFields | qs:':scope > Validation' |  |  |  |
-| parseTablesAndFields | qs:'BaseTableCatalog' |  |  |  |
-| parseTablesAndFields | qs:'BaseTableReference' |  |  |  |
-| parseTablesAndFields | qs:'Calculation' |  |  |  |
-| parseTablesAndFields | qs:'FieldsForTables' |  |  |  |
-| parseTablesAndFields | qs:'InRange' |  |  |  |
-| parseTablesAndFields | qs:'Looked_up' |  |  |  |
-| parseTablesAndFields | qs:'ObjectList' |  |  |  |
-| parseTablesAndFields | qs:'TableOccurrenceReference' |  |  |  |
-| parseTablesAndFields | qsa:':scope > BaseTable' |  |  |  |
-| parseTablesAndFields | qsa:':scope > FieldCatalog' |  |  |  |
-| parseTablesAndFields | qsa:':scope > Field[fieldtype]' |  |  |  |
-| parseTablesAndFields | qsa:'FieldCatalog' |  |  |  |
-| parseRelationships | attr:'baseTable' |  |  |  |
-| parseRelationships | attr:'blue' |  |  |  |
-| parseRelationships | attr:'cascadeCreate' |  |  |  |
-| parseRelationships | attr:'cascadeDelete' |  |  |  |
-| parseRelationships | attr:'green' |  |  |  |
-| parseRelationships | attr:'id' |  |  |  |
-| parseRelationships | attr:'name' |  |  |  |
-| parseRelationships | attr:'red' |  |  |  |
-| parseRelationships | attr:'table' |  |  |  |
-| parseRelationships | attr:'type' |  |  |  |
-| parseRelationships | qs:':scope > LeftTable' |  |  |  |
-| parseRelationships | qs:':scope > RightTable' |  |  |  |
-| parseRelationships | qs:'BaseTableReference' |  |  |  |
-| parseRelationships | qs:'Color' |  |  |  |
-| parseRelationships | qs:'LeftField > FieldReference' |  |  |  |
-| parseRelationships | qs:'RelationshipCatalog' |  |  |  |
-| parseRelationships | qs:'RightField > FieldReference' |  |  |  |
-| parseRelationships | qs:'SortSpecification' |  |  |  |
-| parseRelationships | qs:'TableOccurrenceCatalog' |  |  |  |
-| parseRelationships | qs:'TableOccurrenceReference' |  |  |  |
-| parseRelationships | qsa:':scope > Relationship' |  |  |  |
-| parseRelationships | qsa:':scope > TableOccurrence' |  |  |  |
-| parseRelationships | qsa:'JoinPredicate' |  |  |  |
-| parseLayouts | attr:'Display' |  |  |  |
-| parseLayouts | attr:'Style' |  |  |  |
-| parseLayouts | attr:'allowFormView' |  |  |  |
-| parseLayouts | attr:'allowListView' |  |  |  |
-| parseLayouts | attr:'allowTableView' |  |  |  |
-| parseLayouts | attr:'defaultView' |  |  |  |
-| parseLayouts | attr:'displayName' |  |  |  |
-| parseLayouts | attr:'enable' |  |  |  |
-| parseLayouts | attr:'hidden' |  |  |  |
-| parseLayouts | attr:'id' |  |  |  |
-| parseLayouts | attr:'isFolder' |  |  |  |
-| parseLayouts | attr:'left' |  |  |  |
-| parseLayouts | attr:'name' |  |  |  |
-| parseLayouts | attr:'quickFind' |  |  |  |
-| parseLayouts | attr:'right' |  |  |  |
-| parseLayouts | attr:'rowLimit' |  |  |  |
-| parseLayouts | attr:'rowsperpage' |  |  |  |
-| parseLayouts | attr:'saveRecord' |  |  |  |
-| parseLayouts | attr:'show' |  |  |  |
-| parseLayouts | attr:'startrow' |  |  |  |
-| parseLayouts | attr:'type' |  |  |  |
-| parseLayouts | attr:'width' |  |  |  |
-| parseLayouts | qs:':scope > Button' |  |  |  |
-| parseLayouts | qs:':scope > Field' |  |  |  |
-| parseLayouts | qs:':scope > LayoutThemeReference' |  |  |  |
-| parseLayouts | qs:':scope > LocalCSS' |  |  |  |
-| parseLayouts | qs:':scope > MenuSetReference' |  |  |  |
-| parseLayouts | qs:':scope > Options' |  |  |  |
-| parseLayouts | qs:':scope > PartsList' |  |  |  |
-| parseLayouts | qs:':scope > Portal' |  |  |  |
-| parseLayouts | qs:':scope > ScriptTriggers' |  |  |  |
-| parseLayouts | qs:':scope > Table' |  |  |  |
-| parseLayouts | qs:':scope > TableOccurrenceReference' |  |  |  |
-| parseLayouts | qs:':scope > Theme' |  |  |  |
-| parseLayouts | qs:':scope > Usage' |  |  |  |
-| parseLayouts | qs:':scope > action' |  |  |  |
-| parseLayouts | qs:'Bounds' |  |  |  |
-| parseLayouts | qs:'ButtonBar > ObjectList' |  |  |  |
-| parseLayouts | qs:'CustomMenuSetReference' |  |  |  |
-| parseLayouts | qs:'Display' |  |  |  |
-| parseLayouts | qs:'IconData' |  |  |  |
-| parseLayouts | qs:'LayoutCatalog' |  |  |  |
-| parseLayouts | qs:'ScriptReference' |  |  |  |
-| parseLayouts | qs:'SlideControl > ObjectList' |  |  |  |
-| parseLayouts | qs:'Step' |  |  |  |
-| parseLayouts | qs:'TabControl > ObjectList' |  |  |  |
-| parseLayouts | qs:'ThemeReference' |  |  |  |
-| parseLayouts | qsa:'LayoutCatalog ScriptReference' |  |  |  |
-| parseLayouts | qsa:'LayoutObject' |  |  |  |
-| parseLayouts | qsa:'Metadata ScriptTrigger' |  |  |  |
-| parseLayouts | qsa:'Step' |  |  |  |
-| parseScripts | attr:'enable' |  |  |  |
-| parseScripts | attr:'hidden' |  |  |  |
-| parseScripts | attr:'id' |  |  |  |
-| parseScripts | attr:'isFolder' |  |  |  |
-| parseScripts | attr:'name' |  |  |  |
-| parseScripts | attr:'runwithfullaccess' |  |  |  |
-| parseScripts | qs:':scope > Calculation' |  |  |  |
-| parseScripts | qs:':scope > FileReference' |  |  |  |
-| parseScripts | qs:':scope > Options' |  |  |  |
-| parseScripts | qs:':scope > ScriptReference' |  |  |  |
-| parseScripts | qs:'ObjectList' |  |  |  |
-| parseScripts | qs:'ScriptCatalog' |  |  |  |
-| parseScripts | qs:'ScriptReference' |  |  |  |
-| parseScripts | qs:'StepsForScripts' |  |  |  |
-| parseScripts | qsa:':scope > Script' |  |  |  |
-| parseScripts | qsa:':scope > Step' |  |  |  |
-| parseScripts | qsa:'Calculation' |  |  |  |
-| parseValueLists | attr:'UUID' |  |  |  |
-| parseValueLists | attr:'id' |  |  |  |
-| parseValueLists | attr:'name' |  |  |  |
-| parseValueLists | attr:'type' |  |  |  |
-| parseValueLists | attr:'value' |  |  |  |
-| parseValueLists | qs:':scope > Field' |  |  |  |
-| parseValueLists | qs:':scope > PrimaryField > FieldReference' |  |  |  |
-| parseValueLists | qs:':scope > Source' |  |  |  |
-| parseValueLists | qs:':scope > UUID' |  |  |  |
-| parseValueLists | qs:'OptionsForValueLists' |  |  |  |
-| parseValueLists | qs:'PrimaryField' |  |  |  |
-| parseValueLists | qs:'ShowRelated' |  |  |  |
-| parseValueLists | qs:'Source' |  |  |  |
-| parseValueLists | qs:'TableOccurrenceReference' |  |  |  |
-| parseValueLists | qs:'ValueListCatalog' |  |  |  |
-| parseValueLists | qsa:':scope > ValueList' |  |  |  |
-| parseValueLists | qsa:'Value' |  |  |  |
-| parseValueLists | qsa:'ValueList' |  |  |  |
-| parseValueLists | qsa:'ValueListReference[UUID]' |  |  |  |
-| parseAccounts | attr:'Export' |  |  |  |
-| parseAccounts | attr:'Print' |  |  |  |
-| parseAccounts | attr:'allowOverride' |  |  |  |
-| parseAccounts | attr:'commands' |  |  |  |
-| parseAccounts | attr:'disconnectIdle' |  |  |  |
-| parseAccounts | attr:'enable' |  |  |  |
-| parseAccounts | attr:'id' |  |  |  |
-| parseAccounts | attr:'manageDatabase' |  |  |  |
-| parseAccounts | attr:'membercount' |  |  |  |
-| parseAccounts | attr:'name' |  |  |  |
-| parseAccounts | attr:'type' |  |  |  |
-| parseAccounts | qs:':scope > ObjectList' |  |  |  |
-| parseAccounts | qs:'AccountsCatalog' |  |  |  |
-| parseAccounts | qs:'Authentication' |  |  |  |
-| parseAccounts | qs:'ExtendedPrivilegesCatalog' |  |  |  |
-| parseAccounts | qs:'Other' |  |  |  |
-| parseAccounts | qs:'PasswordEncrypted' |  |  |  |
-| parseAccounts | qs:'PrivilegeSetReference' |  |  |  |
-| parseAccounts | qs:'PrivilegeSetsCatalog' |  |  |  |
-| parseAccounts | qsa:':scope > Account' |  |  |  |
-| parseAccounts | qsa:':scope > ExtendedPrivilege' |  |  |  |
-| parseAccounts | qsa:':scope > PrivilegeSet' |  |  |  |
-| parseAccounts | qsa:'PrivilegeSetReference' |  |  |  |
-| parseCustomFunctions | attr:'id' |  |  |  |
-| parseCustomFunctions | attr:'name' |  |  |  |
-| parseCustomFunctions | qs:'CustomFunctionsCatalog' |  |  |  |
-| parseCustomFunctions | qs:'Display' |  |  |  |
-| parseCustomFunctions | qs:'ObjectList' |  |  |  |
-| parseCustomFunctions | qsa:':scope > CustomFunction' |  |  |  |
-| parseCustomFunctions | qsa:'CalcsForCustomFunctions CustomFunction' |  |  |  |
-| parseCustomFunctions | qsa:'Chunk[type="CustomFunctionRef"]' |  |  |  |
-| parsePersistentStores | attr:'accountName' |  |  |  |
-| parsePersistentStores | attr:'id' |  |  |  |
-| parsePersistentStores | attr:'instanceID' |  |  |  |
-| parsePersistentStores | attr:'modifications' |  |  |  |
-| parsePersistentStores | attr:'name' |  |  |  |
-| parsePersistentStores | attr:'timestamp' |  |  |  |
-| parsePersistentStores | attr:'type' |  |  |  |
-| parsePersistentStores | attr:'userName' |  |  |  |
-| parsePersistentStores | qs:':scope > UUID' |  |  |  |
-| parsePersistentStores | qs:':scope > Value' |  |  |  |
-| parsePersistentStores | qs:'Data' |  |  |  |
-| parsePersistentStores | qs:'PersistentStoreCatalog' |  |  |  |
-| parsePersistentStores | qsa:':scope > PersistentStore' |  |  |  |
-| parseBrokenReferences | attr:'fieldtype' |  |  |  |
-| parseBrokenReferences | attr:'id' |  |  |  |
-| parseBrokenReferences | attr:'name' |  |  |  |
-| parseBrokenReferences | attr:'type' |  |  |  |
-| parseBrokenReferences | attr:'value' |  |  |  |
-| parseBrokenReferences | qs:':scope > AutoEnter' |  |  |  |
-| parseBrokenReferences | qs:':scope > BaseTableReference' |  |  |  |
-| parseBrokenReferences | qs:':scope > Field > ' |  |  |  |
-| parseBrokenReferences | qs:':scope > LeftTable' |  |  |  |
-| parseBrokenReferences | qs:':scope > Name' |  |  |  |
-| parseBrokenReferences | qs:':scope > ObjectList' |  |  |  |
-| parseBrokenReferences | qs:':scope > RightTable' |  |  |  |
-| parseBrokenReferences | qs:':scope > ScriptReference' |  |  |  |
-| parseBrokenReferences | qs:':scope > Source' |  |  |  |
-| parseBrokenReferences | qs:':scope > Validation' |  |  |  |
-| parseBrokenReferences | qs:'FieldReference' |  |  |  |
-| parseBrokenReferences | qs:'LayoutCatalog' |  |  |  |
-| parseBrokenReferences | qs:'Looked_up' |  |  |  |
-| parseBrokenReferences | qs:'RelationshipCatalog' |  |  |  |
-| parseBrokenReferences | qs:'ScriptCatalog' |  |  |  |
-| parseBrokenReferences | qs:'StepsForScripts' |  |  |  |
-| parseBrokenReferences | qs:'TableOccurrenceReference' |  |  |  |
-| parseBrokenReferences | qs:'ValueListCatalog' |  |  |  |
-| parseBrokenReferences | qsa:':scope > Calculation' |  |  |  |
-| parseBrokenReferences | qsa:':scope > Condition' |  |  |  |
-| parseBrokenReferences | qsa:':scope > Field' |  |  |  |
-| parseBrokenReferences | qsa:':scope > Relationship' |  |  |  |
-| parseBrokenReferences | qsa:':scope > Script' |  |  |  |
-| parseBrokenReferences | qsa:':scope > Step' |  |  |  |
-| parseBrokenReferences | qsa:':scope > ValueList' |  |  |  |
-| parseBrokenReferences | qsa:'CalcsForCustomFunctions CustomFunction' |  |  |  |
-| parseBrokenReferences | qsa:'Calculation' |  |  |  |
-| parseBrokenReferences | qsa:'Conditions > Formatting' |  |  |  |
-| parseBrokenReferences | qsa:'Conditions > Hide' |  |  |  |
-| parseBrokenReferences | qsa:'FieldCatalog' |  |  |  |
-| parseBrokenReferences | qsa:'Layout' |  |  |  |
-| parseBrokenReferences | qsa:'Portal' |  |  |  |
-| parseBrokenReferences | qsa:'Script' |  |  |  |
-| parseBrokenReferences | qsa:'Tooltip' |  |  |  |
-| parseGlobalVars | attr:'value' |  |  |  |
-| parseGlobalVars | qsa:'Chunk[type="VariableReference"]' |  |  |  |
-| parseGlobalVars | qsa:'StepsForScripts Parameter[type="Variable"] > Name[value]' |  |  |  |
-| parseCustomMenus | attr:'membercount' |  |  |  |
-| parseCustomMenus | attr:'name' |  |  |  |
-| parseCustomMenus | attr:'value' |  |  |  |
-| parseCustomMenus | qs:':scope > Base' |  |  |  |
-| parseCustomMenus | qs:':scope > ObjectList' |  |  |  |
-| parseCustomMenus | qs:'CustomMenuCatalog' |  |  |  |
-| parseCustomMenus | qs:'CustomMenuSetCatalog' |  |  |  |
-| parseCustomMenus | qs:'MenuItemList' |  |  |  |
-| parseCustomMenus | qsa:':scope > CustomMenu' |  |  |  |
-| parseCustomMenus | qsa:':scope > CustomMenuSet' |  |  |  |
-| parseThemeStyleCss | qsa:'CSS' |  |  |  |
-| parseThemes | attr:'custom' |  |  |  |
-| parseThemes | attr:'isCustom' |  |  |  |
-| parseThemes | attr:'name' |  |  |  |
-| parseThemes | qs:':scope > Display' |  |  |  |
-| parseThemes | qs:'Display' |  |  |  |
-| parseThemes | qs:'Metadata' |  |  |  |
-| parseThemes | qs:'ThemeCatalog' |  |  |  |
-| parseThemes | qs:'namedstyles' |  |  |  |
-| parseThemes | qsa:':scope > Theme' |  |  |  |
-| parseThemes | qsa:'color,Color' |  |  |  |
-| parseExternalSources | attr:'direction' |  |  |  |
-| parseExternalSources | attr:'driver' |  |  |  |
-| parseExternalSources | attr:'file' |  |  |  |
-| parseExternalSources | attr:'name' |  |  |  |
-| parseExternalSources | attr:'source' |  |  |  |
-| parseExternalSources | attr:'type' |  |  |  |
-| parseExternalSources | qs:'ExternalDataSourcesCatalog' |  |  |  |
-| parseExternalSources | qs:'FileAccessCatalog' |  |  |  |
-| parseExternalSources | qs:'ODBCDataSourceCatalog' |  |  |  |
-| parseExternalSources | qsa:':scope > DataSource, :scope > ODBCDataSource' |  |  |  |
-| parseExternalSources | qsa:':scope > ExternalDataSource' |  |  |  |
-| parseExternalSources | qsa:':scope > FileAccess, :scope > ObjectList > Authorization' |  |  |  |
-| parseExternalSources | qsa:'FilePathList > FilePath' |  |  |  |
-| parseBaseDirectories | attr:'name' |  |  |  |
-| parseBaseDirectories | attr:'relativeTo' |  |  |  |
-| parseBaseDirectories | qs:'BaseDirectoryCatalog' |  |  |  |
-| parseBaseDirectories | qsa:':scope > BaseDirectory' |  |  |  |
-| parsePlugins | attr:'type' |  |  |  |
-| parsePlugins | qsa:'Chunk' |  |  |  |
-| parseTags | attr:'isFolder' |  |  |  |
-| parseTags | qs:':scope > ObjectList' |  |  |  |
-| parseTags | qs:':scope > TagList' |  |  |  |
-| parseTags | qs:'LayoutCatalog' |  |  |  |
-| parseTags | qs:'ScriptCatalog' |  |  |  |
-| parseTags | qs:'TableOccurrenceCatalog' |  |  |  |
-| parseTags | qsa:':scope > Field[fieldtype]' |  |  |  |
-| parseTags | qsa:':scope > TableOccurrence' |  |  |  |
-| parseTags | qsa:'FieldCatalog' |  |  |  |
-| parseTags | qsa:'Layout' |  |  |  |
-| parseTags | qsa:'Script' |  |  |  |
-| parseModifications | attr:'Display' |  |  |  |
-| parseModifications | attr:'modifications' |  |  |  |
-| parseModifications | attr:'name' |  |  |  |
-| parseModifications | attr:'timestamp' |  |  |  |
-| parseModifications | attr:'userName' |  |  |  |
-| parseModifications | qsa:'UUID[modifications]' |  |  |  |
-| parseBitFlags | attr:'Options' |  |  |  |
-| parseBitFlags | attr:'inputMode' |  |  |  |
-| parseBitFlags | attr:'name' |  |  |  |
-| parseBitFlags | attr:'show' |  |  |  |
-| parseBitFlags | attr:'type' |  |  |  |
-| parseBitFlags | qs:':scope > Field' |  |  |  |
-| parseBitFlags | qs:':scope > Options' |  |  |  |
-| parseBitFlags | qs:':scope > Portal' |  |  |  |
-| parseBitFlags | qs:':scope > Usage' |  |  |  |
-| parseBitFlags | qs:'AccountsCatalog' |  |  |  |
-| parseBitFlags | qs:'Definition' |  |  |  |
-| parseBitFlags | qs:'LayoutCatalog' |  |  |  |
-| parseBitFlags | qsa:'Layout' |  |  |  |
-| parseBitFlags | qsa:'LayoutObject' |  |  |  |
-| parseBitFlags | qsa:'Part' |  |  |  |
-| parseDeepAnalysis | attr:'enable' |  |  |  |
-| parseDeepAnalysis | attr:'fieldtype' |  |  |  |
-| parseDeepAnalysis | attr:'global' |  |  |  |
-| parseDeepAnalysis | attr:'id' |  |  |  |
-| parseDeepAnalysis | attr:'index' |  |  |  |
-| parseDeepAnalysis | attr:'name' |  |  |  |
-| parseDeepAnalysis | attr:'state' |  |  |  |
-| parseDeepAnalysis | attr:'storeCalculationResults' |  |  |  |
-| parseDeepAnalysis | attr:'type' |  |  |  |
-| parseDeepAnalysis | attr:'value' |  |  |  |
-| parseDeepAnalysis | qs:':scope > BaseTableReference' |  |  |  |
-| parseDeepAnalysis | qs:':scope > ObjectList' |  |  |  |
-| parseDeepAnalysis | qs:':scope > ScriptReference' |  |  |  |
-| parseDeepAnalysis | qs:':scope > Storage' |  |  |  |
-| parseDeepAnalysis | qs:'BaseTableCatalog' |  |  |  |
-| parseDeepAnalysis | qs:'Calculation' |  |  |  |
-| parseDeepAnalysis | qs:'CustomMenuCatalog' |  |  |  |
-| parseDeepAnalysis | qs:'DialogOptions > Storage' |  |  |  |
-| parseDeepAnalysis | qs:'LayoutCatalog' |  |  |  |
-| parseDeepAnalysis | qs:'LayoutReference' |  |  |  |
-| parseDeepAnalysis | qs:'Name' |  |  |  |
-| parseDeepAnalysis | qs:'NoInteract' |  |  |  |
-| parseDeepAnalysis | qs:'ObjectList' |  |  |  |
-| parseDeepAnalysis | qs:'Parameter[type="Variable"]' |  |  |  |
-| parseDeepAnalysis | qs:'Set' |  |  |  |
-| parseDeepAnalysis | qs:'StepsForScripts' |  |  |  |
-| parseDeepAnalysis | qs:'Value > Calculation' |  |  |  |
-| parseDeepAnalysis | qsa:':scope > Field[fieldtype]' |  |  |  |
-| parseDeepAnalysis | qsa:':scope > Script' |  |  |  |
-| parseDeepAnalysis | qsa:':scope > Step' |  |  |  |
-| parseDeepAnalysis | qsa:'BaseTable' |  |  |  |
-| parseDeepAnalysis | qsa:'Calculation' |  |  |  |
-| parseDeepAnalysis | qsa:'FieldCatalog' |  |  |  |
-| parseDeepAnalysis | qsa:'LayoutObject' |  |  |  |
-| parseDeepAnalysis | qsa:'Part' |  |  |  |
-| parseDeepAnalysis | qsa:'StepsForScripts Calculation' |  |  |  |
-| parseUnreferenced | attr:'UUID' |  |  |  |
-| parseUnreferenced | attr:'datatype' |  |  |  |
-| parseUnreferenced | attr:'displayName' |  |  |  |
-| parseUnreferenced | attr:'enable' |  |  |  |
-| parseUnreferenced | attr:'fieldtype' |  |  |  |
-| parseUnreferenced | attr:'global' |  |  |  |
-| parseUnreferenced | attr:'id' |  |  |  |
-| parseUnreferenced | attr:'index' |  |  |  |
-| parseUnreferenced | attr:'isFolder' |  |  |  |
-| parseUnreferenced | attr:'name' |  |  |  |
-| parseUnreferenced | attr:'type' |  |  |  |
-| parseUnreferenced | qs:':scope > AutoEnter' |  |  |  |
-| parseUnreferenced | qs:':scope > BaseTableReference' |  |  |  |
-| parseUnreferenced | qs:':scope > Calculation' |  |  |  |
-| parseUnreferenced | qs:':scope > Comment' |  |  |  |
-| parseUnreferenced | qs:':scope > Display' |  |  |  |
-| parseUnreferenced | qs:':scope > LeftTable TableOccurrenceReference' |  |  |  |
-| parseUnreferenced | qs:':scope > LeftTable' |  |  |  |
-| parseUnreferenced | qs:':scope > ObjectList' |  |  |  |
-| parseUnreferenced | qs:':scope > RightTable TableOccurrenceReference' |  |  |  |
-| parseUnreferenced | qs:':scope > RightTable' |  |  |  |
-| parseUnreferenced | qs:':scope > ScriptReference' |  |  |  |
-| parseUnreferenced | qs:':scope > Storage' |  |  |  |
-| parseUnreferenced | qs:':scope > TableOccurrenceReference' |  |  |  |
-| parseUnreferenced | qs:':scope > UUID' |  |  |  |
-| parseUnreferenced | qs:':scope > UUID, :scope > ObjectList, :scope > Bounds' |  |  |  |
-| parseUnreferenced | qs:':scope > Validation' |  |  |  |
-| parseUnreferenced | qs:'BaseTableCatalog' |  |  |  |
-| parseUnreferenced | qs:'BaseTableSourceReference > BaseTableReference' |  |  |  |
-| parseUnreferenced | qs:'Display' |  |  |  |
-| parseUnreferenced | qs:'LayoutCatalog' |  |  |  |
-| parseUnreferenced | qs:'LayoutReference' |  |  |  |
-| parseUnreferenced | qs:'LayoutReference[id="0"]' |  |  |  |
-| parseUnreferenced | qs:'LeftField > FieldReference' |  |  |  |
-| parseUnreferenced | qs:'Metadata > namedstyles' |  |  |  |
-| parseUnreferenced | qs:'RelationshipCatalog' |  |  |  |
-| parseUnreferenced | qs:'RightField > FieldReference' |  |  |  |
-| parseUnreferenced | qs:'ScriptCatalog' |  |  |  |
-| parseUnreferenced | qs:'ScriptReference' |  |  |  |
-| parseUnreferenced | qs:'StepsForScripts' |  |  |  |
-| parseUnreferenced | qs:'TableOccurrenceCatalog' |  |  |  |
-| parseUnreferenced | qs:'TableOccurrenceReference' |  |  |  |
-| parseUnreferenced | qs:'Text' |  |  |  |
-| parseUnreferenced | qs:'ThemeCatalog' |  |  |  |
-| parseUnreferenced | qs:'ValueListCatalog' |  |  |  |
-| parseUnreferenced | qsa:':scope > Calculation' |  |  |  |
-| parseUnreferenced | qsa:':scope > Field[fieldtype]' |  |  |  |
-| parseUnreferenced | qsa:':scope > ObjectList > Field, :scope > Field' |  |  |  |
-| parseUnreferenced | qsa:':scope > TableOccurrence' |  |  |  |
-| parseUnreferenced | qsa:':scope > Theme' |  |  |  |
-| parseUnreferenced | qsa:':scope > ValueList' |  |  |  |
-| parseUnreferenced | qsa:'BaseTable' |  |  |  |
-| parseUnreferenced | qsa:'BaseTableReference' |  |  |  |
-| parseUnreferenced | qsa:'CalcsForCustomFunctions CustomFunction' |  |  |  |
-| parseUnreferenced | qsa:'Calculation' |  |  |  |
-| parseUnreferenced | qsa:'Conditions > Formatting > Condition > Calculation' |  |  |  |
-| parseUnreferenced | qsa:'Conditions > Hide > Calculation' |  |  |  |
-| parseUnreferenced | qsa:'FieldCatalog' |  |  |  |
-| parseUnreferenced | qsa:'FieldReference' |  |  |  |
-| parseUnreferenced | qsa:'JoinPredicate' |  |  |  |
-| parseUnreferenced | qsa:'Layout' |  |  |  |
-| parseUnreferenced | qsa:'LayoutObject LocalCSS' |  |  |  |
-| parseUnreferenced | qsa:'Part LocalCSS' |  |  |  |
-| parseUnreferenced | qsa:'Portal > Calculation' |  |  |  |
-| parseUnreferenced | qsa:'Relationship Calculation' |  |  |  |
-| parseUnreferenced | qsa:'Relationship' |  |  |  |
-| parseUnreferenced | qsa:'Script' |  |  |  |
-| parseUnreferenced | qsa:'ScriptReference' |  |  |  |
-| parseUnreferenced | qsa:'Step Calculation' |  |  |  |
-| parseUnreferenced | qsa:'Step LayoutReference' |  |  |  |
-| parseUnreferenced | qsa:'Step' |  |  |  |
-| parseUnreferenced | qsa:'StepsForScripts > Script' |  |  |  |
-| parseUnreferenced | qsa:'StyledText > Data' |  |  |  |
-| parseUnreferenced | qsa:'TableOccurrenceReference' |  |  |  |
-| parseUnreferenced | qsa:'Tooltip > Calculation' |  |  |  |
-| parseUnreferenced | qsa:'ValueListReference' |  |  |  |
-| render | s.accounts.acc.account_count |  |  |  |
-| render | s.accounts.acc.blank_password |  |  |  |
-| render | s.accounts.acc.detail |  |  |  |
-| render | s.accounts.acc.names_hidden |  |  |  |
-| render | s.accounts.ep.detail |  |  |  |
-| render | s.accounts.ep.extended_privilege_count |  |  |  |
-| render | s.accounts.priv.detail |  |  |  |
-| render | s.accounts.priv.privilege_set_count |  |  |  |
-| render | s.baseDirs |  |  |  |
-| render | s.bitflags |  |  |  |
-| render | s.customs.custom_function_count |  |  |  |
-| render | s.customs.custom_function_references |  |  |  |
-| render | s.customs.detail |  |  |  |
-| render | s.deep.script_issues |  |  |  |
-| render | s.deep.scripts_dead_setvar |  |  |  |
-| render | s.deep.scripts_embedded_credentials |  |  |  |
-| render | s.deep.scripts_hardcoded_account |  |  |  |
-| render | s.deep.scripts_pSoS_client_steps |  |  |  |
-| render | s.deep.scripts_swallowed_errors |  |  |  |
-| render | s.deep.scripts_with_unguarded_abort_off |  |  |  |
-| render | s.ext.detail |  |  |  |
-| render | s.fileMeta.encryption |  |  |  |
-| render | s.fileMeta.file_trigger_actions |  |  |  |
-| render | s.fileMeta.hide_toolbars |  |  |  |
-| render | s.fileMeta.hide_web_direct |  |  |  |
-| render | s.fileMeta.login_type |  |  |  |
-| render | s.fileMeta.min_fm_version |  |  |  |
-| render | s.fileMeta.save_password |  |  |  |
-| render | s.fileMeta.startup_layout |  |  |  |
-| render | s.globals.detail |  |  |  |
-| render | s.globals.global_variable_count |  |  |  |
-| render | s.globals.max_global_contacts |  |  |  |
-| render | s.graph.cascade_delete |  |  |  |
-| render | s.graph.detail.relationships_all |  |  |  |
-| render | s.graph.detail.tos_all |  |  |  |
-| render | s.graph.relationship_count |  |  |  |
-| render | s.graph.table_occurrence_count |  |  |  |
-| render | s.graph.to_zero_relationships |  |  |  |
-| render | s.layouts.button_bars |  |  |  |
-| render | s.layouts.detail |  |  |  |
-| render | s.layouts.info |  |  |  |
-| render | s.layouts.layout_count |  |  |  |
-| render | s.layouts.local_css_objects |  |  |  |
-| render | s.layouts.objects_total |  |  |  |
-| render | s.layouts.popovers |  |  |  |
-| render | s.layouts.portals_total |  |  |  |
-| render | s.layouts.slide_controls |  |  |  |
-| render | s.layouts.tab_controls |  |  |  |
-| render | s.layouts.web_viewers |  |  |  |
-| render | s.library.binary_data_count |  |  |  |
-| render | s.menus.custom_menu_count |  |  |  |
-| render | s.menus.custom_menu_set_count |  |  |  |
-| render | s.menus.detail |  |  |  |
-| render | s.mods.by_user |  |  |  |
-| render | s.mods.most_recent |  |  |  |
-| render | s.mods.top_modified |  |  |  |
-| render | s.mods.total_modifications |  |  |  |
-| render | s.name |  |  |  |
-| render | s.persistent.count |  |  |  |
-| render | s.persistent.detail.all |  |  |  |
-| render | s.plugins.detail |  |  |  |
-| render | s.plugins.plugin_function_count |  |  |  |
-| render | s.plugins.plugin_function_references |  |  |  |
-| render | s.scripts.detail |  |  |  |
-| render | s.scripts.info |  |  |  |
-| render | s.scripts.max_length |  |  |  |
-| render | s.scripts.orphaned_enabled_steps |  |  |  |
-| render | s.scripts.script_count |  |  |  |
-| render | s.scripts.step_count |  |  |  |
-| render | s.scripts.unbalanced_if_scripts |  |  |  |
-| render | s.scripts.unbalanced_loop_scripts |  |  |  |
-| render | s.scripts.unknown_step_id_count |  |  |  |
-| render | s.tables.calc_fields |  |  |  |
-| render | s.tables.detail.fields_auto_entry |  |  |  |
-| render | s.tables.detail.fields_calc |  |  |  |
-| render | s.tables.detail.fields_container |  |  |  |
-| render | s.tables.detail.fields_global |  |  |  |
-| render | s.tables.detail.fields_summary |  |  |  |
-| render | s.tables.field_count |  |  |  |
-| render | s.tables.field_info |  |  |  |
-| render | s.tables.fields_per_table |  |  |  |
-| render | s.tables.stored_calc_fields |  |  |  |
-| render | s.tables.table_count |  |  |  |
-| render | s.tables.table_info |  |  |  |
-| render | s.tables.tables |  |  |  |
-| render | s.tables.unstored_calc_fields |  |  |  |
-| render | s.tables.unstored_per_table |  |  |  |
-| render | s.tags.custom_count |  |  |  |
-| render | s.tags.custom_tags |  |  |  |
-| render | s.tags.internal_tags |  |  |  |
-| render | s.tags.tagged_fields |  |  |  |
-| render | s.tags.tagged_layouts |  |  |  |
-| render | s.tags.tagged_scripts |  |  |  |
-| render | s.tags.tagged_tos |  |  |  |
-| render | s.tags.total_assignments |  |  |  |
-| render | s.tags.unique_count |  |  |  |
-| render | s.theme |  |  |  |
-| render | s.themes.detail |  |  |  |
-| render | s.themes.theme_count |  |  |  |
-| render | s.themes.themes_detail |  |  |  |
-| render | s.unrefs.all_styles_detail |  |  |  |
-| render | s.unrefs.broken |  |  |  |
-| render | s.unrefs.calc_deps |  |  |  |
-| render | s.unrefs.confidence.reasons |  |  |  |
-| render | s.unrefs.confidence.tier |  |  |  |
-| render | s.unrefs.fields |  |  |  |
-| render | s.unrefs.fields_tiered |  |  |  |
-| render | s.unrefs.layouts |  |  |  |
-| render | s.unrefs.layouts_dynamic_warning |  |  |  |
-| render | s.unrefs.scripts |  |  |  |
-| render | s.unrefs.table_occurrences |  |  |  |
-| render | s.unrefs.tables |  |  |  |
-| render | s.unrefs.to_removability.completely_unused |  |  |  |
-| render | s.unrefs.to_removability.relationship_only |  |  |  |
-| render | s.unrefs.unused_styles |  |  |  |
-| render | s.unrefs.unused_styles_detail |  |  |  |
-| render | s.unrefs.value_lists |  |  |  |
-| render | s.used |  |  |  |
-| render | s.valueLists.detail.all |  |  |  |
-| render | s.valueLists.detail.dynamic_list |  |  |  |
-| render | s.valueLists.detail.dynamic_related_only_list |  |  |  |
-| render | s.valueLists.detail.static_list |  |  |  |
-| render | s.valueLists.value_list_count |  |  |  |
+| parseXMLToStats | qs:'parsererror' | covered | runner: parse pipeline replaced by fm NDJSON, no datum | DOMParser error probe. fm returns parsed JSON per op with its own status/error line; there is no XML text to fail on. |
+| buildDDRTextIndex | attr:'datatype' | gap | catalog-ddr-text | Chunk datatype in the DDR_INFO token stream. fm returns calculation bodies as plain text only; no tokenised reference index. |
+| buildDDRTextIndex | qsa:':scope > DDR_INFO' | gap | catalog-ddr-text | The DDR_INFO sidecar under every Calculation. No fm catalog exposes it. |
+| buildDDRTextIndex | tag:'*' | gap | catalog-ddr-text | Walks every element of the DDR_INFO subtree to build the text index that Reference Explorer, plugin and global-variable detection all read. |
+| parseFileMetadata | attr:'action' | gap | catalog-file-metadata | ScriptTrigger action on the file (OnFirstWindowOpen etc.). fm reports layout triggers only. |
+| parseFileMetadata | attr:'enable' | gap | catalog-file-metadata | enable on HideToolbars / HideWebDirectSharing / HideClientSharing. No fm catalog for File Options. |
+| parseFileMetadata | attr:'keychain' | gap | catalog-file-metadata | SavePassword keychain flag (File Options > log in using). |
+| parseFileMetadata | attr:'name' | gap | catalog-file-metadata | Names the startup LayoutReference and each file-trigger ScriptReference. The layout and script exist in read:layout / read:script, but the file-level binding does not. |
+| parseFileMetadata | attr:'type' | gap | catalog-file-metadata | Encryption type (0/1) and Login type (-1/0/1). |
+| parseFileMetadata | attr:'version' | gap | catalog-file-metadata | Minimum version the file requires. |
+| parseFileMetadata | qs:'Encryption' | gap | catalog-file-metadata | Encryption-at-rest state. fm has no file-metadata catalog. |
+| parseFileMetadata | qs:'HideClientSharing' | gap | catalog-file-metadata | File Options checkbox. |
+| parseFileMetadata | qs:'HideToolbars' | gap | catalog-file-metadata | File Options checkbox. |
+| parseFileMetadata | qs:'HideWebDirectSharing' | gap | catalog-file-metadata | File Options checkbox. |
+| parseFileMetadata | qs:'LayoutReference' | gap | catalog-file-metadata | The startup layout binding under Metadata. |
+| parseFileMetadata | qs:'Login' | gap | catalog-file-metadata | File Options login mode. |
+| parseFileMetadata | qs:'Metadata' | gap | catalog-file-metadata | Root of the whole File Options block. |
+| parseFileMetadata | qs:'Minimum' | gap | catalog-file-metadata | Minimum FileMaker version element. |
+| parseFileMetadata | qs:'SavePassword' | gap | catalog-file-metadata | File Options save-password element. |
+| parseFileMetadata | qs:'ScriptReference' | gap | catalog-file-metadata | Script bound to a file-level trigger. |
+| parseFileMetadata | qsa:'ScriptTrigger' | gap | catalog-file-metadata | The list of file-level script triggers; drives s.fileMeta.file_triggers. |
+| parseLibrary | qs:'LibraryCatalog' | gap | catalog-library | The image/binary library. fm names library members by id (layout object iconId, pictureId) but has no catalog that lists or describes them. |
+| parseLibrary | qsa:'BinaryData' | gap | catalog-library | Counts stored binary payloads (button icons, pictures) for the file-weight stat. |
+| parseTablesAndFields | attr:'absolute' | covered | baseDirectory.relative | BaseDirectoryReference absolute on a container's external-storage path; fm reports the inverse boolean on read:baseDirectory, with field.options.container.baseDirectory naming which one. |
+| parseTablesAndFields | attr:'comment' | covered | table.description + field.options.comment | Table comment needs a read:table describe (by name); the listing carries only name/id. |
+| parseTablesAndFields | attr:'datatype' | covered | field.type | Text/Number/Date/Time/Timestamp/Container; fm uses lowercase words for the same set. |
+| parseTablesAndFields | attr:'existing' | covered | field.options.validation.existingValue |  |
+| parseTablesAndFields | attr:'fieldtype' | covered | field.options.fieldType | Normal/Calculated/Summary. Needs detail:true on the read:field listing. |
+| parseTablesAndFields | attr:'global' | covered | field.options.global |  |
+| parseTablesAndFields | attr:'id' | covered | table.id + field.id |  |
+| parseTablesAndFields | attr:'index' | covered | field.options.indexing | Plus field.options.autoIndex and field.options.indexLanguage. |
+| parseTablesAndFields | attr:'maxRepetitions' | covered | field.options.repetitions |  |
+| parseTablesAndFields | attr:'name' | covered | table.name + field.name + baseDirectory.path |  |
+| parseTablesAndFields | attr:'notEmpty' | covered | field.options.validation.notEmpty |  |
+| parseTablesAndFields | attr:'prohibitModification' | covered | field.options.autoEnter.prohibitModification |  |
+| parseTablesAndFields | attr:'storeCalculationResults' | covered | field.options.stored | Stored vs unstored calc; combine with field.options.global the same way the legacy does. |
+| parseTablesAndFields | attr:'type' | covered | field.options.autoEnter.type + field.options.container.encrypted | AutoEnter type maps 1:1 (serial/calculated/lookup/creation*/modification*); Remote type Secure/Open maps to container.encrypted. |
+| parseTablesAndFields | attr:'unique' | covered | field.options.validation.unique |  |
+| parseTablesAndFields | attr:'withFewerFolders' | gap | catalog-container-storage | Remote withFewerFolders (the 'use fewer folders' checkbox in container external storage). field.options.container reports baseDirectory, external, encrypted and location only. |
+| parseTablesAndFields | qs:':scope > AutoEnter' | covered | field.options.autoEnter |  |
+| parseTablesAndFields | qs:':scope > BaseDirectoryReference' | covered | field.options.container.baseDirectory |  |
+| parseTablesAndFields | qs:':scope > BaseTableReference' | covered | field.table | read:field items carry table{name,id}. |
+| parseTablesAndFields | qs:':scope > Calculation' | covered | field.options.calculation.text | Calc-field body. |
+| parseTablesAndFields | qs:':scope > ObjectList' | covered | field.items[] | Structural wrapper; fm returns the field array directly. |
+| parseTablesAndFields | qs:':scope > Remote' | covered | field.options.container.external |  |
+| parseTablesAndFields | qs:':scope > Storage' | covered | field.options.{global,stored,indexing,repetitions} |  |
+| parseTablesAndFields | qs:':scope > Text' | covered | field.options.calculation.text | The CDATA formula inside Calculation; fm returns the same text. |
+| parseTablesAndFields | qs:':scope > Validation' | covered | field.options.validation |  |
+| parseTablesAndFields | qs:'BaseTableCatalog' | covered | read:table listing |  |
+| parseTablesAndFields | qs:'BaseTableReference' | covered | field.table.name |  |
+| parseTablesAndFields | qs:'Calculation' | covered | field.options.validation.calculation.text |  |
+| parseTablesAndFields | qs:'FieldsForTables' | covered | read:field {table} per table | Structural; the legacy second pass exists only because SaXML splits definitions from per-table field lists. |
+| parseTablesAndFields | qs:'InRange' | covered | field.options.validation.range.{min,max} |  |
+| parseTablesAndFields | qs:'Looked_up' | covered | field.options.autoEnter.lookup | With source.occurrence, source.field, onNoMatch, copyIfSourceEmpty. |
+| parseTablesAndFields | qs:'ObjectList' | covered | field.items[] | Structural. |
+| parseTablesAndFields | qs:'TableOccurrenceReference' | covered | field.table.name | Resolves which table a FieldCatalog belongs to; fm addresses read:field by table. |
+| parseTablesAndFields | qsa:':scope > BaseTable' | covered | read:table items[] |  |
+| parseTablesAndFields | qsa:':scope > FieldCatalog' | covered | read:field {table} per table | Structural. |
+| parseTablesAndFields | qsa:':scope > Field[fieldtype]' | covered | read:field items[] |  |
+| parseTablesAndFields | qsa:'FieldCatalog' | covered | read:field {table} per table | Structural. |
+| parseRelationships | attr:'baseTable' | covered | tableOccurrence.table.name | Legacy fallback attribute for a TO with no relationships. |
+| parseRelationships | attr:'blue' | covered | tableOccurrence.graph.color | fm returns one colour string instead of red/green/blue integers; the to_colors tally works the same on it. |
+| parseRelationships | attr:'cascadeCreate' | covered | relation.leftToRight.createRelated + relation.rightToLeft.createRelated |  |
+| parseRelationships | attr:'cascadeDelete' | covered | relation.leftToRight.cascadeDelete + relation.rightToLeft.cascadeDelete |  |
+| parseRelationships | attr:'green' | covered | tableOccurrence.graph.color | See attr:'blue'. |
+| parseRelationships | attr:'id' | covered | tableOccurrence.id + relation.id |  |
+| parseRelationships | attr:'name' | covered | tableOccurrence.name + relation.left.name + relation.right.name |  |
+| parseRelationships | attr:'red' | covered | tableOccurrence.graph.color | See attr:'blue'. |
+| parseRelationships | attr:'table' | covered | tableOccurrence.table.name |  |
+| parseRelationships | attr:'type' | covered | relation.predicates[].op | Equal/NotEqual/Greater/Less/GreaterOrEqual/LessOrEqual; fm uses its own operator words for the same six. |
+| parseRelationships | qs:':scope > LeftTable' | covered | relation.left + relation.leftToRight |  |
+| parseRelationships | qs:':scope > RightTable' | covered | relation.right + relation.rightToLeft |  |
+| parseRelationships | qs:'BaseTableReference' | covered | tableOccurrence.table |  |
+| parseRelationships | qs:'Color' | covered | tableOccurrence.graph.color | Needs a read:tableOccurrence describe; the listing has no graph block. |
+| parseRelationships | qs:'LeftField > FieldReference' | covered | relation.predicates[].leftField |  |
+| parseRelationships | qs:'RelationshipCatalog' | covered | read:relation listing |  |
+| parseRelationships | qs:'RightField > FieldReference' | covered | relation.predicates[].rightField |  |
+| parseRelationships | qs:'SortSpecification' | gap | catalog-relation-sort | The relationship's stored sort order. relation.leftToRight.sortRelated / rightToLeft.sortRelated say a sort exists but not on which fields or in which direction. |
+| parseRelationships | qs:'TableOccurrenceCatalog' | covered | read:tableOccurrence listing |  |
+| parseRelationships | qs:'TableOccurrenceReference' | covered | relation.left.name + relation.right.name |  |
+| parseRelationships | qsa:':scope > Relationship' | covered | read:relation items[] |  |
+| parseRelationships | qsa:':scope > TableOccurrence' | covered | read:tableOccurrence items[] |  |
+| parseRelationships | qsa:'JoinPredicate' | covered | relation.predicates[] |  |
+| parseLayouts | attr:'Display' | covered | layout.theme.displayName | LayoutThemeReference Display, the human-readable theme name; drives s.layouts.theme_layout_map. |
+| parseLayouts | attr:'Style' | covered | layout.contents.objects[].control | Field Display Style 0-5 maps to fm's control word (editBox, dropDownList, popupMenu, radioButtonSet, checkboxSet, dropDownCalendar). |
+| parseLayouts | attr:'allowFormView' | covered | layout.viewStyles.enabled.form |  |
+| parseLayouts | attr:'allowListView' | covered | layout.viewStyles.enabled.list |  |
+| parseLayouts | attr:'allowTableView' | covered | layout.viewStyles.enabled.table |  |
+| parseLayouts | attr:'defaultView' | covered | layout.viewStyles.default |  |
+| parseLayouts | attr:'displayName' | gap | catalog-object-styles | LocalCSS displayName. layout.contents.objects[].style gives the named style's display name, but an object whose LocalCSS carries CSS text and no style name (the local-override case this parser counts) is invisible to fm. |
+| parseLayouts | attr:'enable' | derived | derived from layout.contents.objects[].action | buttons_single_step. fm models a button action as exactly one step object (action.step/stepID) or a script call, so the enabled-step tally collapses to whether action is present. |
+| parseLayouts | attr:'hidden' | covered | layout.hidden | Options hidden=True means the layout is hidden from the Layouts menu. |
+| parseLayouts | attr:'id' | covered | layout.id + layout.contents.objects[].id |  |
+| parseLayouts | attr:'isFolder' | covered | layout.type | fm reports type 'folder' vs 'layout' in both tree and flatten modes. |
+| parseLayouts | attr:'left' | covered | layout.contents.objects[].bounds.left |  |
+| parseLayouts | attr:'name' | covered | layout.name + layout.contents.objects[].name + layout.tableOccurrence.name |  |
+| parseLayouts | attr:'quickFind' | covered | layout.contents.objects[].quickFind | Object-level Quick Find. The layout-level quickFind option is not reported: see attr:'saveRecord' / catalog-layout-options. |
+| parseLayouts | attr:'right' | derived | derived from layout.contents.objects[].bounds.left + bounds.width | fm reports width, not a right edge; objects_outside_bounds compares left+width against geometry.baseWidth. |
+| parseLayouts | attr:'rowLimit' | covered | layout.contents.objects[].rows | Portal row count. |
+| parseLayouts | attr:'rowsperpage' | covered | layout.contents.objects[].rows | Alternate spelling of the same portal row count. |
+| parseLayouts | attr:'saveRecord' | gap | catalog-layout-options | Layout Setup 'Save record changes automatically'. layout.flags.set carries 23 layout bits but none of them, and there is no other layout-level options key. |
+| parseLayouts | attr:'show' | gap | catalog-portal-setup | Portal Options show bitmask. Bit 2 (allow delete) is covered by layout.contents.objects[].allowDelete; bits 1 (allow create), 8 (sorted) and 16 (filtered) have no fm key - confirmed by the layout describe notes, which say the portal's sort and filter are reported nowhere. |
+| parseLayouts | attr:'startrow' | covered | layout.contents.objects[].initialRow |  |
+| parseLayouts | attr:'type' | covered | layout.contents.objects[].type | 19 object type words cover every LayoutObject type the legacy counts. The Part type reading of this same attribute is a gap, registered on qs:':scope > PartsList'. |
+| parseLayouts | attr:'width' | covered | layout.geometry.baseWidth |  |
+| parseLayouts | qs:':scope > Button' | covered | layout.contents.objects[].type = button + .action |  |
+| parseLayouts | qs:':scope > Field' | covered | layout.contents.objects[].field |  |
+| parseLayouts | qs:':scope > LayoutThemeReference' | covered | layout.theme |  |
+| parseLayouts | qs:':scope > LocalCSS' | gap | catalog-object-styles | The per-object local CSS override text and its property count (s.layouts.objects_with_local_css, local_css_node_count, local_css_objects). fm reports only the named style under objects[].style. |
+| parseLayouts | qs:':scope > MenuSetReference' | gap | catalog-layout-menuset | Which custom menu set a layout installs. read:customMenuSet lists the sets and read:layout describes the layout, but no key joins them. |
+| parseLayouts | qs:':scope > Options' | covered | layout.viewStyles + layout.hidden + layout.flags | saveRecord and the layout-level quickFind inside this element are not reported: catalog-layout-options. |
+| parseLayouts | qs:':scope > PartsList' | gap | catalog-layout-parts | Layout part bands. Verified on the samples: layout.contents.objects[] carries 19 object types and none is a part; only geometry.bodyHeight survives. Header/Footer/Top Navigation/Sub-summary presence, part count and part geometry are all unavailable. |
+| parseLayouts | qs:':scope > Portal' | covered | layout.contents.objects[].type = portal |  |
+| parseLayouts | qs:':scope > ScriptTriggers' | covered | layout.scriptTriggers[] + layout.contents.objects[].scriptTriggers[] | Layout describe also gives scriptTriggerCount directly. The object-level key is present on every object in the samples but empty throughout: no object in the reference solution carries a trigger, so its shape was read from the layout describe notes rather than observed. |
+| parseLayouts | qs:':scope > Table' | covered | layout.contents.objects[].tableOccurrence | The portal's table occurrence. |
+| parseLayouts | qs:':scope > TableOccurrenceReference' | covered | layout.tableOccurrence | Present on the listing as well as the describe. |
+| parseLayouts | qs:':scope > Theme' | covered | layout.theme |  |
+| parseLayouts | qs:':scope > Usage' | covered | layout.contents.objects[].quickFind + browseEntry + findEntry |  |
+| parseLayouts | qs:':scope > action' | covered | layout.contents.objects[].action |  |
+| parseLayouts | qs:'Bounds' | covered | layout.contents.objects[].bounds | left/top/width/height on every object at every nesting depth. |
+| parseLayouts | qs:'ButtonBar > ObjectList' | covered | layout.contents.objects[].objects[] on a buttonBar | Segments are nested button objects; button_bar_segments is their length. |
+| parseLayouts | qs:'CustomMenuSetReference' | gap | catalog-layout-menuset | Alternate tag for the same layout-to-menu-set binding. |
+| parseLayouts | qs:'Display' | covered | layout.contents.objects[].control | See attr:'Style'. |
+| parseLayouts | qs:'IconData' | covered | layout.contents.objects[].iconId | Absent on a button with no icon, which is exactly the buttons_with_icon test. The icon image itself is not readable: catalog-library. |
+| parseLayouts | qs:'LayoutCatalog' | covered | read:layout {flatten:true} listing |  |
+| parseLayouts | qs:'ScriptReference' | covered | layout.contents.objects[].action.script |  |
+| parseLayouts | qs:'SlideControl > ObjectList' | covered | layout.contents.objects[].objects[] on a slideControl |  |
+| parseLayouts | qs:'Step' | covered | layout.contents.objects[].action.step | Single-step button actions report step, stepID and the step's own option keys. |
+| parseLayouts | qs:'TabControl > ObjectList' | covered | layout.contents.objects[].objects[] on a tabControl |  |
+| parseLayouts | qs:'ThemeReference' | covered | layout.theme |  |
+| parseLayouts | qsa:'LayoutCatalog ScriptReference' | derived | derived from layout.contents.objects[].action.script + layout.scriptTriggers[].script | s.layouts.script_refs_from_layouts is the count of both across every layout. |
+| parseLayouts | qsa:'LayoutObject' | covered | layout.contents.objects[] (recursive) | Nested objects appear under objects[] on group, portal, popover, tabControl/tabPanel, slideControl/slidePanel and buttonBar. |
+| parseLayouts | qsa:'Metadata ScriptTrigger' | gap | catalog-file-metadata | File-level triggers, duplicated here into s.layouts.file_triggers. |
+| parseLayouts | qsa:'Step' | covered | layout.contents.objects[].action |  |
+| parseScripts | attr:'enable' | covered | script.body[].disabled | Inverse sense: fm reports disabled true where SaXML says enable=False, and the key is absent on an enabled step. |
+| parseScripts | attr:'hidden' | covered | script.hidden | hidden=False in SaXML means 'include in menu'; fm reports the boolean directly on both listing and describe. |
+| parseScripts | attr:'id' | covered | script.id + script.body[].stepID |  |
+| parseScripts | attr:'isFolder' | covered | script.type | folder / script / separator. |
+| parseScripts | attr:'name' | covered | script.name + script.body[].step |  |
+| parseScripts | attr:'runwithfullaccess' | covered | script.runWithFullAccess | Describe only; the listing does not carry it. |
+| parseScripts | qs:':scope > Calculation' | covered | script.body[].parameter | Presence of a parameter on Perform Script / PSoS, for perform_script_with_param. |
+| parseScripts | qs:':scope > FileReference' | covered | script.body[].file | Distinguishes a genuine cross-file call from a dangling in-file script reference in the call graph. |
+| parseScripts | qs:':scope > Options' | covered | script.runWithFullAccess + script.hidden |  |
+| parseScripts | qs:':scope > ScriptReference' | covered | script.name + script.body[].script |  |
+| parseScripts | qs:'ObjectList' | covered | script.body[] | Structural. |
+| parseScripts | qs:'ScriptCatalog' | covered | read:script {flatten:true} listing |  |
+| parseScripts | qs:'ScriptReference' | covered | script.body[].script | Callee name for the call graph. |
+| parseScripts | qs:'StepsForScripts' | covered | read:script {id} describe | fm needs one describe per script to get body[]; the listing gives only steps as a count. |
+| parseScripts | qsa:':scope > Script' | covered | read:script items[] |  |
+| parseScripts | qsa:':scope > Step' | covered | script.body[] | Also gives block{role,start,end}, which replaces the legacy's own If/Loop balance counting. |
+| parseScripts | qsa:'Calculation' | covered | script.body[] calculation-valued keys | value, condition, parameter, calculation, name and slots.calc.* carry the formula text the $$-scan reads. |
+| parseValueLists | attr:'UUID' | derived | derived from layout.contents.objects[].valueList.{id,name} + field.options.validation.valueList | fm gives value lists no UUID; the reference tally joins on id/name instead. |
+| parseValueLists | attr:'id' | covered | valueList.id |  |
+| parseValueLists | attr:'name' | covered | valueList.name |  |
+| parseValueLists | attr:'type' | covered | valueList.type | Source type attribute; fm's type word carries the same custom / fromField / fromFile distinction. |
+| parseValueLists | attr:'value' | covered | valueList.type | Source value attribute (Custom / FromField). |
+| parseValueLists | qs:':scope > Field' | covered | valueList.field | With field.occurrence and field.field. |
+| parseValueLists | qs:':scope > PrimaryField > FieldReference' | covered | valueList.field.{occurrence,field} |  |
+| parseValueLists | qs:':scope > Source' | covered | valueList.type |  |
+| parseValueLists | qs:':scope > UUID' | derived | derived from valueList.id + valueList.name | The value list's own UUID is only the join key for the reference tally; fm joins by id/name. |
+| parseValueLists | qs:'OptionsForValueLists' | covered | valueList.options | showRelatedOnly, showSecondFieldOnly, sortBySecondField. |
+| parseValueLists | qs:'PrimaryField' | covered | valueList.field |  |
+| parseValueLists | qs:'ShowRelated' | covered | valueList.options.showRelatedOnly | Plus valueList.startTable, which names the relationship start. |
+| parseValueLists | qs:'Source' | covered | valueList.type |  |
+| parseValueLists | qs:'TableOccurrenceReference' | covered | valueList.field.occurrence |  |
+| parseValueLists | qs:'ValueListCatalog' | covered | read:valueList listing |  |
+| parseValueLists | qsa:':scope > ValueList' | covered | read:valueList items[] |  |
+| parseValueLists | qsa:'Value' | covered | valueList.values[] | Custom-values list; item count is values.length. |
+| parseValueLists | qsa:'ValueList' | covered | read:valueList items[] |  |
+| parseValueLists | qsa:'ValueListReference[UUID]' | derived | derived from layout.contents.objects[].valueList + field.options.validation.valueList | s.valueLists per-list refs count; fm surfaces every value-list reference on the object or field that makes it. |
+| parseAccounts | attr:'Export' | covered | privilegeSet.fileOptions.exportAllowed |  |
+| parseAccounts | attr:'Print' | covered | privilegeSet.fileOptions.printAllowed |  |
+| parseAccounts | attr:'allowOverride' | covered | privilegeSet.fileOptions.dataEntryOverride |  |
+| parseAccounts | attr:'commands' | covered | privilegeSet.fileOptions.menuCommands | commands='Minimal' is one of the words fm reports here. |
+| parseAccounts | attr:'disconnectIdle' | covered | privilegeSet.fileOptions.noIdleDisconnect | Inverse sense: disconnectIdle=True corresponds to noIdleDisconnect false. |
+| parseAccounts | attr:'enable' | covered | account.enabled | Describe only; the listing carries name/id/builtIn. |
+| parseAccounts | attr:'id' | covered | account.id + privilegeSet.id + extendedPrivilege.id |  |
+| parseAccounts | attr:'manageDatabase' | covered | privilegeSet.fileOptions.canManageDatabase |  |
+| parseAccounts | attr:'membercount' | derived | derived from read:privilegeSet listing total | Legacy fallback when the catalog lists no members; fm's listing reports total and returned. |
+| parseAccounts | attr:'name' | covered | account.name + privilegeSet.name + extendedPrivilege.name | fm reports account names even where the SaXML export omits them, so s.accounts.acc.names_hidden becomes moot. |
+| parseAccounts | attr:'type' | covered | account.userType | FileMaker / OAuth / ExternalServer. |
+| parseAccounts | qs:':scope > ObjectList' | covered | items[] on the listing | Structural. |
+| parseAccounts | qs:'AccountsCatalog' | covered | read:account listing |  |
+| parseAccounts | qs:'Authentication' | covered | account.hasPassword |  |
+| parseAccounts | qs:'ExtendedPrivilegesCatalog' | covered | read:extendedPrivilege listing |  |
+| parseAccounts | qs:'Other' | covered | privilegeSet.fileOptions | The whole Other attribute block maps onto fileOptions. |
+| parseAccounts | qs:'PasswordEncrypted' | covered | account.hasPassword | Blank-password detection is hasPassword false on a FileMaker-type account. |
+| parseAccounts | qs:'PrivilegeSetReference' | covered | account.privilegeSet |  |
+| parseAccounts | qs:'PrivilegeSetsCatalog' | covered | read:privilegeSet listing |  |
+| parseAccounts | qsa:':scope > Account' | covered | read:account items[] |  |
+| parseAccounts | qsa:':scope > ExtendedPrivilege' | covered | read:extendedPrivilege items[] |  |
+| parseAccounts | qsa:':scope > PrivilegeSet' | covered | read:privilegeSet items[] |  |
+| parseAccounts | qsa:'PrivilegeSetReference' | covered | extendedPrivilege.privilegeSets[] | Per-extended-privilege set count; needs a read:extendedPrivilege describe by id, which the listing does not carry. |
+| parseCustomFunctions | attr:'id' | covered | customFunction.id |  |
+| parseCustomFunctions | attr:'name' | covered | customFunction.name |  |
+| parseCustomFunctions | qs:'CustomFunctionsCatalog' | covered | read:customFunction listing |  |
+| parseCustomFunctions | qs:'Display' | covered | customFunction.prototype | The signature string. fm also reports arity and parameters[] directly, so the legacy's split-on-semicolon param count is no longer needed. |
+| parseCustomFunctions | qs:'ObjectList' | covered | read:customFunction items[] | Structural. |
+| parseCustomFunctions | qsa:':scope > CustomFunction' | covered | read:customFunction items[] | The listing is a tree; type discriminates customFunction from folder. |
+| parseCustomFunctions | qsa:'CalcsForCustomFunctions CustomFunction' | covered | customFunction.body | Recursion detection is the same substring test on this text. |
+| parseCustomFunctions | qsa:'Chunk[type="CustomFunctionRef"]' | derived | derived from calculation text across catalogs + customFunction.name index | No DDR token stream, so per-function reference counts must be recovered by scanning every calculation string for each function name. |
+| parsePersistentStores | attr:'accountName' | gap | catalog-modification-info | The account that last changed the store. |
+| parsePersistentStores | attr:'id' | covered | persistentData.id |  |
+| parsePersistentStores | attr:'instanceID' | covered | persistentData.instance.name |  |
+| parsePersistentStores | attr:'modifications' | gap | catalog-modification-info | Modification counter on the store's UUID element. |
+| parsePersistentStores | attr:'name' | covered | persistentData.key |  |
+| parsePersistentStores | attr:'timestamp' | gap | catalog-modification-info | Last-modified timestamp. |
+| parsePersistentStores | attr:'type' | covered | persistentData.dataType |  |
+| parsePersistentStores | attr:'userName' | gap | catalog-modification-info | The user that last changed the store. |
+| parsePersistentStores | qs:':scope > UUID' | gap | catalog-modification-info | Carries all four audit attributes plus the store's UUID; fm reports none of them. |
+| parsePersistentStores | qs:':scope > Value' | covered | persistentData.value |  |
+| parsePersistentStores | qs:'Data' | covered | persistentData.value | fm returns the payload directly, without the StyledText wrapper. |
+| parsePersistentStores | qs:'PersistentStoreCatalog' | covered | read:persistentData listing |  |
+| parsePersistentStores | qsa:':scope > PersistentStore' | covered | read:persistentData items[] |  |
+| parseBrokenReferences | attr:'fieldtype' | covered | field.options.fieldType | Labels a finding as a calc field vs a plain field calc. |
+| parseBrokenReferences | attr:'id' | covered | field.options.autoEnter.lookup.source + script.problems[] + tableOccurrence.table.resolved | The legacy uses id=0 / empty name as the dangle marker; fm resolves references by name and flags the broken ones in script.problems[] and table.resolved. |
+| parseBrokenReferences | attr:'name' | covered | table.name + field.name + script.name + layout.name + valueList.name | Names the parent of each finding. |
+| parseBrokenReferences | attr:'type' | covered | field.options.autoEnter.type + valueList.type |  |
+| parseBrokenReferences | attr:'value' | covered | valueList.type | Source value = FromField gate for the value-list source check. |
+| parseBrokenReferences | qs:':scope > AutoEnter' | covered | field.options.autoEnter | Auto-enter calc bodies are scanned for the <Field Missing> marker, which fm reproduces verbatim in calculation text (confirmed in the samples). |
+| parseBrokenReferences | qs:':scope > BaseTableReference' | covered | field.table | Names the table a finding belongs to. |
+| parseBrokenReferences | qs:':scope > Field > ' | covered | valueList.field + valueList.secondField | Truncated selector for ':scope > Field > PrimaryField\|SecondaryField'; fm reports both arms with occurrence and field. |
+| parseBrokenReferences | qs:':scope > LeftTable' | covered | relation.left |  |
+| parseBrokenReferences | qs:':scope > Name' | covered | script.body[].step | Step label for a script-step finding. |
+| parseBrokenReferences | qs:':scope > ObjectList' | covered | items[] on each listing | Structural. |
+| parseBrokenReferences | qs:':scope > RightTable' | covered | relation.right |  |
+| parseBrokenReferences | qs:':scope > ScriptReference' | covered | script.name | Resolves the owning script of a step finding. |
+| parseBrokenReferences | qs:':scope > Source' | covered | valueList.type |  |
+| parseBrokenReferences | qs:':scope > Validation' | covered | field.options.validation.calculation.text |  |
+| parseBrokenReferences | qs:'FieldReference' | covered | field.options.autoEnter.lookup.source.{occurrence,field} | A broken lookup source reads back as an empty source field rather than id=0. |
+| parseBrokenReferences | qs:'LayoutCatalog' | covered | read:layout listing |  |
+| parseBrokenReferences | qs:'Looked_up' | covered | field.options.autoEnter.lookup |  |
+| parseBrokenReferences | qs:'RelationshipCatalog' | covered | read:relation listing |  |
+| parseBrokenReferences | qs:'ScriptCatalog' | covered | read:script listing |  |
+| parseBrokenReferences | qs:'StepsForScripts' | covered | read:script {id} describe | fm also reports script.problems[], its own live re-check of unresolved field, layout, script and calculation references - a stronger signal than the <Field Missing> string scan. |
+| parseBrokenReferences | qs:'TableOccurrenceReference' | covered | relation.left.name + relation.right.name |  |
+| parseBrokenReferences | qs:'ValueListCatalog' | covered | read:valueList listing |  |
+| parseBrokenReferences | qsa:':scope > Calculation' | covered | field.options.calculation.text + field.options.validation.calculation.text |  |
+| parseBrokenReferences | qsa:':scope > Condition' | gap | catalog-conditional-formatting | One conditional-formatting rule and its calculation. No layout object key reports conditional formatting at all. |
+| parseBrokenReferences | qsa:':scope > Field' | covered | read:field items[] |  |
+| parseBrokenReferences | qsa:':scope > Relationship' | covered | read:relation items[] |  |
+| parseBrokenReferences | qsa:':scope > Script' | covered | read:script items[] |  |
+| parseBrokenReferences | qsa:':scope > Step' | covered | script.body[] |  |
+| parseBrokenReferences | qsa:':scope > ValueList' | covered | read:valueList items[] |  |
+| parseBrokenReferences | qsa:'CalcsForCustomFunctions CustomFunction' | covered | customFunction.body |  |
+| parseBrokenReferences | qsa:'Calculation' | covered | calculation-valued keys across field, script.body[], layout objects and customFunction.body | fm returns FileMaker's own <Field Missing> / <Table Missing> tokens inside the text, so the same substring count works. |
+| parseBrokenReferences | qsa:'Conditions > Formatting' | gap | catalog-conditional-formatting | The conditional-formatting block on a layout object. |
+| parseBrokenReferences | qsa:'Conditions > Hide' | covered | layout.contents.objects[].hideCondition | Reported as the calculation text, so the marker scan is unchanged. |
+| parseBrokenReferences | qsa:'FieldCatalog' | covered | read:field {table} per table | Structural. |
+| parseBrokenReferences | qsa:'Layout' | covered | read:layout items[] |  |
+| parseBrokenReferences | qsa:'Portal' | gap | catalog-portal-setup | Here the selector exists only to reach the portal's filter Calculation, which fm reports nowhere. |
+| parseBrokenReferences | qsa:'Script' | covered | read:script items[] |  |
+| parseBrokenReferences | qsa:'Tooltip' | covered | layout.contents.objects[].tooltip | Reported as the calculation text. |
+| parseGlobalVars | attr:'value' | covered | script.body[].name | The Set Variable target name, including names containing spaces. |
+| parseGlobalVars | qsa:'Chunk[type="VariableReference"]' | gap | catalog-ddr-text | Every $$ read inside a calculation, pre-tokenised by FileMaker. Without it the page must regex calculation text, which the legacy comment documents as unreliable for variable names containing spaces ($$SMTP Server). |
+| parseGlobalVars | qsa:'StepsForScripts Parameter[type="Variable"] > Name[value]' | covered | script.body[].name | Set Variable targets; confirmed on step 141 in the samples. |
+| parseCustomMenus | attr:'membercount' | derived | derived from read:customMenuSet listing total | Legacy fallback when the catalog lists no members. |
+| parseCustomMenus | attr:'name' | covered | customMenu.name + customMenuSet.name |  |
+| parseCustomMenus | attr:'value' | covered | customMenu.baseMenuID | Base value marks a menu as a modified built-in rather than a new custom menu. |
+| parseCustomMenus | qs:':scope > Base' | covered | customMenu.baseMenuID + customMenu.inheritedMenu |  |
+| parseCustomMenus | qs:':scope > ObjectList' | covered | items[] on the listing | Structural. |
+| parseCustomMenus | qs:'CustomMenuCatalog' | covered | read:customMenu listing |  |
+| parseCustomMenus | qs:'CustomMenuSetCatalog' | covered | read:customMenuSet listing |  |
+| parseCustomMenus | qs:'MenuItemList' | covered | customMenu.items[] | Item count is items.length; needs a describe, the listing has name/id/position only. |
+| parseCustomMenus | qsa:':scope > CustomMenu' | covered | read:customMenu items[] |  |
+| parseCustomMenus | qsa:':scope > CustomMenuSet' | covered | read:customMenuSet items[] |  |
+| parseThemeStyleCss | qsa:'CSS' | gap | catalog-theme-styles | The theme's CSS CDATA, from which every per-style colour, font, border and fill in the Themes tab is parsed. No fm catalog for themes or styles. |
+| parseThemes | attr:'custom' | gap | catalog-theme-styles | Marks a theme as developer-made rather than shipped. |
+| parseThemes | attr:'isCustom' | gap | catalog-theme-styles | Alternate spelling of the same flag. |
+| parseThemes | attr:'name' | gap | catalog-theme-styles | The theme's internal id. layout.theme.{id,name,displayName,group} names the theme a layout wears, but there is no catalog of the themes in the file, so an unused theme is invisible. |
+| parseThemes | qs:':scope > Display' | gap | catalog-theme-styles | The theme's human-readable name. |
+| parseThemes | qs:'Display' | gap | catalog-theme-styles | Fallback selector for the same. |
+| parseThemes | qs:'Metadata' | gap | catalog-theme-styles | Holds the theme's namedstyles list and colour elements. |
+| parseThemes | qs:'ThemeCatalog' | gap | catalog-theme-styles | The list of themes defined in the file. |
+| parseThemes | qs:'namedstyles' | gap | catalog-theme-styles | The per-theme style list; style_count and the unused-style detection both need it. |
+| parseThemes | qsa:':scope > Theme' | gap | catalog-theme-styles |  |
+| parseThemes | qsa:'color,Color' | gap | catalog-theme-styles | The theme palette. |
+| parseExternalSources | attr:'direction' | covered | authorization.type | inbound / outbound. |
+| parseExternalSources | attr:'driver' | covered | externalDataSource.dsn | With sourceType 'odbc' naming the kind. |
+| parseExternalSources | attr:'file' | covered | authorization.filenames[] | Plus filenamesRaw. |
+| parseExternalSources | attr:'name' | covered | externalDataSource.name + authorization.filenames[] |  |
+| parseExternalSources | attr:'source' | covered | authorization.authorizedBy |  |
+| parseExternalSources | attr:'type' | covered | externalDataSource.sourceType + authorization.type |  |
+| parseExternalSources | qs:'ExternalDataSourcesCatalog' | covered | read:externalDataSource {detail:true} listing |  |
+| parseExternalSources | qs:'FileAccessCatalog' | covered | read:authorization listing | Also reports tampered, hasHash, hasToken and authorizedAt, which the legacy never had. |
+| parseExternalSources | qs:'ODBCDataSourceCatalog' | covered | read:externalDataSource items[] with sourceType = odbc | fm folds ODBC sources into the one external-data-source catalog. |
+| parseExternalSources | qsa:':scope > DataSource, :scope > ODBCDataSource' | covered | read:externalDataSource items[] with sourceType = odbc |  |
+| parseExternalSources | qsa:':scope > ExternalDataSource' | covered | read:externalDataSource items[] |  |
+| parseExternalSources | qsa:':scope > FileAccess, :scope > ObjectList > Authorization' | covered | read:authorization items[] |  |
+| parseExternalSources | qsa:'FilePathList > FilePath' | covered | externalDataSource.paths[] | multi_target is paths.length > 1. |
+| parseBaseDirectories | attr:'name' | covered | baseDirectory.path | Plus baseDirectory.absolutePath. |
+| parseBaseDirectories | attr:'relativeTo' | covered | baseDirectory.relative |  |
+| parseBaseDirectories | qs:'BaseDirectoryCatalog' | covered | read:baseDirectory listing |  |
+| parseBaseDirectories | qsa:':scope > BaseDirectory' | covered | read:baseDirectory items[] |  |
+| parsePlugins | attr:'type' | gap | catalog-plugins | Chunk type ExternalFunctionRef / PluginFunction / PluginFunctionRef, which is how a plugin call is told apart from a native function. |
+| parsePlugins | qsa:'Chunk' | gap | catalog-plugins | The DDR chunk stream the whole plugin tab is built from. Plugin call sites survive as raw text inside calculations, but nothing marks them as plugin calls, so the native-function mistagging list and the per-sub-function call tally both lose their source. |
+| parseTags | attr:'isFolder' | covered | layout.type + script.type |  |
+| parseTags | qs:':scope > ObjectList' | covered | items[] on each listing | Structural. |
+| parseTags | qs:':scope > TagList' | gap | catalog-tags | fm reports tags on fields (options.tags), table occurrences, custom menus and custom menu sets, but not on layouts or scripts. s.tags.tagged_layouts and tagged_scripts, and their share of tag_counts, have no source. |
+| parseTags | qs:'LayoutCatalog' | covered | read:layout listing |  |
+| parseTags | qs:'ScriptCatalog' | covered | read:script listing |  |
+| parseTags | qs:'TableOccurrenceCatalog' | covered | read:tableOccurrence listing |  |
+| parseTags | qsa:':scope > Field[fieldtype]' | covered | read:field items[] with options.tags |  |
+| parseTags | qsa:':scope > TableOccurrence' | covered | read:tableOccurrence items[] with tags | tags needs a describe by id. |
+| parseTags | qsa:'FieldCatalog' | covered | read:field {table} per table | Structural. |
+| parseTags | qsa:'Layout' | covered | read:layout items[] | Iteration is covered; the TagList read on each layout is the gap (catalog-tags). |
+| parseTags | qsa:'Script' | covered | read:script items[] | Iteration is covered; the TagList read on each script is the gap (catalog-tags). |
+| parseModifications | attr:'Display' | covered | layout.theme.displayName + customFunction.prototype | Fallback name for an object with no name attribute. Where that object is a Theme, the theme catalog is itself gap: catalog-theme-styles. |
+| parseModifications | attr:'modifications' | gap | catalog-modification-info | The per-object modification counter that the whole hotspots tab ranks on. Not reported for any object, layouts included - layout.modified carries who and when, never how many. |
+| parseModifications | attr:'name' | covered | the name key of each catalog | Names the modified object. |
+| parseModifications | attr:'timestamp' | gap | catalog-modification-info | Last-modified timestamp. Covered for layouts only, by layout.modified.timestamp. |
+| parseModifications | attr:'userName' | gap | catalog-modification-info | Last-modifying user. Covered for layouts only, by layout.modified.by / layout.modified.account. |
+| parseModifications | qsa:'UUID[modifications]' | gap | catalog-modification-info | The audit element on fields, tables, layouts, scripts, TOs, themes, custom functions, custom menus, value lists and privilege sets. Only layouts have an fm equivalent (layout.modified), and it carries no count. |
+| parseBitFlags | attr:'Options' | gap | catalog-bit-flags | Part Definition Options bitmask. Doubly unavailable: the raw value is not reported and neither are layout parts (catalog-layout-parts). |
+| parseBitFlags | attr:'inputMode' | covered | layout.contents.objects[].inputMode | fm reports the decoded word rather than the raw value, which is what this tab catalogues. |
+| parseBitFlags | attr:'name' | covered | layout.name | Only used as the source label on a flag row. |
+| parseBitFlags | attr:'show' | gap | catalog-bit-flags | Portal Options show bitmask, raw. The decoded delete bit is covered (objects[].allowDelete); the create, sort and filter bits are catalog-portal-setup. |
+| parseBitFlags | attr:'type' | gap | catalog-bit-flags | Subtype label on a flag group. Layout object types are covered by objects[].type, but Field Usage type and Part type are not. |
+| parseBitFlags | qs:':scope > Field' | gap | catalog-bit-flags | Reaches the field's raw Options and Usage values on a layout object. |
+| parseBitFlags | qs:':scope > Options' | gap | catalog-bit-flags | The raw numeric option word on a Layout, LayoutObject, Portal, Field or AccountsCatalog. fm decodes these into named booleans and reports the raw number only for a layout (layout.flags.raw, with layout.flags.set naming the 23 bits it recognises). |
+| parseBitFlags | qs:':scope > Portal' | gap | catalog-bit-flags | Reaches the portal's raw inner Options and show values. |
+| parseBitFlags | qs:':scope > Usage' | gap | catalog-bit-flags | Field Usage raw inputMode and type values. |
+| parseBitFlags | qs:'AccountsCatalog' | gap | catalog-bit-flags | The catalog-level Options word. read:account reports no raw flags. |
+| parseBitFlags | qs:'Definition' | gap | catalog-bit-flags | Part Definition, carrying the part's Options word and type. |
+| parseBitFlags | qs:'LayoutCatalog' | gap | catalog-bit-flags | Entry point for the layout flag group; layout.flags.raw is the one raw word fm does report. |
+| parseBitFlags | qsa:'Layout' | gap | catalog-bit-flags | Per-layout raw Options text. layout.flags.raw plus flags.set covers this one group; every other group in this tab has no fm source. |
+| parseBitFlags | qsa:'LayoutObject' | gap | catalog-bit-flags | Per-object raw Options text. |
+| parseBitFlags | qsa:'Part' | gap | catalog-bit-flags | Per-part raw Options text; parts are also catalog-layout-parts. |
+| parseDeepAnalysis | attr:'enable' | covered | script.body[].disabled | Disabled steps are skipped by every script-issue check; fm marks them with disabled true. |
+| parseDeepAnalysis | attr:'fieldtype' | covered | field.options.fieldType |  |
+| parseDeepAnalysis | attr:'global' | covered | field.options.global | stored_with_globals check. |
+| parseDeepAnalysis | attr:'id' | covered | script.body[].stepID + field.id + layout.id | Step ids are the same FileMaker numbers the legacy's FM_STEP_IDS table keys on, and fm reports step alongside stepID so the dictionary becomes optional. |
+| parseDeepAnalysis | attr:'index' | covered | field.options.indexing |  |
+| parseDeepAnalysis | attr:'name' | covered | table.name + field.name + script.name + layout.name |  |
+| parseDeepAnalysis | attr:'state' | covered | script.body[].on + script.body[].with dialog | Confirmed in the samples: Set Error Capture and Allow User Abort report on; Send Mail reports with dialog, already de-inverted. |
+| parseDeepAnalysis | attr:'storeCalculationResults' | covered | field.options.stored |  |
+| parseDeepAnalysis | attr:'type' | covered | script.body[].name + script.body[].storage | Parameter type Variable becomes the Set Variable name key; DialogOptions Storage type becomes storage (userChoice / embedOnly, seen in the samples). |
+| parseDeepAnalysis | attr:'value' | covered | script.body[].name | The Set Variable target name. |
+| parseDeepAnalysis | qs:':scope > BaseTableReference' | covered | field.table |  |
+| parseDeepAnalysis | qs:':scope > ObjectList' | covered | items[] on each listing | Structural. |
+| parseDeepAnalysis | qs:':scope > ScriptReference' | covered | script.body[].script |  |
+| parseDeepAnalysis | qs:':scope > Storage' | covered | field.options.{global,stored,indexing} |  |
+| parseDeepAnalysis | qs:'BaseTableCatalog' | covered | read:table listing | Builds the base-table name index used to spot related-field references in calc text. |
+| parseDeepAnalysis | qs:'Calculation' | covered | field.options.*.calculation.text + script.body[] calculation-valued keys |  |
+| parseDeepAnalysis | qs:'CustomMenuCatalog' | covered | read:customMenu listing |  |
+| parseDeepAnalysis | qs:'DialogOptions > Storage' | covered | script.body[].storage | Insert File storage; the samples show userChoice and embedOnly. |
+| parseDeepAnalysis | qs:'LayoutCatalog' | covered | read:layout listing |  |
+| parseDeepAnalysis | qs:'LayoutReference' | covered | script.body[].layout + script.body[].layout by calculation | The legacy's id=0-plus-Calculation test for a layout chosen by calculation is a separate key in fm. |
+| parseDeepAnalysis | qs:'Name' | covered | script.body[].name |  |
+| parseDeepAnalysis | qs:'NoInteract' | covered | script.body[].with dialog | fm reports the dialog setting the way Pro does, so the Send Mail inversion the legacy has to special-case disappears. |
+| parseDeepAnalysis | qs:'ObjectList' | covered | items[] on each listing | Structural. |
+| parseDeepAnalysis | qs:'Parameter[type="Variable"]' | covered | script.body[].name on Set Variable |  |
+| parseDeepAnalysis | qs:'Set' | covered | script.body[].on | Set Error Capture and Allow User Abort state. |
+| parseDeepAnalysis | qs:'StepsForScripts' | covered | read:script {id} describe |  |
+| parseDeepAnalysis | qs:'Value > Calculation' | covered | script.body[].value | Set Variable / Set Field right-hand side. |
+| parseDeepAnalysis | qsa:':scope > Field[fieldtype]' | covered | read:field items[] |  |
+| parseDeepAnalysis | qsa:':scope > Script' | covered | read:script items[] |  |
+| parseDeepAnalysis | qsa:':scope > Step' | covered | script.body[] |  |
+| parseDeepAnalysis | qsa:'BaseTable' | covered | read:table items[] |  |
+| parseDeepAnalysis | qsa:'Calculation' | covered | calculation-valued keys across field, script.body[] and layout objects |  |
+| parseDeepAnalysis | qsa:'FieldCatalog' | covered | read:field {table} per table | Structural. |
+| parseDeepAnalysis | qsa:'LayoutObject' | covered | layout.contents.objects[] |  |
+| parseDeepAnalysis | qsa:'Part' | gap | catalog-layout-parts | Part iteration for the layout-side checks; no part object exists in layout.contents.objects[]. |
+| parseDeepAnalysis | qsa:'StepsForScripts Calculation' | covered | script.body[] calculation-valued keys | value, condition, parameter, calculation and slots.calc.* carry every formula the expensive-function and dead-variable scans read. |
+| parseUnreferenced | attr:'UUID' | derived | derived from layout.contents.objects[].valueList.{id,name} | fm has no ValueListReference UUID; the used/unused join is by id or name. |
+| parseUnreferenced | attr:'datatype' | covered | field.type | Shown on the unreferenced-field drill-down. |
+| parseUnreferenced | attr:'displayName' | covered | layout.contents.objects[].style | The named style an object wears. The theme-side list of all defined styles, which is what turns this into an unused-style report, is gap: catalog-theme-styles. |
+| parseUnreferenced | attr:'enable' | covered | script.body[].disabled |  |
+| parseUnreferenced | attr:'fieldtype' | covered | field.options.fieldType |  |
+| parseUnreferenced | attr:'global' | covered | field.options.global |  |
+| parseUnreferenced | attr:'id' | covered | the id key of each catalog | fm ids are stable across listing and describe, so the id-keyed defined/referenced maps port unchanged. |
+| parseUnreferenced | attr:'index' | covered | field.options.indexing |  |
+| parseUnreferenced | attr:'isFolder' | covered | layout.type + script.type |  |
+| parseUnreferenced | attr:'name' | covered | the name key of each catalog |  |
+| parseUnreferenced | attr:'type' | covered | layout.contents.objects[].type + valueList.type |  |
+| parseUnreferenced | qs:':scope > AutoEnter' | covered | field.options.autoEnter |  |
+| parseUnreferenced | qs:':scope > BaseTableReference' | covered | field.table + tableOccurrence.table |  |
+| parseUnreferenced | qs:':scope > Calculation' | covered | field.options.calculation.text |  |
+| parseUnreferenced | qs:':scope > Comment' | covered | field.options.comment | Shown on the unreferenced-field drill-down so a developer can judge before deleting. |
+| parseUnreferenced | qs:':scope > Display' | covered | customFunction.prototype + layout.theme.displayName |  |
+| parseUnreferenced | qs:':scope > LeftTable TableOccurrenceReference' | covered | relation.left.name |  |
+| parseUnreferenced | qs:':scope > LeftTable' | covered | relation.left |  |
+| parseUnreferenced | qs:':scope > ObjectList' | covered | items[] on each listing | Structural. |
+| parseUnreferenced | qs:':scope > RightTable TableOccurrenceReference' | covered | relation.right.name |  |
+| parseUnreferenced | qs:':scope > RightTable' | covered | relation.right |  |
+| parseUnreferenced | qs:':scope > ScriptReference' | covered | script.body[].script + layout.scriptTriggers[].script |  |
+| parseUnreferenced | qs:':scope > Storage' | covered | field.options.{global,indexing} |  |
+| parseUnreferenced | qs:':scope > TableOccurrenceReference' | covered | layout.tableOccurrence + tableOccurrence.related[] |  |
+| parseUnreferenced | qs:':scope > UUID' | derived | derived from the id key of each catalog | fm exposes no per-object UUID outside graphNote and authorization; ids serve the same identity role for the used/unused join. |
+| parseUnreferenced | qs:':scope > UUID, :scope > ObjectList, :scope > Bounds' | derived | derived from the id key of each catalog + layout.contents.objects[].bounds | Legacy shape-sniffing to tell one node kind from another; fm returns typed objects, so the sniff is unnecessary. |
+| parseUnreferenced | qs:':scope > Validation' | covered | field.options.validation |  |
+| parseUnreferenced | qs:'BaseTableCatalog' | covered | read:table listing |  |
+| parseUnreferenced | qs:'BaseTableSourceReference > BaseTableReference' | covered | tableOccurrence.table | An unreferenced base table is one no occurrence's table points at. |
+| parseUnreferenced | qs:'Display' | covered | customFunction.prototype |  |
+| parseUnreferenced | qs:'LayoutCatalog' | covered | read:layout listing |  |
+| parseUnreferenced | qs:'LayoutReference' | covered | script.body[].layout |  |
+| parseUnreferenced | qs:'LayoutReference[id="0"]' | covered | script.body[].layout by calculation | Drives s.unrefs.layouts_dynamic_warning: a Go to Layout chosen by calculation means the unreferenced-layout list cannot be trusted. |
+| parseUnreferenced | qs:'LeftField > FieldReference' | covered | relation.predicates[].leftField |  |
+| parseUnreferenced | qs:'Metadata > namedstyles' | gap | catalog-theme-styles | The per-theme list of defined styles. Without it there is nothing to subtract the used styles from, so s.unrefs.unused_styles and unused_styles_detail have no source. |
+| parseUnreferenced | qs:'RelationshipCatalog' | covered | read:relation listing |  |
+| parseUnreferenced | qs:'RightField > FieldReference' | covered | relation.predicates[].rightField |  |
+| parseUnreferenced | qs:'ScriptCatalog' | covered | read:script listing |  |
+| parseUnreferenced | qs:'ScriptReference' | covered | script.body[].script + layout.contents.objects[].action.script + layout.scriptTriggers[].script |  |
+| parseUnreferenced | qs:'StepsForScripts' | covered | read:script {id} describe |  |
+| parseUnreferenced | qs:'TableOccurrenceCatalog' | covered | read:tableOccurrence listing |  |
+| parseUnreferenced | qs:'TableOccurrenceReference' | covered | layout.tableOccurrence + relation.left/right + layout.contents.objects[].field.tableOccurrence |  |
+| parseUnreferenced | qs:'Text' | covered | field.options.calculation.text | The CDATA formula child of a Calculation. |
+| parseUnreferenced | qs:'ThemeCatalog' | gap | catalog-theme-styles | Needed to enumerate every theme and its styles. |
+| parseUnreferenced | qs:'ValueListCatalog' | covered | read:valueList listing |  |
+| parseUnreferenced | qsa:':scope > Calculation' | covered | field.options.*.calculation.text |  |
+| parseUnreferenced | qsa:':scope > Field[fieldtype]' | covered | read:field items[] |  |
+| parseUnreferenced | qsa:':scope > ObjectList > Field, :scope > Field' | covered | read:field items[] | Handles both SaXML field-catalog shapes; fm has one. |
+| parseUnreferenced | qsa:':scope > TableOccurrence' | covered | read:tableOccurrence items[] |  |
+| parseUnreferenced | qsa:':scope > Theme' | gap | catalog-theme-styles |  |
+| parseUnreferenced | qsa:':scope > ValueList' | covered | read:valueList items[] |  |
+| parseUnreferenced | qsa:'BaseTable' | covered | read:table items[] |  |
+| parseUnreferenced | qsa:'BaseTableReference' | covered | tableOccurrence.table + field.table |  |
+| parseUnreferenced | qsa:'CalcsForCustomFunctions CustomFunction' | covered | customFunction.body | Scanned for field and TO references made from custom functions. |
+| parseUnreferenced | qsa:'Calculation' | covered | calculation-valued keys across field, script.body[], layout objects and customFunction.body |  |
+| parseUnreferenced | qsa:'Conditions > Formatting > Condition > Calculation' | gap | catalog-conditional-formatting | A field referenced only from a conditional-formatting calculation will be reported unreferenced, which is a false positive rather than a missing number. |
+| parseUnreferenced | qsa:'Conditions > Hide > Calculation' | covered | layout.contents.objects[].hideCondition |  |
+| parseUnreferenced | qsa:'FieldCatalog' | covered | read:field {table} per table | Structural. |
+| parseUnreferenced | qsa:'FieldReference' | covered | layout.contents.objects[].field + relation.predicates[] + field.options.autoEnter.lookup.source |  |
+| parseUnreferenced | qsa:'JoinPredicate' | covered | relation.predicates[] |  |
+| parseUnreferenced | qsa:'Layout' | covered | read:layout items[] |  |
+| parseUnreferenced | qsa:'LayoutObject LocalCSS' | gap | catalog-object-styles | Collects the style names layout objects actually use. layout.contents.objects[].style gives the display name for an object wearing a named style, but an object carrying local CSS and no style name is silent, so the used-style set is incomplete. |
+| parseUnreferenced | qsa:'Part LocalCSS' | gap | catalog-layout-parts | Styles used by layout part bands. Parts are not reported at all. |
+| parseUnreferenced | qsa:'Portal > Calculation' | gap | catalog-portal-setup | The portal filter calculation. A field referenced only from a portal filter will be reported unreferenced. |
+| parseUnreferenced | qsa:'Relationship Calculation' | gap | catalog-relation-predicate-calc | Calculation bodies stored under a Relationship. relation.predicates[] reports leftField, op and rightField only, so a reference made from a relationship-level calculation has no fm source. Lowest-confidence row in this file: no relationship in the reference solution carries one, so the shape could not be checked against fm. |
+| parseUnreferenced | qsa:'Relationship' | covered | read:relation items[] |  |
+| parseUnreferenced | qsa:'Script' | covered | read:script items[] |  |
+| parseUnreferenced | qsa:'ScriptReference' | covered | script.body[].script + layout.contents.objects[].action.script + layout.scriptTriggers[].script |  |
+| parseUnreferenced | qsa:'Step Calculation' | covered | script.body[] calculation-valued keys |  |
+| parseUnreferenced | qsa:'Step LayoutReference' | covered | script.body[].layout |  |
+| parseUnreferenced | qsa:'Step' | covered | script.body[] |  |
+| parseUnreferenced | qsa:'StepsForScripts > Script' | covered | read:script {id} describe per script |  |
+| parseUnreferenced | qsa:'StyledText > Data' | covered | layout.contents.objects[].text + layout.contents.objects[].mergeFields[] | Merge-field references inside layout text; fm resolves each merge field to name, id and tableOccurrence rather than leaving it in the text. |
+| parseUnreferenced | qsa:'TableOccurrenceReference' | covered | layout.tableOccurrence + relation.left/right + tableOccurrence.related[] |  |
+| parseUnreferenced | qsa:'Tooltip > Calculation' | covered | layout.contents.objects[].tooltip |  |
+| parseUnreferenced | qsa:'ValueListReference' | covered | layout.contents.objects[].valueList + field.options.validation.valueList |  |
+| render | s.accounts.acc.account_count | derived | derived from read:account listing total |  |
+| render | s.accounts.acc.blank_password | derived | derived from account.hasPassword + account.userType | Blank password is hasPassword false on a FileMaker-type account. |
+| render | s.accounts.acc.detail | covered | account.{name,userType,enabled,privilegeSet,hasPassword} | Needs one read:account describe per account; the listing carries name/id/builtIn only. |
+| render | s.accounts.acc.names_hidden | derived | derived from account.name | fm reads names straight from the file, so the SaXML anonymisation this flag warns about cannot happen; the flag becomes constantly false. |
+| render | s.accounts.ep.detail | covered | extendedPrivilege.{name,description,enabled,privilegeSets[]} |  |
+| render | s.accounts.ep.extended_privilege_count | derived | derived from read:extendedPrivilege listing total |  |
+| render | s.accounts.priv.detail | covered | privilegeSet.{name,fileOptions.*} | printAllowed, exportAllowed, canManageDatabase, noIdleDisconnect, menuCommands, dataEntryOverride. |
+| render | s.accounts.priv.privilege_set_count | derived | derived from read:privilegeSet listing total |  |
+| render | s.baseDirs | covered | read:baseDirectory items[] | path, absolutePath, relative, id. |
+| render | s.bitflags | gap | catalog-bit-flags | The whole Bit Flags tab. Only layout.flags.raw survives; every other raw option word is decoded away. |
+| render | s.customs.custom_function_count | derived | derived from read:customFunction listing, items with type customFunction |  |
+| render | s.customs.custom_function_references | derived | derived from calculation text across catalogs + customFunction.name index |  |
+| render | s.customs.detail | covered | customFunction.{id,name,prototype,arity,parameters,body,comment,availableToUser} | Recursion is a substring test on body, as before. |
+| render | s.deep.script_issues | derived | derived from script.body[] step keys + block + disabled | Every check the tab makes reads step options fm names explicitly (on, with dialog, storage, layout by calculation, name, value). |
+| render | s.deep.scripts_dead_setvar | derived | derived from script.body[].name + the calculation-valued keys of later steps |  |
+| render | s.deep.scripts_embedded_credentials | derived | derived from script.body[].{password,smtp password,open password,edit password,account,API key,oauth client secret} | fm names each credential slot, which is a better source than the legacy's text scan. |
+| render | s.deep.scripts_hardcoded_account | derived | derived from script.body[].account |  |
+| render | s.deep.scripts_pSoS_client_steps | derived | derived from script.body[].stepID |  |
+| render | s.deep.scripts_swallowed_errors | derived | derived from script.body[].on for stepID 86 + Get(LastError) in later calculation text |  |
+| render | s.deep.scripts_with_unguarded_abort_off | derived | derived from script.body[].on for stepID 85 |  |
+| render | s.ext.detail | covered | externalDataSource.{name,paths,sourceType,dsn,hasData} + authorization.{type,filenames,authorizedBy} |  |
+| render | s.fileMeta.encryption | gap | catalog-file-metadata |  |
+| render | s.fileMeta.file_trigger_actions | gap | catalog-file-metadata | File-level script triggers and the scripts they call. |
+| render | s.fileMeta.hide_toolbars | gap | catalog-file-metadata |  |
+| render | s.fileMeta.hide_web_direct | gap | catalog-file-metadata |  |
+| render | s.fileMeta.login_type | gap | catalog-file-metadata |  |
+| render | s.fileMeta.min_fm_version | gap | catalog-file-metadata |  |
+| render | s.fileMeta.save_password | gap | catalog-file-metadata |  |
+| render | s.fileMeta.startup_layout | gap | catalog-file-metadata |  |
+| render | s.globals.detail | gap | catalog-ddr-text | Per-variable contact counts. Set Variable targets are covered (script.body[].name) but every $$ READ inside a calculation needs the tokenised chunk stream; a regex over calculation text mis-splits names containing spaces. |
+| render | s.globals.global_variable_count | gap | catalog-ddr-text | Same source problem; the count would be low by every read-only variable. |
+| render | s.globals.max_global_contacts | gap | catalog-ddr-text | Same source problem. |
+| render | s.graph.cascade_delete | derived | derived from relation.leftToRight.cascadeDelete + relation.rightToLeft.cascadeDelete |  |
+| render | s.graph.detail.relationships_all | covered | relation.{left,right,predicates[],leftToRight,rightToLeft} | Every column including the sorted tick (sortRelated); only the sort's field list is missing (catalog-relation-sort). |
+| render | s.graph.detail.tos_all | covered | tableOccurrence.{name,table.name} |  |
+| render | s.graph.relationship_count | derived | derived from read:relation listing total |  |
+| render | s.graph.table_occurrence_count | derived | derived from read:tableOccurrence listing total |  |
+| render | s.graph.to_zero_relationships | derived | derived from tableOccurrence.related[] (empty) or the union of relation.left/right |  |
+| render | s.layouts.button_bars | derived | derived from layout.contents.objects[].type = buttonBar |  |
+| render | s.layouts.detail | gap | catalog-layout-parts | Most sublists are covered (all, hidden, in_sidebar, with_triggers, with_portals, with_charts, with_buttons, with_tab_controls, with_slide_controls, with_web_viewers, with_popovers, with_button_bars, dividers). with_header, with_footer, with_subsummary and with_nav_part need part bands; with_local_css needs catalog-object-styles; with_filtered_portals needs catalog-portal-setup. |
+| render | s.layouts.info | gap | catalog-layout-options | id, theme, base_to, triggers, hidden, default_view and allow_form/list/table are covered by layout.{id,theme,tableOccurrence,scriptTriggerCount,hidden,viewStyles}. menu_set is catalog-layout-menuset; save_record and the layout-level quick_find are catalog-layout-options. |
+| render | s.layouts.layout_count | derived | derived from read:layout {flatten:true} items with type = layout | Minus the hyphen-named dividers, same rule as today. |
+| render | s.layouts.local_css_objects | gap | catalog-object-styles | Per-layout, per-object-type counts of local CSS overrides. |
+| render | s.layouts.objects_total | derived | derived from layout.contents.objects[] counted recursively | layout.contents also reports fieldCount, portalCount, webViewerCount and unmodelledCount directly. |
+| render | s.layouts.popovers | derived | derived from layout.contents.objects[].type = popoverButton and popover |  |
+| render | s.layouts.portals_total | derived | derived from layout.contents.portalCount |  |
+| render | s.layouts.slide_controls | derived | derived from layout.contents.objects[].type = slideControl |  |
+| render | s.layouts.tab_controls | derived | derived from layout.contents.objects[].type = tabControl |  |
+| render | s.layouts.web_viewers | derived | derived from layout.contents.webViewerCount |  |
+| render | s.library.binary_data_count | gap | catalog-library |  |
+| render | s.menus.custom_menu_count | derived | derived from read:customMenu listing total |  |
+| render | s.menus.custom_menu_set_count | derived | derived from read:customMenuSet listing total |  |
+| render | s.menus.detail | covered | customMenu.{name,items[],baseMenuID} + customMenuSet.name | Item count is items.length; modified-built-in vs new is baseMenuID. |
+| render | s.mods.by_user | gap | catalog-modification-info |  |
+| render | s.mods.most_recent | gap | catalog-modification-info | Covered for layouts only, by layout.modified.timestamp. |
+| render | s.mods.top_modified | gap | catalog-modification-info | Ranks on the modification counter, which is reported for nothing. |
+| render | s.mods.total_modifications | gap | catalog-modification-info |  |
+| render | s.name | gap | catalog-theme-styles | Theme-style row: the style's name in the Theme Styles pane. |
+| render | s.persistent.count | derived | derived from read:persistentData listing total |  |
+| render | s.persistent.detail.all | gap | catalog-modification-info | name, id, instanceID, type, value and length are covered by persistentData.{key,id,instance.name,dataType,value}; the modifiedBy, account, modifiedAt, mods and uuid columns have no source. |
+| render | s.plugins.detail | gap | catalog-plugins |  |
+| render | s.plugins.plugin_function_count | gap | catalog-plugins |  |
+| render | s.plugins.plugin_function_references | gap | catalog-plugins |  |
+| render | s.scripts.detail | covered | script.{name,hidden,runWithFullAccess,steps} + script.body[] |  |
+| render | s.scripts.info | covered | script.{id,folder,hidden,runWithFullAccess,steps} + script.body[] | complexity, nesting, inactive and uses_globals are computed from body[] as before. |
+| render | s.scripts.max_length | derived | derived from the max of script.steps on the read:script listing | No describe needed: the listing carries a step count per script. |
+| render | s.scripts.orphaned_enabled_steps | derived | derived from script.body[].disabled + script.body[].block | fm reports no block role on a disabled block step, which is exactly the wrapper-disabled case this check looks for. |
+| render | s.scripts.script_count | derived | derived from read:script {flatten:true} items with type = script |  |
+| render | s.scripts.step_count | derived | derived from the sum of script.steps on the read:script listing |  |
+| render | s.scripts.unbalanced_if_scripts | derived | derived from script.body[].block | An unclosed If reports start with no end, so fm answers this directly instead of by counting openers and closers. |
+| render | s.scripts.unbalanced_loop_scripts | derived | derived from script.body[].block | Same. |
+| render | s.scripts.unknown_step_id_count | derived | derived from script.body[].step + script.problems[] | fm names every step it returns, so the unknown-id bucket collapses to zero; problems[] is the replacement drift signal. |
+| render | s.tables.calc_fields | derived | derived from field.options.fieldType = calculation |  |
+| render | s.tables.detail.fields_auto_entry | covered | field.options.autoEnter.type |  |
+| render | s.tables.detail.fields_calc | covered | field.options.fieldType + field.options.calculation.text |  |
+| render | s.tables.detail.fields_container | gap | catalog-container-storage | container_mode, container_type, container_base, is_global and reps are covered by field.options.container.{external,encrypted,baseDirectory} plus options.global and options.repetitions; the fewer_folders column has no source. |
+| render | s.tables.detail.fields_global | covered | field.options.global |  |
+| render | s.tables.detail.fields_summary | covered | field.options.fieldType + field.options.summary.{type,field,running,individualReps} |  |
+| render | s.tables.field_count | derived | derived from the sum of read:field listing total per table |  |
+| render | s.tables.field_info | covered | field.{id,name,type,options.*} | Every column of the dense fields table: type, data type, global, repeating, indexed, stored/unstored calc, auto-entry kind, validation rules, comment and calc excerpt. |
+| render | s.tables.fields_per_table | derived | derived from read:field listing total per table |  |
+| render | s.tables.stored_calc_fields | derived | derived from field.options.stored + field.options.fieldType + field.options.global |  |
+| render | s.tables.table_count | derived | derived from read:table listing total |  |
+| render | s.tables.table_info | covered | table.{id,name,description} + read:field listing total | description needs a read:table describe by name. |
+| render | s.tables.tables | covered | read:table items[] |  |
+| render | s.tables.unstored_calc_fields | derived | derived from field.options.stored + field.options.fieldType + field.options.global |  |
+| render | s.tables.unstored_per_table | derived | derived from field.options.stored per table | Feeds the high_unstored_tables proliferation check. |
+| render | s.tags.custom_count | gap | catalog-tags | Undercounts by every tag that exists only on a layout or a script. |
+| render | s.tags.custom_tags | gap | catalog-tags | Same. |
+| render | s.tags.internal_tags | gap | catalog-tags | Same. |
+| render | s.tags.tagged_fields | covered | field.options.tags |  |
+| render | s.tags.tagged_layouts | gap | catalog-tags | No layout tag list in fm. |
+| render | s.tags.tagged_scripts | gap | catalog-tags | No script tag list in fm. |
+| render | s.tags.tagged_tos | covered | tableOccurrence.tags | Describe by id; the listing has no tags. |
+| render | s.tags.total_assignments | gap | catalog-tags | Sums tag counts across all four object kinds, two of which have no source. |
+| render | s.tags.unique_count | gap | catalog-tags | Same. |
+| render | s.theme | gap | catalog-theme-styles | Theme-style row: which theme a style belongs to. |
+| render | s.themes.detail | gap | catalog-theme-styles |  |
+| render | s.themes.theme_count | gap | catalog-theme-styles | layout.theme names the theme each layout wears, so a distinct-themes-in-use count is derivable, but a theme defined and unused is invisible. |
+| render | s.themes.themes_detail | gap | catalog-theme-styles | Per-theme palette, style list and colour usage. |
+| render | s.unrefs.all_styles_detail | gap | catalog-theme-styles |  |
+| render | s.unrefs.broken | covered | script.problems[] + <Field Missing> / <Table Missing> in calculation text | Confirmed in the samples: fm returns both the markers inside calculation text and its own live re-check per script. |
+| render | s.unrefs.calc_deps | derived | derived from calculation text across catalogs + the table, field, script and layout name indexes |  |
+| render | s.unrefs.confidence.reasons | gap | catalog-plugins | Four of the five uncertainty signals are derivable from calculation text (Evaluate, GetField, dynamic ExecuteSQL) and from read:externalDataSource; plugin_call_count is not, because nothing marks a call as a plugin call. |
+| render | s.unrefs.confidence.tier | gap | catalog-plugins | The tier is computed from those five signals, so it degrades with the missing one. |
+| render | s.unrefs.fields | derived | derived from read:field per table minus every reference site (layout objects, script step keys, calculation text, relation predicates, value lists) |  |
+| render | s.unrefs.fields_tiered | derived | derived from the same reference sites, split by how the reference was found |  |
+| render | s.unrefs.layouts | derived | derived from read:layout minus script.body[].layout + layout.contents.objects[].action.layout |  |
+| render | s.unrefs.layouts_dynamic_warning | covered | script.body[].layout by calculation | fm names the by-calculation case as its own key instead of the legacy's id=0 sniff. |
+| render | s.unrefs.scripts | derived | derived from read:script minus script.body[].script + layout object actions + layout.scriptTriggers[] + customMenu item actions |  |
+| render | s.unrefs.table_occurrences | derived | derived from read:tableOccurrence minus relation.left/right + layout.tableOccurrence + field references |  |
+| render | s.unrefs.tables | derived | derived from read:table minus tableOccurrence.table |  |
+| render | s.unrefs.to_removability.completely_unused | derived | derived from tableOccurrence.related[] + layout.tableOccurrence + field references |  |
+| render | s.unrefs.to_removability.relationship_only | derived | derived from tableOccurrence.related[] + layout.tableOccurrence + field references |  |
+| render | s.unrefs.unused_styles | gap | catalog-theme-styles | Needs the theme's namedstyles list to subtract used styles from. |
+| render | s.unrefs.unused_styles_detail | gap | catalog-theme-styles | Same. |
+| render | s.unrefs.value_lists | derived | derived from read:valueList minus layout.contents.objects[].valueList + field.options.validation.valueList |  |
+| render | s.used | gap | catalog-theme-styles | Theme-style row: whether a style is used by any object. |
+| render | s.valueLists.detail.all | covered | valueList.{name,type,values[],field} |  |
+| render | s.valueLists.detail.dynamic_list | covered | valueList.type + valueList.field.{occurrence,field} |  |
+| render | s.valueLists.detail.dynamic_related_only_list | covered | valueList.options.showRelatedOnly + valueList.startTable |  |
+| render | s.valueLists.detail.static_list | covered | valueList.type + valueList.values[] |  |
+| render | s.valueLists.value_list_count | derived | derived from read:valueList listing total |  |
+
+## Summary
+
+| Classification | Rows |
+|---|---|
+| covered | 373 |
+| derived | 66 |
+| gap | 124 |
+
+Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 373 + 66 + 124 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
+
+## Gap ids introduced
+
+From the brief's list:
+
+- `catalog-theme-styles` (23 rows): fm has no theme catalog. A layout reports `theme{id,name,displayName,group}` and an object a `style` display name, but nothing enumerates the themes in the file, their named styles, their palettes or their CSS. The Themes tab, the unused-style report and the style columns of the Reference Explorer all depend on it.
+- `catalog-file-metadata` (26 rows): no catalog for File Options. Encryption state, login mode, minimum FileMaker version, the three hide-sharing checkboxes, save-password, the startup layout and file-level script triggers have no fm source. The Overview tab's file-security block depends on it.
+- `catalog-ddr-text` (7 rows): no tokenised reference index. Calculations come back as plain text, so the `Chunk` stream that tells a plugin call from a native function, and that yields `$$` variable names containing spaces, is gone. The Globals tab and the plugin tally depend on it.
+- `catalog-bit-flags` (14 rows): fm decodes stored option words into named booleans and reports the raw number only for a layout (`layout.flags.raw`, with `flags.set` naming 23 bits). The Bit Flags tab, which catalogues raw values per context, depends on the rest.
+- `catalog-plugins` (7 rows): nothing marks a calculation call site as a plugin function call. The Plugins tab and the plugin-call uncertainty signal behind the Fields confidence tier depend on it.
+- `catalog-modification-info` (14 rows): no object reports a modification count, and only a layout reports who and when (`layout.modified`). The Modification Hotspots tab and the audit columns of the Persistent Data tab depend on it.
+- `catalog-relation-sort` (1 row): `relation.leftToRight.sortRelated` says a relationship sorts related records but not on which fields or in which direction. The relationship detail pane depends on it.
+- `catalog-layout-parts` (4 rows): verified against the samples - `layout.contents.objects[]` carries 19 object types and no part. Only `geometry.bodyHeight` survives. Part presence, count, type, geometry and per-part styles have no source; the Wireframe tab and the header/footer/sub-summary/navigation layout lists depend on them.
+- `catalog-object-styles` (4 rows): an object's local CSS override. `objects[].style` gives the named style's display name, but an object carrying CSS text and no style name - the exact local-override case the legacy counts - is invisible.
+
+New in this pass:
+
+- `catalog-tags` (8 rows): fm reports tags on fields, table occurrences, custom menus and custom menu sets, but not on layouts or scripts. The Tags tab's `tagged_layouts` and `tagged_scripts`, and their share of every tag total, have no source.
+- `catalog-library` (3 rows): no catalog for the image/binary library. fm names members by id (`iconId`, `pictureId`) but nothing lists or describes them, so the stored-binary count on the Overview tab has no source.
+- `catalog-portal-setup` (3 rows): the portal's filter calculation, its stored sort order and its allow-create bit. The layout describe notes state outright that the sort and the filter are reported nowhere. `portals_with_filter`, `portals_with_sort` and `portals_allow_create` depend on them, and a field referenced only from a portal filter becomes a false positive in the unreferenced-fields report.
+- `catalog-conditional-formatting` (3 rows): no layout object key reports conditional formatting at all. The broken-reference scan over conditional-format calculations, and any field referenced only from one, depend on it.
+- `catalog-layout-options` (2 rows): the layout-level Save-record-changes-automatically and Quick-Find settings from Layout Setup. Neither appears in `layout.flags.set` nor anywhere else. The layout dense table shows both columns.
+- `catalog-layout-menuset` (2 rows): which custom menu set a layout installs. `read:customMenuSet` lists the sets and `read:layout` describes the layout, but no key joins them.
+- `catalog-container-storage` (2 rows): the container external-storage `withFewerFolders` setting. `field.options.container` reports `baseDirectory`, `external`, `encrypted` and `location` only, so the container-fields drill-down loses one column.
+- `catalog-relation-predicate-calc` (1 row): a calculation body stored under a Relationship. `relation.predicates[]` reports `leftField`, `op` and `rightField` only. Lowest-confidence entry in this file - no relationship in the reference solution carries one, so the shape could not be checked against fm.
