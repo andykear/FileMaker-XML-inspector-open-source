@@ -4,10 +4,15 @@
   "private": true,
   "type": "module",
   "description": "Live FileMaker solution analysis through the Claris ADT fm CLI",
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "test": "node --test 'tests/*.test.mjs'",
     "inventory": "node scripts/saxml-inventory.mjs"
   },
-  "license": "CC-BY-4.0"
+  "license": "CC-BY-4.0",
+  "dependencies": {
+    "fm-adt-toolkit": "file:../fm-adt-toolkit"
+  }
 }
