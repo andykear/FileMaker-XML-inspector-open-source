@@ -13,9 +13,9 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseFileMetadata | attr:'enable' | gap | catalog-file-metadata | enable on HideToolbars / HideWebDirectSharing / HideClientSharing. No fm catalog for File Options. |
 | parseFileMetadata | attr:'keychain' | gap | catalog-file-metadata | SavePassword keychain flag (File Options > log in using). |
 | parseFileMetadata | attr:'name' | gap | catalog-file-metadata | Names the startup LayoutReference and each file-trigger ScriptReference. The layout and script exist in read:layout / read:script, but the file-level binding does not. |
-| parseFileMetadata | attr:'type' | gap | catalog-file-metadata | Encryption type (0/1) and Login type (-1/0/1). |
+| parseFileMetadata | attr:'type' | gap | catalog-file-metadata | Encryption type (0/1) and Login type (-1/0/1). The encryption half is covered by evaluate:calculation `Get ( EncryptionState )`; the login type (File Options) is the gap. |
 | parseFileMetadata | attr:'version' | gap | catalog-file-metadata | Minimum version the file requires. |
-| parseFileMetadata | qs:'Encryption' | gap | catalog-file-metadata | Encryption-at-rest state. fm has no file-metadata catalog. |
+| parseFileMetadata | qs:'Encryption' | covered | evaluate:calculation `Get ( EncryptionState )` (value "0"/"1") | Encryption-at-rest state. No file catalog, but the Get() function evaluates against the file (verified on ooe 2026-09-14: "0"). The encryption hint and shared-ID details are not exposed. |
 | parseFileMetadata | qs:'HideClientSharing' | gap | catalog-file-metadata | File Options checkbox. |
 | parseFileMetadata | qs:'HideToolbars' | gap | catalog-file-metadata | File Options checkbox. |
 | parseFileMetadata | qs:'HideWebDirectSharing' | gap | catalog-file-metadata | File Options checkbox. |
@@ -466,7 +466,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | render | s.deep.scripts_swallowed_errors | derived | derived from script.body[].on for stepID 86 + Get(LastError) in later calculation text |  |
 | render | s.deep.scripts_with_unguarded_abort_off | derived | derived from script.body[].on for stepID 85 |  |
 | render | s.ext.detail | covered | externalDataSource.{name,paths,sourceType,dsn,hasData} + authorization.{type,filenames,authorizedBy} |  |
-| render | s.fileMeta.encryption | gap | catalog-file-metadata |  |
+| render | s.fileMeta.encryption | covered | evaluate:calculation `Get ( EncryptionState )` | Rendered as on/off from the "0"/"1" value. |
 | render | s.fileMeta.file_trigger_actions | gap | catalog-file-metadata | File-level script triggers and the scripts they call. |
 | render | s.fileMeta.hide_toolbars | gap | catalog-file-metadata |  |
 | render | s.fileMeta.hide_web_direct | gap | catalog-file-metadata |  |
@@ -573,18 +573,18 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 
 | Classification | Rows |
 |---|---|
-| covered | 372 |
+| covered | 374 |
 | derived | 66 |
-| gap | 125 |
+| gap | 123 |
 
-Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 372 + 66 + 125 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
+Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 374 + 66 + 123 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
 
 ## Gap ids introduced
 
 From the brief's list:
 
 - `catalog-theme-styles` (23 rows): fm has no theme catalog. A layout reports `theme{id,name,displayName,group}` and an object a `style` display name, but nothing enumerates the themes in the file, their named styles, their palettes or their CSS. The Themes tab, the unused-style report and the style columns of the Reference Explorer all depend on it.
-- `catalog-file-metadata` (26 rows): no catalog for File Options. Encryption state, login mode, minimum FileMaker version, the three hide-sharing checkboxes, save-password, the startup layout and file-level script triggers have no fm source. The Overview tab's file-security block depends on it.
+- `catalog-file-metadata` (24 rows): no catalog for File Options. Login mode, saved password, minimum FileMaker version, the three hide-sharing checkboxes, the startup layout and file-level script triggers have no read op and no Get() function (fm help: file-level options are deliberately not members of any catalog). Encryption state, file name, path, size, persistent ID and locale ARE readable through evaluate:calculation with Get() functions, so those rows are covered.
 - `catalog-ddr-text` (7 rows): no tokenised reference index. Calculations come back as plain text, so the `Chunk` stream that tells a plugin call from a native function, and that yields `$$` variable names containing spaces, is gone. The Globals tab and the plugin tally depend on it.
 - `catalog-bit-flags` (15 rows): fm decodes stored option words into named booleans and enums and reports the raw number only for a layout (`layout.flags.raw`, with `flags.set` naming 22 bits). The Bit Flags tab catalogues the raw numeric word per context - its `addFlag` drops anything non-numeric and its rows are decimal, binary and bits-set - so a decoded word is not a substitute for it.
 - `catalog-plugins` (7 rows): nothing marks a calculation call site as a plugin function call. The Plugins tab and the plugin-call uncertainty signal behind the Fields confidence tier depend on it.

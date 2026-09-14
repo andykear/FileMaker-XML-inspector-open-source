@@ -10,7 +10,7 @@ The Clockwork Inspector is being rewritten to read live FileMaker files through 
 
 - `npm test`: `node --test 'tests/*.test.mjs'` (the directory form of `node --test` fails on Node 22.19).
 - `npm run inventory`: regenerate the skeleton of `docs/saxml-inventory.md` from the legacy file (classification columns are hand-written; re-running overwrites them, so diff before committing).
-- Read-only probes against the reference solution: `fm --file=fmnet://localhost/ooe --username=admin --keychain --no-prompt --abort-on-error=false --out=<out> <ops.ndjson>`. Only `read:` ops, ever.
+- Read-only probes against the reference solution: `fm --file=fmnet://localhost/ooe --username=admin --keychain --no-prompt --abort-on-error=false --out=<out> <ops.ndjson>`. Only read-only ops, ever: `read:*`, plus `evaluate:calculation` and `validate:calculation` (fm's help guarantees they never change the file).
 
 ## Shared code
 

@@ -64,7 +64,7 @@ The server always spawns fm with `--username=<account> --keychain --prompt` (fm'
 Endpoints, JSON only, bound to 127.0.0.1:
 
 - `GET /api/context` returns `{ cli: { path, version, contract, engine }, root, username }`.
-- `POST /api/read` body `{ target, ops }` returns `{ results, notices, summary, fatal, exitCode }`. Any op whose `op` does not start with `read:` is refused with 400 before fm is spawned. This single check is the read-only guarantee; there is no other write path.
+- `POST /api/read` body `{ target, ops }` returns `{ results, notices, summary, fatal, exitCode }`. Any op that is not read-only is refused with 400 before fm is spawned. Read-only means `read:*`, plus `evaluate:calculation` and `validate:calculation`, which fm's own help guarantees never change a file ("a file's bytes are identical after evaluating"). The formulas the inspector evaluates are fixed strings in its own code, never user input. The check is the toolkit's `assertReadOnly`, shared with `fm-gaps check`; there is no other write path.
 - `POST /api/resolve-target` body `{ from, path }` returns `{ target }` or `{ unresolvable, reason }`. `file:Name` resolves to a sibling of `from`: `fmnet://host/Name` for a hosted root, `<dir>/Name.fmp12` for a local one (existence checked). `$$variable`, `odbc:`, `filemac:`/`filewin:` absolute paths and anything else are `unresolvable` with the reason. No fm call.
 
 The page owns the solution model and drives discovery:
@@ -103,6 +103,8 @@ FileModel = {
 ```
 
 Values are fm results verbatim. Nothing is renamed or reshaped on the way in.
+
+File-level facts come from `evaluate:calculation` with `Get()` functions, since fm has no file catalog (verified 2026-09-14 on ooe): `Get ( FileName )`, `Get ( FilePath )`, `Get ( FileSize )`, `Get ( EncryptionState )`, `Get ( PersistentID )`, `Get ( FileLocaleElements )`, `Get ( HostName )`, `Get ( HostApplicationVersion )`. File Options (login mode, saved password, minimum version, hide checkboxes, startup layout, file-level script triggers) have no function and stay in the register. Two engine quirks: under the CLI engine `Get ( SystemVersion )` returns the string `Recover` and `Get ( ApplicationVersion )` returns `1.0`.
 
 Read plan per file, two fm invocations:
 
