@@ -137,7 +137,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseLayouts | qs:'ThemeReference' | covered | layout.theme |  |
 | parseLayouts | qsa:'LayoutCatalog ScriptReference' | derived | derived from layout.contents.objects[].action.script + layout.scriptTriggers[].script | s.layouts.script_refs_from_layouts is the count of both across every layout. |
 | parseLayouts | qsa:'LayoutObject' | covered | layout.contents.objects[] (recursive) | Nested objects appear under objects[] on group, portal, popover, tabControl/tabPanel, slideControl/slidePanel and buttonBar. |
-| parseLayouts | qsa:'Metadata ScriptTrigger' | gap | catalog-file-metadata | File-level triggers, duplicated here into s.layouts.file_triggers. |
+| parseLayouts | qsa:'Metadata ScriptTrigger' | gap | catalog-file-metadata | The FILE's own script triggers (File Options: OnFirstWindowOpen, OnLastWindowClose, OnWindowOpen, OnWindowClose...), which SaXML stores under Metadata, not under any layout. The legacy Layouts tab counted them a second time to show a file-triggers figure beside the layout trigger counts. Layout-level and object-level triggers are fully covered by read:layout; only the file-level bindings have no fm op. |
 | parseLayouts | qsa:'Step' | covered | layout.contents.objects[].action |  |
 | parseScripts | attr:'enable' | covered | script.body[].disabled | Inverse sense: fm reports disabled true where SaXML says enable=False, and the key is absent on an enabled step. |
 | parseScripts | attr:'hidden' | covered | script.hidden | hidden=False in SaXML means 'include in menu'; fm reports the boolean directly on both listing and describe. |
