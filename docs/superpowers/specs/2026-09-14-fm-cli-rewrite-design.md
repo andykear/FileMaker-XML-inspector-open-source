@@ -129,61 +129,76 @@ Dropped, registered: theme mood board and colour palette (no theme catalog; a la
 
 Deferred, not dropped: compare mode (two solution snapshots can be diffed later since the model is JSON), saved report snapshot.
 
-## 4. Gap register and the intake loop
+## 4. Coverage register and the intake loop
 
-`fm-adt-toolkit/gaps/register.json`, one entry per gap:
+The register answers one question for Claris, per kind of object: **what does this object have that the fm read op for it does not report?** It is a coverage matrix, not a list of inspector features. Its unit is a *subject*: an fm read op plus a kind under it, because attributes differ by kind. A field layout object, a portal and a tab control share a read op and almost nothing else; a container field and a summary field have different option sets; every script step has its own options.
+
+Subjects, by example: `read:layout · layout`, `read:layout · part`, `read:layout · object:field`, `read:layout · object:portal`, `read:layout · object:tabControl`, `read:layout · object:webViewer` and the other object types; `read:field · type:text`, `read:field · type:container`, `read:field · type:calculation`, `read:field · type:summary`; `read:script · script`, `read:script · step:Import Records` and every other step; `read:relation`, `read:tableOccurrence`, `read:valueList · type:field`, `read:customMenu · item`, `read:account`, and a pseudo-op `none` for objects fm has no read op for at all (File Options, themes and styles, plugins).
+
+### Entry shape
+
+`fm-adt-toolkit/gaps/register.json` holds one entry per subject:
 
 ```json
 {
-  "id": "layout-theme-styles",
-  "title": "Theme styles are not readable",
-  "area": "catalog:layout",
-  "description": "read:layout reports a theme name and per-object style names only; no style definitions.",
-  "status": "open",
-  "firstSeen": "0.6.0",
-  "lastChecked": {
-    "version": "0.6.0", "build": "29816214", "date": "2026-09-14", "outcome": "open",
-    "command": "fm --file=fmnet://localhost/ooe --username=admin --keychain --no-prompt --abort-on-error=false --out=/tmp/fm-gaps-1.out.ndjson /tmp/fm-gaps-1.ops.ndjson",
-    "ops": [ { "op": "read:layout", "id": 11, "detail": true } ],
-    "batch": { "size": 11, "position": 7 },
-    "evidence": "gaps/evidence/0.6.0/5f2a9c1e.ndjson"
-  },
-  "reportedToClaris": null,
-  "blocks": [
-    { "app": "inspector", "feature": "theme-moodboard", "where": "ui/tabs/themes.js" }
-  ],
+  "id": "layout-object-field",
+  "op": "read:layout",
+  "kind": "object:field",
   "probe": {
-    "target": "reference",
-    "ops": [ { "op": "read:layout", "id": 11, "detail": true } ],
-    "check": { "kind": "keyPresent", "path": "theme.styles" }
-  }
+    "ops": [ { "op": "read:layout", "name": "File Open", "detail": true } ],
+    "select": "contents.objects[type=field]"
+  },
+  "attributes": [
+    { "name": "control style",          "knownFrom": "SaXML Field > Usage @type; Inspector > Data > Control style", "fmKey": "control", "reported": true },
+    { "name": "named theme style",      "knownFrom": "SaXML LocalCSS @name; Inspector > Styles",                  "fmKey": "style",   "reported": true },
+    { "name": "conditional formatting", "knownFrom": "SaXML ConditionalFormatting; Inspector > Conditional",       "fmKey": null,      "reported": false },
+    { "name": "local style overrides",  "knownFrom": "SaXML LocalCSS body",                                        "fmKey": null,      "reported": false }
+  ],
+  "firstSeen": "0.6.0",
+  "reportedToClaris": null,
+  "lastChecked": { "version": "0.6.0", "build": "29816214", "date": "2026-09-14",
+                   "command": "fm --file=... --keychain --no-prompt --abort-on-error=false --out=... ...",
+                   "batch": { "size": 40, "position": 7 },
+                   "evidence": "gaps/evidence/0.6.0/5f2a9c1e.ndjson",
+                   "attributes": { "conditional formatting": "absent", "local style overrides": "absent" } },
+  "blocks": [ { "app": "inspector", "feature": "conditional-formatting-check", "attribute": "conditional formatting" } ]
 }
 ```
 
-Evidence is mandatory. `lastChecked.command` is the exact command line the checker ran, including the temp file paths it used, and `lastChecked.ops` is the exact NDJSON batch written to that ops file. `lastChecked.response` is fm's response verbatim: every stdout line and every stderr line as parsed JSON objects, in order, plus the exit code. Nothing is summarised or trimmed; a large result stays large, because the point is that Claris sees exactly what we saw. The checker overwrites this block on every run, and the git history is the record of how each gap behaved across builds. The `fm-gaps report` output includes the command and the response for every open entry.
+- `attributes` is the complete list of what the kind carries, reported or not. `knownFrom` names where the attribute is known to exist: the SaXML element or attribute in the Ooe export first, then the FileMaker Inspector or dialog that shows it. `fmKey` is the key fm reports it under, or `null`.
+- `probe.ops` is one read op against the reference solution; `probe.select` picks the instance of the kind inside the result (a JSONPath-like `path[key=value]`, or a step name for scripts). Ooe supplies one instance of every kind; where it lacks one, the owner adds it, as was done for the secure-storage container.
+- `fm-gaps check` runs every probe in one read-only invocation, selects the instance, and evaluates every attribute with `keyPresent` on its `fmKey` where one is expected and "any new key" detection otherwise: an attribute with `reported: false` whose `fmKey` is null passes only when a human names the new key, so the checker reports *unexplained new keys* on the instance as a separate list, which is how a closed gap first shows up on a new build. Outcomes are per attribute and land in `lastChecked.attributes`.
+- `status` per attribute is derived: reported, missing, or wontfix (set by hand with a reason). There is no entry-level status.
+- `blocks` is for the inspector's own intake loop and keys a feature to an attribute; the Claris report never shows it.
 
-**Evidence is stored once per distinct probe, not once per entry** (decided 2026-09-14). Many entries share one probe: every opaque step kind probes the same `read:script` on the one-of-everything script, whose result is about 230 KB, and storing it per entry made the register 3.3 MB for eleven entries and would make it about 19 MB for the 81 opaque kinds, rewritten on every weekly check. So `lastChecked.response` on an entry is replaced by `lastChecked.evidence`, the id of a file under `gaps/evidence/<version>/<probe-id>.ndjson` that holds the verbatim response for that probe op (stdout lines, stderr lines, exit code, and the command and ops that produced it). The probe id is a stable hash of the probe op. Evidence files are committed like the register. Nothing is summarised or trimmed: `fm-gaps report` inlines the referenced evidence under every open entry, so Claris still sees exactly what we saw. Entries keep their own `outcome`, `reason`, `version`, `build`, `date`, and `batch` position. The first task of Plan 2 makes this change together with the register reconciliation (one entry per inventory gap id and per opaque step kind).
+### Evidence
 
-`status` is `open`, `fixed`, or `wontfix`. `area` is `catalog:<name>`, `step:<step name>`, or `cli`. Check kinds, implemented as small functions in `gaps/checks.mjs`: `keyPresent`, `opAccepted`, `stepNotOpaque`, `valueEquals`. A gap that needs more gets a named function in the same file, not a new mechanism.
+Evidence is mandatory and verbatim, stored once per distinct probe (decided 2026-09-14): `gaps/evidence/<version>/<probe-id>.ndjson` holds the command, the ops, every stdout and stderr line, and the exit code for that probe op; entries reference it. Nothing is summarised or trimmed. Evidence files are committed like the register; git history is the record of how each build behaved.
 
-Seeded from: fm-ai's backlog (five confirmed gaps; one entry per opaque step kind), the inventory rows classified as gap, the refusals and "not reported" notes in `fm help --json --all`, and `unmodelledCount` or `unresolved` values observed on ooe.
+### The attribute reference
 
-The intake loop per fm build:
+"What the object has" is enumerated, not remembered. The primary source is the Save as XML export of Ooe: for each kind, every element and attribute that appears under it, named by its SaXML path. The FileMaker help and the Inspector supply the human names. Andrew Kear's clipboard-format repos (Script XML, Layout XML, field/table/value list definitions) are a cross-check for kinds whose clipboard form is richer than SaXML. The inventory (`docs/saxml-inventory.md`) is a third input: its gap rows are attributes the legacy inspector consumed, so every one of them must appear in some entry's `attributes` with `reported: false`.
 
-1. `fm-gaps check --file=<reference> --username=<account>` runs every probe in one read-only fm invocation, evaluates the checks, writes each entry's `lastChecked` with the command, ops, and verbatim response, prints three lists: still open, newly passing, errored. Newly passing entries print with their `blocks` rows, which is the to-do list for re-enabling features, pointing at the file where each is stubbed.
-2. `fm-gaps report` renders the open entries as Markdown for Claris, grouped by area, each with its probe op and the observed output from the last check.
-3. The inspector page runs the same probes against the connected root file at startup and evaluates the same check functions. Its Gaps tab shows every register entry with its registered status against the running fm version. A probe that passes live while the entry is still `open` is flagged "readable in this build, feature not yet enabled". Every stubbed feature renders its note from its register entry, so the UI never keeps its own list of what is missing. The direction register-to-HTML is therefore visible before anyone edits the register.
+### Seeding and reconciliation
+
+Plan 2's first task builds the matrix kind by kind: enumerate the kind's attributes from the Ooe export, read one instance through fm, mark each attribute reported or missing with its `fmKey`, and record evidence. The twelve entries seeded in Plan 1 fold into it (opaque step kinds become `read:script · step:<name>` entries whose every option is missing; the catalog-level gaps become `none` subjects or attribute rows on the kind they belong to). The inventory's 103 gap rows are the acceptance check: each must map to an attribute row.
+
+### The intake loop per fm build
+
+1. `fm-gaps check --file=<reference> --username=<account>` runs all probes, writes evidence and per-attribute outcomes, and prints: attributes still missing, **attributes newly reported** (with the `blocks` rows they unblock), unexplained new keys per instance (candidates for closing a gap once named), and errored probes. It never edits `attributes[].reported` or `fmKey` by itself; a human confirms a newly reported attribute by filling in `fmKey`.
+2. `fm-gaps report` renders, per read op and kind, the attributes fm does not report, each with `knownFrom`, and inlines the evidence for that kind's instance so Claris sees fm's actual response next to the list of what is absent. Reported attributes are listed compactly so the reader sees coverage, not only gaps.
+3. The inspector page runs the same probes at startup, evaluates the same checks, and its Gaps tab shows the matrix against the running fm version, flagging attributes that are reported live but still marked missing in the register. Every stubbed feature renders its note from the attribute it is keyed to, so the UI keeps no list of its own.
 
 ## 5. Inventory, porting order, testing
 
-Inventory first. A script-assisted pass over `legacy/clockwork-inspector.html` produces `docs/saxml-inventory.md`: one row per XML element or attribute a `parseXxx` reads and per `s.<catalog>.<field>` a tab renders, each classified covered (fm catalog and key named), derived, gap, or dropped (a datum the new inspector does not need, by owner decision; not a gap, not reported to Claris). The owner reviews it before any tab is ported. Gap rows become register entries.
+Inventory first. A script-assisted pass over `legacy/clockwork-inspector.html` produces `docs/saxml-inventory.md`: one row per XML element or attribute a `parseXxx` reads and per `s.<catalog>.<field>` a tab renders, each classified covered (fm catalog and key named), derived, gap, or dropped (a datum the new inspector does not need, by owner decision; not a gap, not reported to Claris). The owner reviews it before any tab is ported. Gap rows become attribute rows in the coverage register (section 4).
 
 Porting order:
 
 1. Extract the shared package; switch fm-ai to it; its tests green.
 2. Inspector server, target resolution, discovery, model, read plan; smoke test on ooe.
 3. Tabs: tables and fields; occurrences and relations with the graph; scripts with the shared renderer and step index; layouts with wireframe; security; remaining catalogs; then the derived analyses (unreferenced, broken references, risk, reference explorer); then exports and the Gaps tab.
-4. Register seeded, `fm-gaps check` and `report` working against ooe.
+4. Coverage register built kind by kind, `fm-gaps check` and `report` working against ooe.
 5. Throwaway count cross-check: old inspector on ooe's SaXML export versus the new one on the live file. Mismatches are either gaps or bugs; resolve each, then discard the comparison.
 6. Delete `legacy/` when every inventory row is covered, derived, dropped, or registered.
 
