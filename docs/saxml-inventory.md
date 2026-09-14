@@ -313,7 +313,7 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseTags | qsa:'Layout' | covered | read:layout items[] | Iteration is covered; the TagList read on each layout is the gap (catalog-tags). |
 | parseTags | qsa:'Script' | covered | read:script items[] | Iteration is covered; the TagList read on each script is the gap (catalog-tags). |
 | parseModifications | attr:'Display' | covered | layout.theme.displayName + customFunction.prototype | Fallback name for an object with no name attribute. Where that object is a Theme, the theme catalog is itself gap: catalog-theme-styles. |
-| parseModifications | attr:'modifications' | gap | catalog-modification-info | The per-object modification counter that the whole hotspots tab ranks on. Not reported for any object, layouts included - layout.modified carries who and when, never how many. |
+| parseModifications | attr:'modifications' | gap | catalog-modification-info | The per-object modification counter that the whole hotspots tab ranks on. Not reported for any object, layouts included - layout.modified carries who and when, never how many. The counter itself is DDR bookkeeping; the ask to Claris is the who/when triple (account, user name, timestamp) on every catalog, which fm reports for layouts only (register: catalog-modification-info). |
 | parseModifications | attr:'name' | covered | the name key of each catalog | Names the modified object. |
 | parseModifications | attr:'timestamp' | gap | catalog-modification-info | Last-modified timestamp. Covered for layouts only, by layout.modified.timestamp. |
 | parseModifications | attr:'userName' | gap | catalog-modification-info | Last-modifying user. Covered for layouts only, by layout.modified.by / layout.modified.account. |
