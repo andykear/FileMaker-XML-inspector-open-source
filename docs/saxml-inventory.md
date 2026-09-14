@@ -191,7 +191,7 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseAccounts | qs:'Authentication' | covered | account.hasPassword |  |
 | parseAccounts | qs:'ExtendedPrivilegesCatalog' | covered | read:extendedPrivilege listing |  |
 | parseAccounts | qs:'Other' | covered | privilegeSet.fileOptions | The whole Other attribute block maps onto fileOptions. |
-| parseAccounts | qs:'PasswordEncrypted' | covered | account.hasPassword | Blank-password detection is hasPassword false on a FileMaker-type account. |
+| parseAccounts | qs:'PasswordEncrypted' | gap | catalog-modification-info | Whether an account carries a password. fm 0.6.0's account.hasPassword does NOT track it: it equals (userType == fileMakerUser) on all 13 Ooe accounts (account 14 has no PasswordEncrypted yet reads true; the seven external/OAuth accounts carry one and read false). Register: account:* "password set" gap (Task 11); the blank-password observation cannot be built on hasPassword. Gap id kept under catalog-modification-info pending a dedicated id in the register. |
 | parseAccounts | qs:'PrivilegeSetReference' | covered | account.privilegeSet |  |
 | parseAccounts | qs:'PrivilegeSetsCatalog' | covered | read:privilegeSet listing |  |
 | parseAccounts | qsa:':scope > Account' | covered | read:account items[] |  |
@@ -393,7 +393,7 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseUnreferenced | qs:':scope > ScriptReference' | covered | script.body[].script + layout.scriptTriggers[].script |  |
 | parseUnreferenced | qs:':scope > Storage' | covered | field.options.{global,indexing} |  |
 | parseUnreferenced | qs:':scope > TableOccurrenceReference' | covered | layout.tableOccurrence + tableOccurrence.related[] |  |
-| parseUnreferenced | qs:':scope > UUID' | derived | derived from the id key of each catalog | fm exposes no per-object UUID outside graphNote and authorization; ids serve the same identity role for the used/unused join. |
+| parseUnreferenced | qs:':scope > UUID' | derived | derived from the id key of each catalog | fm exposes no per-object UUID for schema objects (script steps and menu items carry uuids; authorization.uuid is the PAIRED file's UUID, not the element's; graphNote has its own); ids serve the same identity role for the used/unused join. |
 | parseUnreferenced | qs:':scope > UUID, :scope > ObjectList, :scope > Bounds' | derived | derived from the id key of each catalog + layout.contents.objects[].bounds | Legacy shape-sniffing to tell one node kind from another; fm returns typed objects, so the sniff is unnecessary. |
 | parseUnreferenced | qs:':scope > Validation' | covered | field.options.validation |  |
 | parseUnreferenced | qs:'BaseTableCatalog' | covered | read:table listing |  |
@@ -573,12 +573,12 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 
 | Classification | Rows |
 |---|---|
-| covered | 386 |
+| covered | 385 |
 | derived | 66 |
-| gap | 103 |
+| gap | 104 |
 | dropped | 8 |
 
-Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 386 + 66 + 103 + 8 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
+Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 385 + 66 + 104 + 8 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
 
 ## Gap ids introduced
 
