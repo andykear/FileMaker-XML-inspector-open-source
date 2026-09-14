@@ -43,7 +43,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseTablesAndFields | attr:'storeCalculationResults' | covered | field.options.stored | Stored vs unstored calc; combine with field.options.global the same way the legacy does. |
 | parseTablesAndFields | attr:'type' | covered | field.options.autoEnter.type + field.options.container.encrypted | AutoEnter type maps 1:1 (serial/calculated/lookup/creation*/modification*); Remote type Secure/Open maps to container.encrypted. |
 | parseTablesAndFields | attr:'unique' | covered | field.options.validation.unique |  |
-| parseTablesAndFields | attr:'withFewerFolders' | gap | catalog-container-storage | Remote withFewerFolders (the 'use fewer folders' checkbox in container external storage). field.options.container reports baseDirectory, external, encrypted and location only. |
+| parseTablesAndFields | attr:'withFewerFolders' | covered | field.options.container.fewerFolders | Verified on ooe 2026-09-14 (table containers, field encrypted_with_fewer_folders): field.options.container reports external, encrypted, fewerFolders and baseDirectory. Reported only for a secure-storage container. |
 | parseTablesAndFields | qs:':scope > AutoEnter' | covered | field.options.autoEnter |  |
 | parseTablesAndFields | qs:':scope > BaseDirectoryReference' | covered | field.options.container.baseDirectory |  |
 | parseTablesAndFields | qs:':scope > BaseTableReference' | covered | field.table | read:field items carry table{name,id}. |
@@ -433,7 +433,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | parseUnreferenced | qsa:'LayoutObject LocalCSS' | gap | catalog-object-styles | Collects the style names layout objects actually use. layout.contents.objects[].style gives the display name for an object wearing a named style, but an object carrying local CSS and no style name is silent, so the used-style set is incomplete. |
 | parseUnreferenced | qsa:'Part LocalCSS' | gap | catalog-layout-parts | Styles used by layout part bands. Parts are not reported at all. |
 | parseUnreferenced | qsa:'Portal > Calculation' | gap | catalog-portal-setup | The portal filter calculation. A field referenced only from a portal filter will be reported unreferenced. |
-| parseUnreferenced | qsa:'Relationship Calculation' | gap | catalog-relation-predicate-calc | Calculation bodies stored under a Relationship. relation.predicates[] reports leftField, op and rightField only, so a reference made from a relationship-level calculation has no fm source. Lowest-confidence row in this file: no relationship in the reference solution carries one, so the shape could not be checked against fm. |
+| parseUnreferenced | qsa:'Relationship Calculation' | covered | n/a: construct does not exist in FileMaker; the legacy query never matched | The legacy code speculatively queried a Calculation element under Relationship ("rare, but possible"). FileMaker has no calculation-based join predicates (owner confirmed 2026-09-14), so nothing is lost. relation.predicates[] carries leftField, op, rightField. |
 | parseUnreferenced | qsa:'Relationship' | covered | read:relation items[] |  |
 | parseUnreferenced | qsa:'Script' | covered | read:script items[] |  |
 | parseUnreferenced | qsa:'ScriptReference' | covered | script.body[].script + layout.contents.objects[].action.script + layout.scriptTriggers[].script |  |
@@ -520,7 +520,7 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 | render | s.tables.calc_fields | derived | derived from field.options.fieldType = calculation |  |
 | render | s.tables.detail.fields_auto_entry | covered | field.options.autoEnter.type |  |
 | render | s.tables.detail.fields_calc | covered | field.options.fieldType + field.options.calculation.text |  |
-| render | s.tables.detail.fields_container | gap | catalog-container-storage | container_mode, container_type, container_base, is_global and reps are covered by field.options.container.{external,encrypted,baseDirectory} plus options.global and options.repetitions; the fewer_folders column has no source. |
+| render | s.tables.detail.fields_container | covered | field.options.container.{external,encrypted,fewerFolders,baseDirectory} + field.options.global/repetitions | container_mode, container_type, container_base, is_global, reps and the fewer-folders flag are all covered; verified on ooe 2026-09-14 with a secure-storage container. |
 | render | s.tables.detail.fields_global | covered | field.options.global |  |
 | render | s.tables.detail.fields_summary | covered | field.options.fieldType + field.options.summary.{type,field,running,individualReps} |  |
 | render | s.tables.field_count | derived | derived from the sum of read:field listing total per table |  |
@@ -573,11 +573,11 @@ Classification is one of `covered`, `derived`, `gap`. `fm` names the catalog and
 
 | Classification | Rows |
 |---|---|
-| covered | 374 |
+| covered | 377 |
 | derived | 66 |
-| gap | 123 |
+| gap | 120 |
 
-Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 374 + 66 + 123 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
+Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 377 + 66 + 120 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
 
 ## Gap ids introduced
 
@@ -601,5 +601,3 @@ New in this pass:
 - `catalog-conditional-formatting` (3 rows): no layout object key reports conditional formatting at all. The broken-reference scan over conditional-format calculations, and any field referenced only from one, depend on it.
 - `catalog-layout-options` (2 rows): the layout-level Save-record-changes-automatically and Quick-Find settings from Layout Setup. Neither appears in `layout.flags.set` nor anywhere else. The layout dense table shows both columns.
 - `catalog-layout-menuset` (2 rows): which custom menu set a layout installs. `read:customMenuSet` lists the sets and `read:layout` describes the layout, but no key joins them.
-- `catalog-container-storage` (2 rows): the container external-storage `withFewerFolders` setting. `field.options.container` reports `baseDirectory`, `external`, `encrypted` and `location` only, so the container-fields drill-down loses one column.
-- `catalog-relation-predicate-calc` (1 row): a calculation body stored under a Relationship. `relation.predicates[]` reports `leftField`, `op` and `rightField` only. Lowest-confidence entry in this file - no relationship in the reference solution carries one, so the shape could not be checked against fm.
