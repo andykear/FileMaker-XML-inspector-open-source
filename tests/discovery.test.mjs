@@ -2,6 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { discover, readFile, siblingPaths, reread } from '../ui/discovery.js';
 import { resolveTarget } from '../server/targets.mjs';
+import { createReplayApi } from './replay-api.mjs';
+import { catalogCounts } from '../ui/model.js';
+
+const FIXTURE = new URL('./fixtures/ooe/', import.meta.url).pathname;
 
 function fakeApi(log = []) {
   const files = {
@@ -215,4 +219,37 @@ test('a fatal on the describe batch leaves no partial file: readFile returns {fa
   const s = await discover(fatalOnSecondBatchApi(fatal), 'fmnet://localhost/root');
   assert.deepEqual(s.files, {});
   assert.deepEqual(s.unreachable, [{ target: 'fmnet://localhost/root', from: null, via: null, error: fatal }]);
+});
+
+test('discovery of the recorded ooe solution', async () => {
+  const api = createReplayApi(FIXTURE);
+  const s = await discover(api, api.meta.root);
+  const root = s.files[api.meta.root];
+  assert.ok(root, 'root file read');
+  assert.equal(root.name, 'ooe');
+  assert.equal(root.facts['Get ( EncryptionState )'].value, '0');
+  const counts = catalogCounts(root);
+  assert.ok(counts.table.listed >= 13, 'ooe has at least 13 tables');
+  assert.equal(counts.field.described, counts.table.listed, 'every table described');
+  assert.equal(counts.script.described, root.catalogs.script.list.filter((i) => i.type === 'script').length);
+  assert.equal(counts.layout.described, root.catalogs.layout.list.filter((i) => i.type === 'layout').length);
+  assert.ok(root.catalogs.layout.detailById[String(root.catalogs.layout.list.find((i) => i.type === 'layout').id)].result.contents, 'layout detail carries contents');
+  for (const u of s.unreachable) assert.ok(u.error.code, `unreachable ${u.target} carries an error code`);
+  const byVia = Object.fromEntries(s.unreachable.map((u) => [u.via, u.error.code]));
+  assert.equal(byVia.by_variable, 'unresolvable');
+  assert.ok(['open_failed', 'authentication_failed'].includes(byVia.Ooe_dev) || s.files['fmnet://localhost/Ooe_dev'], 'Ooe_dev read or unreachable with fm\'s code');
+  assert.ok(!Object.keys(s.files).some((t) => t !== api.meta.root && t.toLowerCase() === api.meta.root), 'Self source did not re-read the root');
+});
+
+test('object and catalog re-read replay against the recorded ooe', async () => {
+  const api = createReplayApi(FIXTURE);
+  const s = await discover(api, api.meta.root);
+  const root = s.files[api.meta.root];
+  const scriptId = root.catalogs.script.list.find((i) => i.type === 'script').id;
+  const before = root.catalogs.script.detailById[String(scriptId)].readAt;
+  await new Promise((r) => setTimeout(r, 2));
+  await reread(api, s, { kind: 'object', target: api.meta.root, catalog: 'script', key: String(scriptId) });
+  assert.notEqual(root.catalogs.script.detailById[String(scriptId)].readAt, before);
+  await reread(api, s, { kind: 'catalog', target: api.meta.root, catalog: 'valueList' });
+  assert.equal(catalogCounts(root).valueList.described, root.catalogs.valueList.list.length);
 });
