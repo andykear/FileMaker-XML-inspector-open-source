@@ -3,8 +3,14 @@
 export function createApi(baseUrl = '') {
   async function call(path, init) {
     const res = await fetch(baseUrl + path, init);
-    const body = await res.json();
-    if (!res.ok) throw new Error(body.error ?? `${path} failed with ${res.status}`);
+    const text = await res.text();
+    let body = null;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = null;
+    }
+    if (!res.ok) throw new Error(body?.error ?? `${path} failed with ${res.status}`);
     return body;
   }
   const post = (path, body) => call(path, {

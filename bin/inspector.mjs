@@ -21,11 +21,18 @@ if (!cli) {
 }
 
 const server = createServer({ cli, root: args.file, username: args.username, noPrompt: args.noPrompt });
+server.on('error', (e) => {
+  console.error(`cannot listen on 127.0.0.1:${args.port}: ${e.message}`);
+  process.exit(2);
+});
 server.listen(args.port, '127.0.0.1', () => {
   const url = `http://127.0.0.1:${server.address().port}/`;
   console.log(`Clockwork Inspector on ${url} (fm ${cli.version}, ${args.file} as ${args.username})`);
   if (args.open) {
-    const opener = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-    spawn(opener, [url], { stdio: 'ignore', detached: true, shell: process.platform === 'win32' }).unref();
+    const child = process.platform === 'win32'
+      ? spawn('cmd', ['/c', 'start', '', url], { stdio: 'ignore', detached: true })
+      : spawn(process.platform === 'darwin' ? 'open' : 'xdg-open', [url], { stdio: 'ignore', detached: true });
+    child.on('error', () => {});
+    child.unref();
   }
 });

@@ -6,6 +6,7 @@ import { catalogCounts } from './model.js';
 const api = createApi('');
 const $ = (id) => document.getElementById(id);
 let solution = null;
+let ctx = null;
 let busy = false;
 
 function esc(s) {
@@ -17,19 +18,35 @@ function progress(message) {
 }
 
 async function run(label, fn) {
-  if (busy) return;
+  if (busy) {
+    progress('Already reading, wait for it to finish');
+    return false;
+  }
   busy = true;
   $('reread-solution').disabled = true;
+  for (const b of document.querySelectorAll('button[data-reread-catalog]')) b.disabled = true;
   progress(label);
+  let ok = true;
   try {
     await fn();
   } catch (e) {
+    ok = false;
     progress(`Failed: ${e.message}`);
   } finally {
     busy = false;
     $('reread-solution').disabled = false;
     render();
   }
+  return ok;
+}
+
+/** Fetches (or refetches) the context, then does a full discovery. Used both
+ *  for the initial load and to retry from scratch when solution is still null
+ *  (the initial context fetch or discovery failed). */
+async function discoverSolution() {
+  ctx = await api.context();
+  $('context').textContent = `${ctx.root} as ${ctx.username}, fm ${ctx.cli.version}`;
+  solution = await discover(api, ctx.root, { onProgress: progress });
 }
 
 function renderFile(file) {
@@ -58,7 +75,7 @@ function renderUnreachable(list) {
 
 function render() {
   if (!solution) return;
-  $('context').textContent = `${solution.root}, fm ${solution.cli?.version ?? '?'}, read ${solution.readAt ?? '...'}`;
+  $('context').textContent = `${solution.root} as ${ctx?.username ?? '?'}, fm ${solution.cli?.version ?? '?'}, read ${solution.readAt ?? '...'}`;
   $('solution').innerHTML = Object.values(solution.files).map(renderFile).join('') + renderUnreachable(solution.unreachable);
 }
 
@@ -70,6 +87,10 @@ $('solution').addEventListener('click', (ev) => {
 });
 
 $('reread-solution').addEventListener('click', () => {
+  if (!solution) {
+    run('Discovering the solution', discoverSolution);
+    return;
+  }
   run('Re-reading the solution', async () => { solution = await reread(api, solution, { kind: 'solution' }); });
 });
 
@@ -78,8 +99,4 @@ window.inspector = {
   reread: (slot) => run(`Re-reading ${slot.kind}`, async () => { solution = await reread(api, solution, slot); }),
 };
 
-const ctx = await api.context();
-$('context').textContent = `${ctx.root} as ${ctx.username}, fm ${ctx.cli.version}`;
-run('Discovering the solution', async () => {
-  solution = await discover(api, ctx.root, { onProgress: progress });
-});
+run('Discovering the solution', discoverSolution);
