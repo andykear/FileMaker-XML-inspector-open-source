@@ -113,35 +113,75 @@ function fileOf(solution, target) {
   return file;
 }
 
+/** fm's own fatal shape, thrown so a reread never half-applies: the message
+ *  names the fatal for `%s`-free callers, the object itself rides `err.fatal`. */
+function fatalError(fatal) {
+  const err = new Error(`${fatal.code}: ${fatal.message}`);
+  err.fatal = fatal;
+  return err;
+}
+
+/** The only door a reread has to fm. An empty `ops` never spawns fm (skipped,
+ *  returns null); a fatal response throws instead of returning, before any
+ *  slot has been touched. */
+async function readBatch(api, target, ops) {
+  if (!ops.length) return null;
+  const response = await api.read(target, ops);
+  if (response.fatal) throw fatalError(response.fatal);
+  return response;
+}
+
+function freshCatalogs(...names) {
+  const catalogs = {};
+  for (const n of names) catalogs[n] = { list: [], listError: null, detailById: {}, ops: [], readAt: null };
+  return catalogs;
+}
+
 /** Re-read one slot. Solution: a fresh discovery (new object). Catalog: the list
- *  op, then that catalog's describes. Object: the one describe op. */
-export async function reread(api, solution, slot) {
-  if (slot.kind === 'solution') return discover(api, solution.root);
+ *  op, then that catalog's describes, staged in a throwaway file and swapped in
+ *  only once every read has succeeded — a fatal at either step leaves the real
+ *  catalog (list and detailById both) exactly as it was. Object: the one
+ *  describe op. Table and field share one pair of reads: table's list, then
+ *  field describes for every table in the new list. */
+export async function reread(api, solution, slot, hooks = {}) {
+  if (slot.kind === 'solution') return discover(api, solution.root, hooks);
 
   const file = fileOf(solution, slot.target);
   const catalog = file.catalogs[slot.catalog];
   if (!catalog) throw new Error(`no catalog ${slot.catalog}`);
 
   if (slot.kind === 'catalog') {
-    if (slot.catalog === 'field') {
-      const ops = describeOps({ table: file.catalogs.table.list });
-      applyBatch(file, ops, await api.read(slot.target, ops), now());
+    if (slot.catalog === 'table' || slot.catalog === 'field') {
+      const listOp = { op: 'read:table' };
+      const listResponse = await readBatch(api, slot.target, [listOp]);
+      const staged = { facts: {}, catalogs: freshCatalogs('table', 'field') };
+      applyBatch(staged, [listOp], listResponse, now());
+      const describes = describeOps({ table: staged.catalogs.table.list });
+      const describeResponse = await readBatch(api, slot.target, describes);
+      if (describes.length) applyBatch(staged, describes, describeResponse, now());
+      file.catalogs.table = staged.catalogs.table;
+      file.catalogs.field = staged.catalogs.field;
       return solution;
     }
+
     const listOp = listOps().find((o) => o.op === `read:${slot.catalog}`);
-    applyBatch(file, [listOp], await api.read(slot.target, [listOp]), now());
-    if (DESCRIBED_BY_ID.includes(slot.catalog)) {
-      catalog.detailById = {};
-      const ops = describeOps({ [slot.catalog]: catalog.list });
-      if (ops.length) applyBatch(file, ops, await api.read(slot.target, ops), now());
-    }
+    const listResponse = await readBatch(api, slot.target, listOp ? [listOp] : []);
+    const staged = { facts: {}, catalogs: freshCatalogs(slot.catalog) };
+    if (listOp) applyBatch(staged, [listOp], listResponse, now());
+    const describes = DESCRIBED_BY_ID.includes(slot.catalog)
+      ? describeOps({ [slot.catalog]: staged.catalogs[slot.catalog].list })
+      : [];
+    const describeResponse = await readBatch(api, slot.target, describes);
+    if (describes.length) applyBatch(staged, describes, describeResponse, now());
+    file.catalogs[slot.catalog] = staged.catalogs[slot.catalog];
     return solution;
   }
 
   if (slot.kind === 'object') {
     const entry = catalog.detailById[slot.key];
     if (!entry) throw new Error(`no ${slot.catalog} ${slot.key} in ${slot.target}`);
-    applyBatch(file, [entry.op], await api.read(slot.target, [entry.op]), now());
+    const response = await readBatch(api, slot.target, [entry.op]);
+    applyBatch(file, [entry.op], response, now());
     return solution;
   }
   throw new Error(`unknown slot kind ${slot.kind}`);
