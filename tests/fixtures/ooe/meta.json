@@ -1,0 +1,27 @@
+{
+  "recordedOn": "2026-09-15",
+  "root": "fmnet://localhost/ooe",
+  "username": "admin",
+  "fm": {
+    "path": "/usr/local/bin/fm",
+    "version": "0.6.0",
+    "contract": null,
+    "banner": "0.6.0 (29816214)"
+  },
+  "files": [
+    "fmnet://localhost/ooe",
+    "fmnet://localhost/BrojDva"
+  ],
+  "unreachable": [
+    {
+      "target": "fmnet://localhost/Ooe_dev",
+      "via": "Ooe_dev",
+      "code": "open_failed"
+    },
+    {
+      "target": "$$referenced_file",
+      "via": "by_variable",
+      "code": "unresolvable"
+    }
+  ]
+}

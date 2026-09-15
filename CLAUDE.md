@@ -9,8 +9,18 @@ The Clockwork Inspector is being rewritten to read live FileMaker files through 
 ## Commands
 
 - `npm test`: `node --test 'tests/*.test.mjs'` (the directory form of `node --test` fails on Node 22.19).
+- `npm start -- --file=<target> --username=<account> [--port=0] [--no-open] [--no-prompt]`: run the inspector against a live file.
+- `INSPECTOR_LIVE=1 npm test`: also runs the live smoke test against the reference solution (reads only).
+- `npm run record -- --file=... --username=admin --out=tests/fixtures/ooe`: re-record the ooe fixture, after ooe changes or a new fm build.
 - `npm run inventory`: regenerate the skeleton of `docs/saxml-inventory.md` from the legacy file (classification columns are hand-written; re-running overwrites them, so diff before committing).
 - Read-only probes against the reference solution: `fm --file=fmnet://localhost/ooe --username=admin --keychain --no-prompt --abort-on-error=false --out=<out> <ops.ndjson>`. Only read-only ops, ever: `read:*`, plus `evaluate:calculation` and `validate:calculation` (fm's help guarantees they never change the file).
+
+## Layout
+
+- `bin/` — the entry point: parses args, locates fm, starts the server.
+- `server/` — the one fm spawn plus the HTTP endpoints.
+- `ui/` — the browser-safe model, discovery and page; no server code.
+- `tests/fixtures/ooe` — the recorded solution, with `meta.json` naming the fm build.
 
 ## Shared code
 

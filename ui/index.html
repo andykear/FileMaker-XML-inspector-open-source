@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clockwork Inspector</title>
+<style>
+  :root { --ink: #1c1b18; --muted: #6b6760; --line: #ddd8cf; --bg: #faf8f4; --panel: #fff; --accent: #2f5d8a; --bad: #a33; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, sans-serif; }
+  header { padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel); display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; }
+  header .meta { color: var(--muted); }
+  main { padding: 20px; display: grid; gap: 20px; max-width: 1100px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
+  h2 { font-size: 15px; margin: 0 0 8px; }
+  h2 button { font-size: 13px; font-weight: 400; margin-left: 4px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; }
+  td.num { text-align: right; }
+  button { font: inherit; padding: 3px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 0 0 10px; }
+  dt { color: var(--muted); }
+  .error { color: var(--bad); }
+  .muted { color: var(--muted); }
+  code { font-family: ui-monospace, monospace; font-size: 13px; }
+  #progress { color: var(--muted); }
+</style>
+<header>
+  <h1>Clockwork Inspector</h1>
+  <span class="meta" id="context">connecting</span>
+  <button id="reread-solution" disabled>Re-read solution</button>
+  <span id="progress"></span>
+</header>
+<main id="solution"></main>
+<script type="module" src="app.js"></script>
+</html>

@@ -7,9 +7,14 @@
   "engines": {
     "node": ">=22.18"
   },
+  "bin": {
+    "inspector": "bin/inspector.mjs"
+  },
   "scripts": {
     "test": "node --test 'tests/*.test.mjs'",
-    "inventory": "node scripts/saxml-inventory.mjs"
+    "start": "node bin/inspector.mjs",
+    "inventory": "node scripts/saxml-inventory.mjs",
+    "record": "node scripts/record-fixture.mjs"
   },
   "license": "CC-BY-4.0",
   "dependencies": {
