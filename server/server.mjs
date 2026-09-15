@@ -17,7 +17,23 @@ const TYPES = {
 
 function send(res, status, body, type = 'application/json; charset=utf-8') {
   res.writeHead(status, { 'content-type': type, 'cache-control': 'no-store' });
-  res.end(type.startsWith('application/json') ? JSON.stringify(body) : body);
+  // A file read off disk is already bytes (a .json file under ui/ would
+  // otherwise be JSON.stringify'd into a quoted string).
+  res.end(Buffer.isBuffer(body) ? body : type.startsWith('application/json') ? JSON.stringify(body) : body);
+}
+
+/** Binding to 127.0.0.1 keeps other machines out; it does not keep another web
+ *  page in the user's own browser out. Two headers close that: a Host the
+ *  browser only sends for our own loopback origin (so a rebound DNS name is
+ *  refused), and an Origin that, when present, must be our own. */
+function hostAllowed(host, port) {
+  if (typeof host !== 'string') return false;
+  const h = host.toLowerCase();
+  return h === `127.0.0.1:${port}` || h === `localhost:${port}` || h === '127.0.0.1' || h === 'localhost';
+}
+
+function originAllowed(origin, port) {
+  return origin === `http://127.0.0.1:${port}` || origin === `http://localhost:${port}`;
 }
 
 /** Thrown for a client mistake the handler should answer with 400, not 500. */
@@ -55,10 +71,23 @@ async function serveStatic(res, uiDir, urlPath) {
 
 export function createServer(opts) {
   const api = createDirectApi(opts);
-  const uiDir = opts.uiDir ?? UI_DIR;
+  // resolve() also strips a trailing separator, which the traversal guard below
+  // compares against.
+  const uiDir = resolve(opts.uiDir ?? UI_DIR);
 
   return createHttpServer(async (req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1');
+    const port = req.socket.localPort;
+    if (!hostAllowed(req.headers.host, port)) return send(res, 403, { error: 'host not allowed' });
+    if (req.method === 'POST') {
+      const origin = req.headers.origin;
+      if (origin !== undefined && !originAllowed(origin, port)) return send(res, 403, { error: 'origin not allowed' });
+      // Anything but application/json needs a CORS preflight, which a
+      // cross-origin page cannot get from us: we answer no OPTIONS.
+      if (!String(req.headers['content-type'] ?? '').startsWith('application/json')) {
+        return send(res, 415, { error: 'content-type must be application/json' });
+      }
+    }
     try {
       if (req.method === 'GET' && url.pathname === '/api/context') {
         return send(res, 200, await api.context());
@@ -68,6 +97,7 @@ export function createServer(opts) {
         if (typeof body.target !== 'string' || !Array.isArray(body.ops)) {
           return send(res, 400, { error: 'body must be { target: string, ops: [] }' });
         }
+        if (!body.ops.length) return send(res, 400, { error: 'ops must not be empty' });
         let result;
         try {
           result = await api.read(body.target, body.ops);

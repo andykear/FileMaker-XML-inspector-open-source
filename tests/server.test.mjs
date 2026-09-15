@@ -1,5 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { request as httpRequest } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readOps, createDirectApi } from '../server/read.mjs';
 import { createServer } from '../server/server.mjs';
 
@@ -144,4 +148,93 @@ test('createDirectApi offers the three operations without http', async () => {
   assert.deepEqual(await api.resolveTarget('fmnet://localhost/ooe', 'file:BrojDva'), { target: 'fmnet://localhost/BrojDva' });
   const r = await api.read('fmnet://localhost/ooe', [{ op: 'read:font' }]);
   assert.equal(r.results[0].op, 'read:font');
+});
+
+/** A request with headers `fetch` will not let us forge (Host above all). */
+function raw(base, { method = 'GET', path = '/', headers = {}, body = null } = {}) {
+  const { port } = new URL(base);
+  return new Promise((resolve, reject) => {
+    const req = httpRequest({ host: '127.0.0.1', port, method, path, headers }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve({ status: res.statusCode, text: Buffer.concat(chunks).toString('utf8') }));
+    });
+    req.on('error', reject);
+    if (body !== null) req.write(body);
+    req.end();
+  });
+}
+
+test('a request for another Host is refused: DNS rebinding cannot reach the endpoints', async () => {
+  const calls = [];
+  await withServer({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps(calls) }, async (base) => {
+    const res = await raw(base, { path: '/api/context', headers: { host: 'evil.example:1234' } });
+    assert.equal(res.status, 403);
+    assert.equal(JSON.parse(res.text).error, 'host not allowed');
+
+    const read = await raw(base, {
+      method: 'POST', path: '/api/read', headers: { host: 'evil.example:1234', 'content-type': 'application/json' },
+      body: JSON.stringify({ target: 'fmnet://localhost/ooe', ops: [{ op: 'read:table' }] }),
+    });
+    assert.equal(read.status, 403);
+    assert.equal(calls.length, 0, 'fm is never spawned for a foreign Host');
+
+    const ours = await raw(base, { path: '/api/context', headers: { host: `localhost:${new URL(base).port}` } });
+    assert.equal(ours.status, 200, 'our own loopback names are allowed');
+  });
+});
+
+test('a POST carrying a foreign Origin is refused before fm', async () => {
+  const calls = [];
+  await withServer({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps(calls) }, async (base) => {
+    const res = await fetch(base + '/api/read', {
+      method: 'POST', headers: { 'content-type': 'application/json', origin: 'http://evil.example' },
+      body: JSON.stringify({ target: 'fmnet://localhost/ooe', ops: [{ op: 'read:table' }] }),
+    });
+    assert.equal(res.status, 403);
+    assert.equal((await res.json()).error, 'origin not allowed');
+    assert.equal(calls.length, 0);
+
+    const ok = await fetch(base + '/api/read', {
+      method: 'POST', headers: { 'content-type': 'application/json', origin: `http://127.0.0.1:${new URL(base).port}` },
+      body: JSON.stringify({ target: 'fmnet://localhost/ooe', ops: [{ op: 'read:table' }] }),
+    });
+    assert.equal(ok.status, 200, 'our own page\'s Origin is allowed');
+    assert.equal(calls.length, 1);
+  });
+});
+
+test('a POST that is not application/json is 415, so a cross-origin page needs a preflight it cannot get', async () => {
+  const calls = [];
+  await withServer({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps(calls) }, async (base) => {
+    const res = await fetch(base + '/api/read', {
+      method: 'POST', headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify({ target: 'fmnet://localhost/ooe', ops: [{ op: 'read:table' }] }),
+    });
+    assert.equal(res.status, 415);
+    assert.equal((await res.json()).error, 'content-type must be application/json');
+    assert.equal(calls.length, 0);
+  });
+});
+
+test('POST /api/read with no ops is a 400 and never spawns fm', async () => {
+  const calls = [];
+  await withServer({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps(calls) }, async (base) => {
+    const res = await post(base, '/api/read', { target: 'fmnet://localhost/ooe', ops: [] });
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error, 'ops must not be empty');
+    assert.equal(calls.length, 0);
+  });
+});
+
+test('a .json file under the ui directory is served as its own bytes', async () => {
+  const dir = fileURLToPath(new URL('./fixtures/static/', import.meta.url));
+  await withServer({ cli, root: 'x', username: 'admin', noPrompt: true, uiDir: dir, runOps: fakeRunOps([]) }, async (base) => {
+    const res = await fetch(base + '/sample.json');
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type'), /application\/json/);
+    const text = await res.text();
+    assert.equal(text, await readFile(join(dir, 'sample.json'), 'utf8'));
+    assert.deepEqual(JSON.parse(text), { note: 'served by the static handler as bytes, not re-encoded', n: 3, list: [1, 2, 3] });
+  });
 });
