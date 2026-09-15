@@ -1,0 +1,18 @@
+// ui/api.js
+// The page's only door to the server. Works in Node too (native fetch).
+export function createApi(baseUrl = '') {
+  async function call(path, init) {
+    const res = await fetch(baseUrl + path, init);
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? `${path} failed with ${res.status}`);
+    return body;
+  }
+  const post = (path, body) => call(path, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+  return {
+    context: () => call('/api/context'),
+    read: (target, ops) => post('/api/read', { target, ops }),
+    resolveTarget: (from, path) => post('/api/resolve-target', { from, path }),
+  };
+}
