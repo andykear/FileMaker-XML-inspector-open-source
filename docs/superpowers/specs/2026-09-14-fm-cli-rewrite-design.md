@@ -85,7 +85,7 @@ solution = {
   root: target,
   cli: { version, contract, engine },
   files: { [target]: FileModel },
-  unreachable: [ { target, from, error } ],
+  unreachable: [ { target, from, via, error } ],
   readAt
 }
 FileModel = {

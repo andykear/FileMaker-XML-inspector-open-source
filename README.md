@@ -36,7 +36,7 @@ Developed by Andrew Kear, owner of [Clockwork Creative Technology](https://www.c
 
 Local, in the browser, and open is where the platform is heading, and it is a better place to do this work from.
 
-There is nothing to install and nothing to license. It runs in any modern browser, your file is parsed on your own machine and never uploaded, and the source is readable, forkable, and built to be extended or embedded in your own workflows.
+There is nothing to license. It runs in any modern browser, your file is parsed on your own machine and never uploaded, and the source is readable, forkable, and built to be extended or embedded in your own workflows.
 
 It is also the tool we use ourselves. Clockwork runs the Inspector in daily production, in place of the commercial products it replaced.
 

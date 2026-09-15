@@ -159,7 +159,7 @@ export async function reread(api, solution, slot, hooks = {}) {
     const staged = { name: null, facts: {}, catalogs: {} };
     applyBatch(staged, ops, response, now());
     file.facts = staged.facts;
-    file.name = staged.name;
+    file.name = staged.name ?? file.name;
     return solution;
   }
 
