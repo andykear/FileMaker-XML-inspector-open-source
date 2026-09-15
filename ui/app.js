@@ -8,18 +8,28 @@ const $ = (id) => document.getElementById(id);
 let solution = null;
 let ctx = null;
 let busy = false;
+let lastProgress = '';
+let guardShown = false;
 
 function esc(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
 function progress(message) {
+  lastProgress = message;
+  $('progress').textContent = message;
+}
+
+/** The busy guard writes over the running read's own message without recording
+ *  it, so the read can put its message back when it finishes. */
+function guard(message) {
+  guardShown = true;
   $('progress').textContent = message;
 }
 
 async function run(label, fn) {
   if (busy) {
-    progress('Already reading, wait for it to finish');
+    guard('Already reading, wait for it to finish');
     return false;
   }
   busy = true;
@@ -34,6 +44,10 @@ async function run(label, fn) {
     progress(`Failed: ${e.message}`);
   } finally {
     busy = false;
+    if (guardShown) {
+      guardShown = false;
+      $('progress').textContent = lastProgress;
+    }
     $('reread-solution').disabled = false;
     render();
   }
@@ -59,7 +73,8 @@ function renderFile(file) {
     return `<tr><td>${esc(catalog)} ${listErr}</td><td class="num">${c.listed}</td><td class="num">${c.described}</td><td class="num ${c.errors ? 'error' : ''}">${c.errors}</td><td class="muted">${esc(slot.readAt ?? '')}</td><td><button data-reread-catalog="${esc(catalog)}" data-target="${esc(file.target)}">Re-read</button></td></tr>`;
   }).join('');
   return `<section>
-    <h2>${esc(file.name ?? file.target)} <span class="muted">${esc(file.target)}</span></h2>
+    <h2>${esc(file.name ?? file.target)} <span class="muted">${esc(file.target)}</span>
+      <button data-reread-catalog="facts" data-target="${esc(file.target)}">Re-read facts</button></h2>
     <dl>${facts}</dl>
     <table><thead><tr><th>Catalog</th><th>Listed</th><th>Described</th><th>Errors</th><th>Read at</th><th></th></tr></thead><tbody>${rows}</tbody></table>
   </section>`;
