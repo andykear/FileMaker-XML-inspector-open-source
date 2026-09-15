@@ -116,6 +116,27 @@ test('static files come from the ui directory and nothing above it', async () =>
   });
 });
 
+test('a malformed URL encoding answers 4xx and does not take the server down', async () => {
+  await withServer({ cli, root: 'x', username: 'admin', noPrompt: true, runOps: fakeRunOps([]) }, async (base) => {
+    const bad = await fetch(base + '/%');
+    assert.ok(bad.status >= 400 && bad.status < 500);
+    const page = await fetch(base + '/');
+    assert.equal(page.status, 200);
+  });
+});
+
+test('POST /api/read with an invalid JSON body is a 400, not a 500, and never reaches fm', async () => {
+  const calls = [];
+  await withServer({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps(calls) }, async (base) => {
+    const res = await fetch(base + '/api/read', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: 'not json{{',
+    });
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error, 'body is not valid JSON');
+    assert.equal(calls.length, 0);
+  });
+});
+
 test('createDirectApi offers the three operations without http', async () => {
   const calls = [];
   const api = createDirectApi({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps(calls) });

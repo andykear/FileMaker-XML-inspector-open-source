@@ -1,7 +1,7 @@
 // http on 127.0.0.1: static ui/, and the three JSON endpoints. Spec section 2.
 import { createServer as createHttpServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { dirname, extname, join, resolve, sep } from 'node:path';
+import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createDirectApi } from './read.mjs';
 
@@ -20,15 +20,28 @@ function send(res, status, body, type = 'application/json; charset=utf-8') {
   res.end(type.startsWith('application/json') ? JSON.stringify(body) : body);
 }
 
+/** Thrown for a client mistake the handler should answer with 400, not 500. */
+class BadRequest extends Error {}
+
 async function readJson(req) {
   const chunks = [];
   for await (const c of req) chunks.push(c);
   const text = Buffer.concat(chunks).toString('utf8');
-  return text ? JSON.parse(text) : {};
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new BadRequest('body is not valid JSON');
+  }
 }
 
 async function serveStatic(res, uiDir, urlPath) {
-  const rel = urlPath === '/' ? 'index.html' : decodeURIComponent(urlPath.slice(1));
+  let rel;
+  try {
+    rel = urlPath === '/' ? 'index.html' : decodeURIComponent(urlPath.slice(1));
+  } catch {
+    return send(res, 400, { error: 'malformed URL encoding' });
+  }
   const file = resolve(uiDir, rel);
   if (!file.startsWith(uiDir + sep)) return send(res, 404, { error: 'not found' });
   const type = TYPES[extname(file)];
@@ -72,10 +85,11 @@ export function createServer(opts) {
         return send(res, 200, await api.resolveTarget(body.from, body.path));
       }
       if (req.method === 'GET' && !url.pathname.startsWith('/api/')) {
-        return serveStatic(res, uiDir, url.pathname);
+        return await serveStatic(res, uiDir, url.pathname);
       }
       send(res, 404, { error: 'not found' });
     } catch (e) {
+      if (e instanceof BadRequest) return send(res, 400, { error: e.message });
       send(res, 500, { error: e.message });
     }
   });
