@@ -3,9 +3,15 @@
 // re-read) replays from the same recording.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { resolveTarget } from '../server/targets.mjs';
 
-export function createReplayApi(dir) {
+/** Takes a path or a file: URL. A URL's `.pathname` is percent-encoded, so it
+ *  is not a path; fileURLToPath is. */
+export function createReplayApi(dirOrUrl) {
+  const dir = dirOrUrl instanceof URL || String(dirOrUrl).startsWith('file:')
+    ? fileURLToPath(dirOrUrl)
+    : dirOrUrl;
   const meta = JSON.parse(readFileSync(join(dir, 'meta.json'), 'utf8'));
   const lines = readFileSync(join(dir, 'calls.ndjson'), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const byOp = new Map();   // `${target}\n${opJson}` -> result line

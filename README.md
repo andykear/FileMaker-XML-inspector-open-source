@@ -20,11 +20,11 @@
 
 
 
-A modern alternative to the commercial FileMaker analysis tools that now exceeds most of them on usability, without asking you to install anything, license anything, or send your work to a server.
+A modern alternative to the commercial FileMaker analysis tools that now exceeds most of them on usability, without licensing anything or sending your work to a server.
 
 **Version 3 (in progress)**: reads live FileMaker files through the Claris ADT `fm` CLI, instead of a Save as XML export. `npm install`, then `npm start -- --file=<target> --username=<account>` — fm asks for the password in its own window and offers to save it in the keychain. Reads only. The Save as XML version is kept in `legacy/`.
 
-It analyses around a million lines of XML per second on a reasonably capable computer, so even a large enterprise solution is parsed and reported about as fast as you can open the file. It reads Save as XML, FileMaker's native object export.
+It analyses around a million lines of XML per second on a reasonably capable computer, so even a large enterprise solution is parsed and reported about as fast as you can open the file. It reads Save as XML, FileMaker's native object export (the version kept in `legacy/`).
 
 Along the way it does things FileMaker itself does not offer: a complete visual mood board of any theme with every named style drawn as the object it styles, an interactive relationship graph laid out from the real TO geometry in the file, layout wireframes, field performance risk scoring, universal reference exploration in both directions, and two-file comparison with script and calculation diffs.
 
@@ -46,7 +46,7 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 
 ## What it analyses
 
-Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) and the Inspector parses it entirely in your browser. Nothing is uploaded anywhere. Handles UTF-16 and UTF-8 with BOM detection, FileMaker 2026 split-catalog folders, and strips (and reports) illegal XML control characters so affected files still parse.
+Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) and the Inspector parses it entirely in your browser (this is the version kept in `legacy/`). Nothing is uploaded anywhere. Handles UTF-16 and UTF-8 with BOM detection, FileMaker 2026 split-catalog folders, and strips (and reports) illegal XML control characters so affected files still parse.
 
 **Schema**
 - Base tables, table occurrences, fields — counts, types, storage, validation, auto-entry

@@ -121,6 +121,15 @@ Derived views are plain functions in `ui/` over the model, computed after a read
 
 Script bodies render through the shared `stepDisplay(step)`, wrapped in HTML with line numbers and indentation from block extents. Each `StepRendered.gaps` entry is surfaced next to the step and aggregated on the Gaps tab.
 
+**Amended during Plan 3 (2026-09-15).** What was built differs from the sketch above in these respects, and the code is the authority:
+
+- `field` is stored as `detailById`, keyed `table:<name>`, not as `byTable`. One `read:field {table, detail:true}` op per table, one entry per op, like every other described object.
+- `cli` is `{ path, version, contract }`. There is no `engine` on it: the engine shows up as `Get ( HostApplicationVersion )` in the file's facts, which is where it belongs, since it is a property of the host and not of the CLI.
+- Re-read grains are solution, catalog and object. `table` and `field` are one catalog grain, not two: re-reading either sends the table list and then a field describe for every table in the new list. `facts` is a catalog grain as well, sending the eight `evaluate:calculation` ops, although facts is not a catalog in the model.
+- `reread` throws on an fm fatal, with the fatal itself on `err.fatal`, and leaves the slot exactly as it was: the new list and describes are staged in a throwaway file and swapped in only after every read in the grain has succeeded.
+- Discovery is depth first. Each sibling is fully read, and its own siblings walked, before the next sibling in the list is resolved, so an unreachable sibling's failure is recorded before anything later in the list.
+- Hosted target keys are case-folded (`server/targets.mjs` `targetKey`, mirrored in `ui/discovery.js`): the FileMaker host treats file names case-insensitively, so a file naming itself, or naming a sibling in another case, must not be read twice.
+
 ### Feature disposition (initial; the inventory confirms it)
 
 Kept: tables, fields, occurrences, relations and graph (node bounds from `graph.bounds`), layouts with wireframe (object bounds), scripts with step index and call graph, value lists, accounts and privilege sets and extended privileges, custom functions, custom menus and sets, external sources, base directories, persistent data, Markdown and Mermaid export.
