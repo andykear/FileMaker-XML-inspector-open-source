@@ -14,7 +14,7 @@ The Clockwork Inspector is being rewritten to read live FileMaker files through 
 
 ## Shared code
 
-`fm-adt-toolkit` (sibling checkout at `../fm-adt-toolkit`, installed as a `file:` dependency until the GitHub tag is used) supplies `runner` (locate and run fm), `step-display` (script step rendering and its catalog), and `gaps` (the register and `fm-gaps check`/`report`). Anything about fm's wire format, step rendering, or known gaps belongs there, not here.
+`fm-adt-toolkit` (installed from the GitHub tag in `package.json`; the sibling checkout at `../fm-adt-toolkit` is where changes are made, then tagged and the pin bumped) supplies `runner` (locate and run fm), `step-display` (script step rendering and its catalog), and `gaps` (the register and `fm-gaps check`/`report`). Anything about fm's wire format, step rendering, or known gaps belongs there, not here.
 
 ## Legacy file
 

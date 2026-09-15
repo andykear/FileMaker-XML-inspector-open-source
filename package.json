@@ -13,6 +13,6 @@
   },
   "license": "CC-BY-4.0",
   "dependencies": {
-    "fm-adt-toolkit": "file:../fm-adt-toolkit"
+    "fm-adt-toolkit": "github:wimdecorte/fm-adt-toolkit#v0.4.0"
   }
 }
