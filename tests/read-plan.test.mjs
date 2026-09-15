@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LIST_CATALOGS, FILE_FACTS, listOps, describeOps, describeKey, catalogOf } from '../ui/read-plan.js';
+import { LIST_CATALOGS, FILE_FACTS, listOps, factOps, describeOps, describeKey, catalogOf } from '../ui/read-plan.js';
 
 test('listOps is the 18 list ops with their flags, then the file facts', () => {
   const ops = listOps();
@@ -11,6 +11,7 @@ test('listOps is the 18 list ops with their flags, then the file facts', () => {
   assert.deepEqual(ops.find((o) => o.op === 'read:table'), { op: 'read:table' });
   assert.equal(LIST_CATALOGS.length, 18);
   assert.deepEqual(ops.slice(18), FILE_FACTS.map((calculation) => ({ op: 'evaluate:calculation', calculation })));
+  assert.deepEqual(ops.slice(18), factOps(), 'a facts re-read sends exactly what the list batch sent');
   assert.ok(FILE_FACTS.includes('Get ( EncryptionState )'));
 });
 

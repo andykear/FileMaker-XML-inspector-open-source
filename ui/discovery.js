@@ -1,7 +1,7 @@
 // Walks a solution: root file, then every FileMaker external data source it
 // names, recursively, once each. Re-reads at solution, catalog and object grain.
 // Browser safe; `api` is the only door to fm. Spec section 2.
-import { listOps, describeOps, describeKey, DESCRIBED_BY_ID } from './read-plan.js';
+import { listOps, factOps, describeOps, describeKey, DESCRIBED_BY_ID } from './read-plan.js';
 import { createSolution, createFile, applyBatch } from './model.js';
 
 function now() {
@@ -89,6 +89,9 @@ export async function discover(api, root, hooks = {}) {
         });
         continue;
       }
+      // A target that turned out to be unreachable stays in `visited` on
+      // purpose: a second referrer must not spawn fm again to be told the same
+      // thing. The first referrer's entry in `unreachable` speaks for both.
       if (visited.has(targetKey(next))) continue;
       visited.add(targetKey(next));
       await walk(next, target, source);
@@ -142,17 +145,30 @@ function freshCatalogs(...names) {
  *  only once every read has succeeded — a fatal at either step leaves the real
  *  catalog (list and detailById both) exactly as it was. Object: the one
  *  describe op. Table and field share one pair of reads: table's list, then
- *  field describes for every table in the new list. */
+ *  field describes for every table in the new list. `facts` is a catalog for
+ *  re-read purposes although it is not one in the model: the same eight
+ *  `evaluate:calculation` ops discovery sent, staged the same way. */
 export async function reread(api, solution, slot, hooks = {}) {
   if (slot.kind === 'solution') return discover(api, solution.root, hooks);
 
   const file = fileOf(solution, slot.target);
+
+  if (slot.kind === 'catalog' && slot.catalog === 'facts') {
+    const ops = factOps();
+    const response = await readBatch(api, slot.target, ops);
+    const staged = { name: null, facts: {}, catalogs: {} };
+    applyBatch(staged, ops, response, now());
+    file.facts = staged.facts;
+    file.name = staged.name;
+    return solution;
+  }
+
   const catalog = file.catalogs[slot.catalog];
   if (!catalog) throw new Error(`no catalog ${slot.catalog}`);
 
   if (slot.kind === 'catalog') {
     if (slot.catalog === 'table' || slot.catalog === 'field') {
-      const listOp = { op: 'read:table' };
+      const listOp = listOps().find((o) => o.op === 'read:table');
       const listResponse = await readBatch(api, slot.target, [listOp]);
       const staged = { facts: {}, catalogs: freshCatalogs('table', 'field') };
       applyBatch(staged, [listOp], listResponse, now());

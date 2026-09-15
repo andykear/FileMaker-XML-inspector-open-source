@@ -27,11 +27,14 @@ function listOp(catalog) {
   return op;
 }
 
+/** The file-facts half of a list batch, on its own so a facts re-read sends
+ *  exactly the ops discovery sent. */
+export function factOps() {
+  return FILE_FACTS.map((calculation) => ({ op: 'evaluate:calculation', calculation }));
+}
+
 export function listOps() {
-  return [
-    ...LIST_CATALOGS.map(listOp),
-    ...FILE_FACTS.map((calculation) => ({ op: 'evaluate:calculation', calculation })),
-  ];
+  return [...LIST_CATALOGS.map(listOp), ...factOps()];
 }
 
 function isMember(catalog, item) {

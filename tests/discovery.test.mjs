@@ -1,13 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 import { discover, readFile, siblingPaths, reread } from '../ui/discovery.js';
-import { resolveTarget } from '../server/targets.mjs';
+import { resolveTarget, targetKey } from '../server/targets.mjs';
 import { createReplayApi } from './replay-api.mjs';
 import { catalogCounts } from '../ui/model.js';
+import { FILE_FACTS } from '../ui/read-plan.js';
 
-const FIXTURE = new URL('./fixtures/ooe/', import.meta.url).pathname;
+const FIXTURE = fileURLToPath(new URL('./fixtures/ooe/', import.meta.url));
 
 function fakeApi(log = []) {
+  const factValues = {}; // calculation -> value, so a test can make the facts change
   const files = {
     'fmnet://localhost/root': {
       externalDataSource: [
@@ -24,7 +27,14 @@ function fakeApi(log = []) {
       script: [{ id: 21, name: 'S', type: 'script' }],
     },
     'fmnet://localhost/Child': {
-      externalDataSource: [{ name: 'Back', id: 1, paths: ['file:ROOT'], sourceType: 'filemaker' }],
+      // The same root under four spellings: hosted names are case-insensitive,
+      // so all four must fold onto the visited root and read nothing.
+      externalDataSource: [
+        { name: 'Back', id: 1, paths: ['file:ROOT'], sourceType: 'filemaker' },
+        { name: 'BackAgain', id: 2, paths: ['file:Root'], sourceType: 'filemaker' },
+        { name: 'BackLower', id: 3, paths: ['file:root'], sourceType: 'filemaker' },
+        { name: 'BackAbsolute', id: 4, paths: ['fmnet://LOCALHOST/Root'], sourceType: 'filemaker' },
+      ],
       table: [{ name: 'C', id: 1 }],
     },
   };
@@ -32,13 +42,14 @@ function fakeApi(log = []) {
   return {
     log,
     files,
+    factValues,
     async context() { return { cli: { version: '0.6.0' }, root: 'fmnet://localhost/root', username: 'admin' }; },
     async read(target, ops) {
       log.push({ target, ops: ops.map((o) => o.op + (o.id ? ':' + o.id : o.table ? ':' + o.table : '')) });
       const f = files[target];
       if (!f) return { results: [], notices: [], summary: null, fatal, exitCode: 2 };
       const results = ops.map((op) => {
-        if (op.op === 'evaluate:calculation') return { op: op.op, status: 'ok', result: { kind: 'calculation', value: target.split('/').pop(), dataType: 'text' } };
+        if (op.op === 'evaluate:calculation') return { op: op.op, status: 'ok', result: { kind: 'calculation', value: factValues[op.calculation] ?? target.split('/').pop(), dataType: 'text' } };
         if (op.op === 'read:field') return { op: op.op, status: 'ok', result: { kind: 'field', items: [{ name: 'f', table: op.table }] } };
         if ('id' in op) return { op: op.op, status: 'ok', result: { id: op.id, name: 'described', readCount: (log.filter((l) => l.ops.includes(op.op + ':' + op.id)).length) } };
         const c = op.op.replace('read:', '');
@@ -94,6 +105,14 @@ test('discover walks siblings once, records unreachable and unresolvable, never 
   assert.equal(reads.filter((t) => t.toLowerCase() === 'fmnet://localhost/root').length, 2, 'root read once (two batches)');
   assert.equal(reads.filter((t) => t === 'fmnet://localhost/Gone').length, 1);
   assert.ok(messages.length >= 2);
+  // Child names the root back as file:ROOT, file:Root, file:root and
+  // fmnet://LOCALHOST/Root. The two reads above are the whole story only if
+  // discovery's own key folds case the way server/targets.mjs does.
+  const spellings = [
+    'fmnet://localhost/root', 'fmnet://localhost/ROOT', 'fmnet://localhost/Root',
+    'fmnet://LOCALHOST/Root', 'fmnet://LocalHost/rOOt',
+  ];
+  for (const t of spellings) assert.equal(targetKey(t), targetKey('fmnet://localhost/root'), `${t} is the same target`);
 });
 
 test('reread at the three grains', async () => {
@@ -238,18 +257,107 @@ test('discovery of the recorded ooe solution', async () => {
   const byVia = Object.fromEntries(s.unreachable.map((u) => [u.via, u.error.code]));
   assert.equal(byVia.by_variable, 'unresolvable');
   assert.ok(['open_failed', 'authentication_failed'].includes(byVia.Ooe_dev) || s.files['fmnet://localhost/Ooe_dev'], 'Ooe_dev read or unreachable with fm\'s code');
-  assert.ok(!Object.keys(s.files).some((t) => t !== api.meta.root && t.toLowerCase() === api.meta.root), 'Self source did not re-read the root');
+  assert.ok(!Object.keys(s.files).some((t) => t !== api.meta.root && t.toLowerCase() === api.meta.root.toLowerCase()), 'Self source did not re-read the root');
 });
 
 test('object and catalog re-read replay against the recorded ooe', async () => {
   const api = createReplayApi(FIXTURE);
   const s = await discover(api, api.meta.root);
   const root = s.files[api.meta.root];
-  const scriptId = root.catalogs.script.list.find((i) => i.type === 'script').id;
-  const before = root.catalogs.script.detailById[String(scriptId)].readAt;
+  const scriptId = String(root.catalogs.script.list.find((i) => i.type === 'script').id);
+  const before = root.catalogs.script.detailById[scriptId].readAt;
+  const resultBefore = structuredClone(root.catalogs.script.detailById[scriptId].result);
+  const keysBefore = Object.keys(root.catalogs.script.detailById);
   await new Promise((r) => setTimeout(r, 2));
-  await reread(api, s, { kind: 'object', target: api.meta.root, catalog: 'script', key: String(scriptId) });
-  assert.notEqual(root.catalogs.script.detailById[String(scriptId)].readAt, before);
+  await reread(api, s, { kind: 'object', target: api.meta.root, catalog: 'script', key: scriptId });
+  assert.notEqual(root.catalogs.script.detailById[scriptId].readAt, before);
+  // The replay hands back the recorded line, so re-reading one script changes
+  // when it was read and nothing else.
+  assert.deepEqual(root.catalogs.script.detailById[scriptId].result, resultBefore);
+  assert.deepEqual(Object.keys(root.catalogs.script.detailById), keysBefore);
   await reread(api, s, { kind: 'catalog', target: api.meta.root, catalog: 'valueList' });
   assert.equal(catalogCounts(root).valueList.described, root.catalogs.valueList.list.length);
+});
+
+test('reread at facts grain sends the eight Get() ops and replaces the facts and the name', async () => {
+  const api = fakeApi();
+  const s = await discover(api, 'fmnet://localhost/root');
+  const file = s.files['fmnet://localhost/root'];
+  assert.ok(!('facts' in file.catalogs), 'facts is a re-read grain, not a catalog in the model');
+  assert.equal(file.facts['Get ( FileSize )'].value, 'root');
+  const keysBefore = Object.keys(file.facts);
+
+  api.factValues['Get ( FileSize )'] = '4096';
+  api.factValues['Get ( FileName )'] = 'root_renamed';
+  const same = await reread(api, s, { kind: 'catalog', target: 'fmnet://localhost/root', catalog: 'facts' });
+  assert.equal(same, s);
+  assert.deepEqual(api.log.at(-1).ops, FILE_FACTS.map(() => 'evaluate:calculation'));
+  assert.equal(file.facts['Get ( FileSize )'].value, '4096');
+  assert.equal(file.name, 'root_renamed');
+  assert.deepEqual(Object.keys(file.facts), keysBefore, 'every fact is asked again, none is dropped');
+});
+
+test('a fatal at facts grain leaves the facts and the name untouched', async () => {
+  const api = fakeApi();
+  const s = await discover(api, 'fmnet://localhost/root');
+  const file = s.files['fmnet://localhost/root'];
+  const factsBefore = structuredClone(file.facts);
+  const fatal = { code: 'open_failed', message: 'host gone' };
+  const failingApi = { ...api, async read() { return { results: [], fatal }; } };
+
+  await assert.rejects(
+    () => reread(failingApi, s, { kind: 'catalog', target: 'fmnet://localhost/root', catalog: 'facts' }),
+    (err) => {
+      assert.deepEqual(err.fatal, fatal);
+      return /open_failed/.test(err.message);
+    },
+  );
+  assert.deepEqual(file.facts, factsBefore);
+  assert.equal(file.name, 'root');
+});
+
+test('a fatal on the describe half of a catalog re-read leaves list and detailById exactly as they were', async () => {
+  const api = fakeApi();
+  const s = await discover(api, 'fmnet://localhost/root');
+  const file = s.files['fmnet://localhost/root'];
+  const slotRef = file.catalogs.script;
+  const before = structuredClone(file.catalogs.script);
+
+  // The list op succeeds, the describe batch that follows it fatals.
+  const fatal = { code: 'open_failed', message: 'the host went away between batches' };
+  let calls = 0;
+  const flaky = {
+    ...api,
+    async read(target, ops) {
+      calls += 1;
+      return calls === 1 ? api.read(target, ops) : { results: [], notices: [], summary: null, fatal, exitCode: 2 };
+    },
+  };
+
+  await assert.rejects(
+    () => reread(flaky, s, { kind: 'catalog', target: 'fmnet://localhost/root', catalog: 'script' }),
+    /open_failed/,
+  );
+  assert.equal(calls, 2, 'the list read happened, then the describe read fatalled');
+  assert.equal(file.catalogs.script, slotRef, 'the staged catalog was never swapped in');
+  assert.deepEqual(structuredClone(file.catalogs.script), before);
+});
+
+test('an object-grain re-read of one table\'s fields sends only that op and leaves its siblings alone', async () => {
+  const api = fakeApi();
+  api.files['fmnet://localhost/root'].table = [{ name: 'A', id: 1 }, { name: 'B', id: 2 }];
+  const s = await discover(api, 'fmnet://localhost/root');
+  const file = s.files['fmnet://localhost/root'];
+  const keysBefore = Object.keys(file.catalogs.field.detailById);
+  assert.deepEqual(keysBefore, ['table:A', 'table:B']);
+  const siblingBefore = structuredClone(file.catalogs.field.detailById['table:B']);
+  const logBefore = api.log.length;
+
+  await reread(api, s, { kind: 'object', target: 'fmnet://localhost/root', catalog: 'field', key: 'table:A' });
+
+  assert.equal(api.log.length, logBefore + 1, 'one batch, not a list plus describes');
+  assert.deepEqual(api.log.at(-1), { target: 'fmnet://localhost/root', ops: ['read:field:A'] });
+  assert.deepEqual(Object.keys(file.catalogs.field.detailById), keysBefore);
+  assert.deepEqual(structuredClone(file.catalogs.field.detailById['table:B']), siblingBefore);
+  assert.deepEqual(file.catalogs.field.detailById['table:A'].result.items, [{ name: 'f', table: 'A' }]);
 });
