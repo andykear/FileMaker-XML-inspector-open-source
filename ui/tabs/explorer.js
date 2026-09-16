@@ -11,7 +11,7 @@
 // A pure renderer: no document, every fm key through access.js, every model
 // string through esc.
 import { badge, count, esc, link, matches, section, table } from '../dom.js';
-import { kindSelection, selectionKey, totalsLine, withFile } from './common.js';
+import { emptyNote, fileName, kindSelection, linkOr, selectRow, selectionKey, totalsLine, withFile } from './common.js';
 import { nameIndex, references } from '../analysis/refs.js';
 import { callGraph, callTreeOf, scriptKey } from '../analysis/scripts.js';
 
@@ -48,8 +48,6 @@ export function refHash(kind, target, id) {
   const make = HASH_OF[kind];
   return make && id !== undefined && id !== null && id !== '' ? make(target, id) : null;
 }
-
-const linkOr = (hash, label) => (hash ? link(hash, label) : esc(label));
 
 // ── The pickable objects ──────────────────────────────────────────────
 
@@ -93,7 +91,7 @@ export function objectEntries(solution) {
         out.push({
           kind, target, id, entry,
           name: String(entry.name ?? ''),
-          file: solution.files?.[target]?.name ?? target,
+          file: fileName(solution, target),
           detail: String(entry.table ?? entry.folder ?? ''),
           key: selectionKey(target, kind, id),
         });
@@ -199,8 +197,8 @@ function renderList(solution, view) {
   const body = totals
     + `<p class="muted">Showing ${count(shown.length)} of ${count(rows.length)}. Pick one to see both directions.</p>`
     + table(withFile(LIST_COLUMNS, view), shown, {
-      empty: 'No object of that name',
-      rowAttrs: (r) => `data-select="${esc(r.key)}"${r.key === view.selection ? ' class="selected"' : ''}`,
+      empty: emptyNote(rows.length, 'Nothing named was read'),
+      rowAttrs: selectRow(view.selection),
     });
   return section('Objects', body);
 }
@@ -238,17 +236,19 @@ function renderSelected(solution, view) {
   if (!entry) {
     return section('Nothing selected', `<p class="empty">Nothing of that name was read: ${esc(view.selection)}</p>`);
   }
-  const out = outgoing(solution, sel).filter((r) => refMatches(r, view.filter));
-  const back = incoming(solution, sel).filter((r) => refMatches(r, view.filter));
+  const allOut = outgoing(solution, sel);
+  const allBack = incoming(solution, sel);
+  const out = allOut.filter((r) => refMatches(r, view.filter));
+  const back = allBack.filter((r) => refMatches(r, view.filter));
   const own = refHash(sel.kind, sel.target, sel.id);
   const title = `${LABEL_OF[sel.kind]} ${entry.name}${view.multiFile ? ` (${entry.file})` : ''}`;
   const body = `<p class="muted">${own ? link(own, 'Open on its own tab') : 'No tab of its own.'}</p>`
     + '<h3>References</h3>'
     + '<p class="muted">What this object names.</p>'
-    + table(REF_COLUMNS, out, { empty: 'Names nothing' })
+    + table(REF_COLUMNS, out, { empty: emptyNote(allOut.length, 'Names nothing') })
     + '<h3>Referenced by</h3>'
     + '<p class="muted">What names this object.</p>'
-    + table(REF_COLUMNS, back, { empty: 'Nothing names it' })
+    + table(REF_COLUMNS, back, { empty: emptyNote(allBack.length, 'Nothing names it') })
     + callTreeSection(solution, sel);
   return section(title, body);
 }

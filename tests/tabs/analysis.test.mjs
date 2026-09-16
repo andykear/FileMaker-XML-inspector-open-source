@@ -21,6 +21,21 @@ const view = { selection: null, filter: '', multiFile: true };
 
 const hrefs = (html) => [...html.matchAll(/href="([^"]*)"/g)].map((m) => m[1]);
 
+/** The smallest solution the analyses accept, for the rules ooe cannot measure. */
+function handMade(catalogs) {
+  const empty = { list: [], listError: null, detailById: {}, ops: [], readAt: null };
+  const slots = {};
+  for (const c of ['externalDataSource', 'table', 'tableOccurrence', 'relation', 'layout', 'script', 'valueList', 'customFunction', 'customMenu', 'theme', 'field']) {
+    slots[c] = { ...empty, ...(catalogs[c] ?? {}) };
+  }
+  return { root: 'file:///x.fmp12', files: { 'file:///x.fmp12': { target: 'file:///x.fmp12', name: 'x', facts: {}, catalogs: slots } }, unreachable: [] };
+}
+
+const oneScript = (body, name = 'S') => handMade({
+  script: { list: [{ id: 1, name, type: 'script' }], detailById: { 1: { op: {}, readAt: null, result: { id: 1, name, body } } } },
+});
+const handView = { selection: null, filter: '', multiFile: false };
+
 test('analysisTotals: solution-wide, unfiltered, pinned on ooe', () => {
   const t = analysisTotals(solution);
   assert.deepEqual(t.unreferenced.byCategory, {
@@ -154,14 +169,68 @@ test('the filter narrows every table and leaves the totals alone', () => {
   assert.ok(html.length < all.length);
 });
 
+test('a nested detail is printed to the bottom, not as [object Object]', () => {
+  // `expensive-in-loop` is the one check whose detail nests; ooe has none, so
+  // the rule is measured on the smallest body that produces one.
+  const html = tab.render(oneScript([
+    { stepID: 71, step: 'Loop', block: { role: 'opener', start: 0, end: 2 } },
+    { stepID: 141, step: 'Set Variable', name: '$rows', value: 'ExecuteSQL ( "SELECT 1" ; "" ; "" )' },
+    { stepID: 72, step: 'End Loop', block: { role: 'closer', start: 0, end: 2 } },
+  ]), handView);
+  assert.ok(!html.includes('[object Object]'), 'a nested detail rendered as [object Object]');
+  assert.ok(html.includes('found: ExecuteSQL'));
+  // Braced, so the nested level's separators cannot read as the outer level's.
+  assert.ok(html.includes('found: ExecuteSQL \u00b7 loop: {index: 0 \u00b7 stepID: 71}'),
+    html.slice(html.indexOf('expensive-in-loop'), html.indexOf('expensive-in-loop') + 500));
+});
+
+test('the psos sentence counts the same set the table under it lists', () => {
+  const sentence = (html) => {
+    const at = html.indexOf('psos-only-step');
+    const from = html.indexOf('</summary>', at);
+    return html.slice(from, html.indexOf('</p>', from));
+  };
+  assert.ok(sentence(tab.render(solution, view))
+    .includes('<span class="num">715</span> steps in <span class="num">24</span> scripts.'));
+  // Filtered to one script: BOTH numbers narrow, and the word agrees with the
+  // number. The group's own summary keeps the unfiltered 715, as every total does.
+  const one = tab.render(solution, { ...view, filter: 'all script steps and all options 20260318' });
+  const block = sentence(one);
+  assert.ok(block.includes('<span class="num">305</span> steps in <span class="num">1</span> script.'), block);
+  assert.ok(!block.includes('715'), 'the sentence kept the unfiltered step count');
+  assert.ok(!/scripts\./.test(block), 'one script was called "scripts"');
+});
+
+test('a table the filter emptied says so, instead of contradicting its own heading', () => {
+  const html = tab.render(solution, { ...view, filter: 'zzz-nothing-matches-this' });
+  // Unreferenced scripts: the summary still counts 37, so the body cannot say none exist.
+  const at = html.indexOf('<summary>Scripts ');
+  const block = html.slice(at, html.indexOf('</details>', at));
+  assert.ok(block.includes('<span class="num">37</span>'));
+  assert.ok(block.includes('None match the filter'), block);
+  assert.ok(!block.includes('No unreferenced scripts'));
+  // The same everywhere a non-empty set was narrowed away: the other seven
+  // categories, the globals table and every issue group.
+  assert.ok(!html.includes('No unreferenced scripts'));
+  assert.ok(!html.includes('No unused named styles'));
+  assert.ok(!html.includes('No $$ global is named anywhere'));
+  assert.ok(!html.includes('No row for this check'));
+  assert.ok(!html.includes('No step of this kind'));
+  // ... but a category that IS empty still says so: 0 unreferenced tables on ooe.
+  assert.ok(html.includes('No unreferenced tables'));
+});
+
+test('a genuinely empty category still says it is empty, filter or no filter', () => {
+  const html = tab.render(solution, view);
+  const at = html.indexOf('<summary>Tables '); // 0 unreferenced tables on ooe
+  const block = html.slice(at, html.indexOf('</details>', at));
+  assert.ok(block.includes('<span class="num">0</span>'));
+  assert.ok(block.includes('No unreferenced tables'), block);
+});
+
 test('every model string goes through esc', () => {
   const evil = '<img src=x onerror=1>';
-  const empty = { list: [], listError: null, detailById: {}, ops: [], readAt: null };
-  const slots = {};
-  for (const c of ['externalDataSource', 'table', 'tableOccurrence', 'relation', 'layout', 'script', 'valueList', 'customFunction', 'customMenu', 'theme', 'field']) slots[c] = { ...empty };
-  slots.script = { ...empty, list: [{ id: 1, name: evil, type: 'script' }], detailById: { 1: { op: {}, readAt: null, result: { id: 1, name: evil, body: [] } } } };
-  const hand = { root: 'file:///x.fmp12', files: { 'file:///x.fmp12': { target: 'file:///x.fmp12', name: 'x', facts: {}, catalogs: slots } }, unreachable: [] };
-  const html = tab.render(hand, { selection: null, filter: '', multiFile: false });
+  const html = tab.render(oneScript([], evil), handView);
   assert.ok(html.includes('&lt;img src=x onerror=1&gt;'));
   assert.ok(!html.includes('<img src=x'));
 });

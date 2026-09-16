@@ -11,16 +11,13 @@
 // (`refHash`) and is imported rather than repeated.
 //
 // A pure renderer: no document, every model string through esc.
-import { badge, count, esc, link, matches, section, table } from '../dom.js';
-import { withFile } from './common.js';
+import { badge, count, esc, matches, section, table } from '../dom.js';
+import { emptyNote, fileName, linkOr, plural, withFile } from './common.js';
 import { refHash } from './explorer.js';
 import { unreferenced } from '../analysis/unreferenced.js';
 import { broken } from '../analysis/broken.js';
 import { scriptIssues } from '../analysis/scripts.js';
 import { GLOBALS_NOTE, globals } from '../analysis/globals.js';
-
-const linkOr = (hash, label) => (hash ? link(hash, label) : esc(label));
-const fileName = (solution, target) => solution.files?.[target]?.name ?? target;
 
 // ── Totals ────────────────────────────────────────────────────────────
 
@@ -111,7 +108,7 @@ const STYLE_COLUMNS = [
 
 function detailsBlock(label, total, shown, columns, view) {
   return `<details><summary>${esc(label)} ${count(total)}</summary>`
-    + table(withFile(columns, view), shown, { empty: `No unreferenced ${label.toLowerCase()}` })
+    + table(withFile(columns, view), shown, { empty: emptyNote(total, `No unreferenced ${label.toLowerCase()}`) })
     + '</details>';
 }
 
@@ -127,7 +124,7 @@ function renderUnreferenced(solution, view) {
   const shownStyles = styles.filter((r) => matches(r.display, view.filter) || matches(r.key, view.filter) || matches(r.theme, view.filter));
   const themes = new Set(styles.map((r) => `${r.target}/${r.themeId}`)).size;
   blocks.push(`<details><summary>Styles ${count(styles.length)} in ${count(themes)} themes</summary>`
-    + table(withFile(STYLE_COLUMNS, view), shownStyles, { empty: 'No unused named styles' })
+    + table(withFile(STYLE_COLUMNS, view), shownStyles, { empty: emptyNote(styles.length, 'No unused named styles') })
     + '</details>');
   return section('Unreferenced', blocks.join(''));
 }
@@ -140,11 +137,17 @@ function renderUnreferenced(solution, view) {
 // one from ui/analysis/broken.js) is appended rather than dropped.
 const KIND_ORDER = ['problem', 'missingMarker', 'unresolvedOccurrence', 'danglingName'];
 
-/** fm's own `problems[]` entries ride through unread, so a detail is printed by
- *  walking whatever keys it carries rather than by naming the ones fm has today. */
+/** fm's own `problems[]` entries ride through unread, and a check's detail may
+ *  nest (`expensive-in-loop` carries the loop it found the call in), so a detail
+ *  is printed by walking whatever it carries, however deep, rather than by
+ *  naming the keys anything has today. A nested object is braced, so its own
+ *  separators cannot read as the outer level's. */
+const detailValue = (v) => (v !== null && typeof v === 'object' ? `{${detailText(v)}}` : String(v ?? ''));
+
 function detailText(detail) {
   if (detail === null || typeof detail !== 'object') return String(detail ?? '');
-  return Object.entries(detail).map(([k, v]) => `${k}: ${v}`).join(' · ');
+  if (Array.isArray(detail)) return detail.map(detailValue).join(', ');
+  return Object.entries(detail).map(([k, v]) => `${k}: ${detailValue(v)}`).join(' · ');
 }
 
 const BROKEN_COLUMNS = [
@@ -166,7 +169,7 @@ function renderBroken(solution, view) {
     const mine = rows.filter((r) => r.kind === kind);
     const shown = mine.filter((r) => matches(r.name, view.filter) || matches(r.detail, view.filter) || matches(r.where, view.filter));
     return `<details><summary>${esc(kind)} ${count(mine.length)}</summary>`
-      + table(withFile(BROKEN_COLUMNS, view), shown, { empty: 'None match the filter' })
+      + table(withFile(BROKEN_COLUMNS, view), shown, { empty: emptyNote(mine.length, 'None') })
       + '</details>';
   });
   return section('Broken references', blocks.join('') || '<p class="empty">Nothing in this read is broken</p>');
@@ -215,7 +218,7 @@ const PSOS_COLUMNS = [
   {
     key: 'steps',
     label: 'Which',
-    render: (r) => `<details><summary>${count(r.rows.length)} ${r.rows.length === 1 ? 'step' : 'steps'}</summary><ul class="notes">`
+    render: (r) => `<details><summary>${plural(r.rows.length, 'step')}</summary><ul class="notes">`
       + r.rows.map((x) => `<li>${esc(stepText(x))}</li>`).join('') + '</ul></details>',
   },
 ];
@@ -227,12 +230,14 @@ function renderIssueGroup(solution, group, view) {
   const shown = rows.filter((r) => issueMatches(r, view.filter));
   const head = `<details><summary>${esc(group.check)} ${count(rows.length)}</summary>`;
   if (group.check !== 'psos-only-step') {
-    return head + table(withFile(ISSUE_COLUMNS, view), shown, { empty: 'None match the filter' }) + '</details>';
+    return head + table(withFile(ISSUE_COLUMNS, view), shown, { empty: emptyNote(rows.length, 'No row for this check') }) + '</details>';
   }
+  // Both numbers are of `shown`, not one of each: under a filter the sentence
+  // has to describe the table printed under it.
   const per = psosByScript(shown).map((g) => ({ ...g, file: fileName(solution, g.target) }));
   return head
-    + `<p class="muted">One row per script, not per step: ${count(rows.length)} steps in ${count(per.length)} scripts.</p>`
-    + table(withFile(PSOS_COLUMNS, view), per, { empty: 'None match the filter' })
+    + `<p class="muted">One row per script, not per step: ${plural(shown.length, 'step')} in ${plural(per.length, 'script')}.</p>`
+    + table(withFile(PSOS_COLUMNS, view), per, { empty: emptyNote(rows.length, 'No step of this kind') })
     + '</details>';
 }
 
@@ -254,7 +259,7 @@ const globalColumns = (solution) => [
     key: 'where',
     label: 'Set where',
     render: (r) => (r.sets.length
-      ? `<details><summary>${count(r.sets.length)} ${r.sets.length === 1 ? 'site' : 'sites'}</summary><ul class="notes">${r.sets
+      ? `<details><summary>${plural(r.sets.length, 'site')}</summary><ul class="notes">${r.sets
         .map((s) => `<li>${linkOr(refHash('script', s.target, s.script.id), s.script.name)} step ${esc(s.step.index)}</li>`)
         .join('')}</ul></details>`
       : '<span class="empty">never set</span>'),
@@ -268,7 +273,7 @@ function renderGlobals(solution, view) {
   const shown = rows.filter((r) => matches(r.name, view.filter)
     || r.sets.some((s) => matches(s.script.name, view.filter)));
   return section('Globals', `<p class="muted">${esc(GLOBALS_NOTE)}</p>`
-    + table(globalColumns(solution), shown, { empty: 'No $$ global is named anywhere' }));
+    + table(globalColumns(solution), shown, { empty: emptyNote(rows.length, 'No $$ global is named anywhere') }));
 }
 
 export const tab = {

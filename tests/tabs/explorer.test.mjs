@@ -168,6 +168,25 @@ test('a selection that names nothing says so instead of throwing', () => {
   assert.ok(html.includes('Nothing of that name was read') || html.includes('no such object'), html.slice(0, 200));
 });
 
+test('a table the filter emptied says so, not that the object names nothing', () => {
+  const key = selectionKey(ROOT, 'field', 'TestTable::TextField1');
+  const html = tab.render(solution, viewOf(key, 'zzz-nothing-matches-this'));
+  // 23 references in and 0 out: the filter empties one table and the other was
+  // already empty, and the two must not read the same.
+  assert.ok(html.includes('None match the filter'), html.slice(html.indexOf('<h3>Referenced by'), html.indexOf('<h3>Referenced by') + 300));
+  assert.ok(html.includes('Names nothing'), 'a genuinely empty direction stopped saying so');
+  assert.ok(!html.includes('Nothing names it'), 'a narrowed table claimed nothing names the field');
+});
+
+test('the object list rows are the house selectable row', () => {
+  const key = selectionKey(ROOT, 'script', 2);
+  const html = tab.render(solution, viewOf(key));
+  const row = html.slice(html.indexOf(`data-select="${ROOT}|script:2"`) - 4);
+  assert.ok(row.startsWith(`<tr data-select="${ROOT}|script:2" class="selected"`), row.slice(0, 120));
+  // Raw in the attribute -- the shell reads it back verbatim and encodes once.
+  assert.ok(html.includes(`data-select="${ROOT}|field:TestTable::TextField1"`));
+});
+
 test('every model string goes through esc', () => {
   const evil = '<img src=x onerror=1>';
   const hand = handMade({
