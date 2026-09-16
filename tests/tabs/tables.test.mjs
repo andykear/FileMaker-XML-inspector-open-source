@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import { parseHash } from '../../ui/shell.js';
-import { tab, fieldsOf, fieldKind, fieldStorage, autoEnterSummary, validationSummary } from '../../ui/tabs/tables.js';
+import { tab, fieldsOf, fieldKind, fieldStorage, autoEnterSummary, validationSummary, tableCounts } from '../../ui/tabs/tables.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -16,8 +16,7 @@ const view = { selection: null, filter: '', multiFile: true };
 test('fieldsOf, fieldKind, fieldStorage, autoEnterSummary on real fields', () => {
   const fields = fieldsOf(root, 'TestTable');
   assert.ok(fields.length > 5);
-  // fm 0.7.x spells the calculation field type "calculated"; fieldKind takes either.
-  const calc = fields.find((f) => ['calculation', 'calculated'].includes(f.options.fieldType));
+  const calc = fields.find((f) => f.options.fieldType === 'calculated');
   assert.equal(fieldKind(calc), 'calc');
   assert.ok(['stored', 'unstored'].includes(fieldStorage(calc)));
   const constant = fieldsOf(root, 'autoEnter_fields').find((f) => f.options.autoEnter.type !== 'none');
@@ -37,6 +36,20 @@ test('fieldKind and fieldStorage classify every kind the fixture carries', () =>
   assert.equal(storage('CalcField1_c'), 'stored');
   assert.equal(storage('ContactNameList_u'), 'unstored');
   assert.equal(storage('MyGlobal_g'), 'global');
+  // fm's fieldType vocabulary, straight from the fixture: nothing else is spelled.
+  assert.deepEqual([...new Set(tt.map((f) => f.options.fieldType))].sort(), ['calculated', 'normal', 'summary']);
+});
+
+test('a global calculation counts as neither stored nor unstored', () => {
+  // ooe has no global calc, so this is the one hand-made field in the file.
+  const globalCalc = { name: 'g_calc', type: 'text', options: { fieldType: 'calculated', global: true, stored: true, repetitions: 1, calculation: { text: '1' } } };
+  assert.equal(fieldKind(globalCalc), 'calc');
+  assert.equal(fieldStorage(globalCalc), 'global');
+  const counts = tableCounts([globalCalc]);
+  assert.equal(counts.calc, 1);
+  assert.equal(counts.storedCalc, 0);
+  assert.equal(counts.unstoredCalc, 0);
+  assert.equal(counts.global, 1);
 });
 
 test('autoEnterSummary and validationSummary name what is set', () => {
@@ -75,6 +88,14 @@ test('the totals line counts tables, fields and calc fields across files', () =>
   assert.match(html, /class="muted totals">Tables <span class="num">\d+<\/span>/);
   assert.ok(html.includes(`Tables <span class="num">${tables}</span>`), `expected ${tables} tables in the totals`);
   assert.match(html, /Unstored calc <span class="num">\d+<\/span>/);
+});
+
+test('the totals are solution-wide: a filter that hides most tables leaves them alone', () => {
+  const line = (html) => html.match(/<p class="muted totals">.*?<\/p>/)[0];
+  const all = line(tab.render(solution, view));
+  const filtered = tab.render(solution, { ...view, filter: 'contacts' });
+  assert.equal(line(filtered), all);
+  assert.ok(!filtered.includes('>TestTable<'), 'the filter did hide tables');
 });
 
 test('a selected table shows its fields, sublists and an object re-read control', () => {

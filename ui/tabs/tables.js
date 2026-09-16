@@ -6,17 +6,15 @@
 import { count, esc, link, matches, section, table } from '../dom.js';
 import { get, path } from '../access.js';
 
-/** fm has spelled the calculation field type both ways across builds. */
-const CALC_TYPES = ['calculation', 'calculated'];
-
 export function fieldsOf(file, tableName) {
   const detail = get(path(file, 'catalogs.field'), 'detailById');
   return path(get(detail, `table:${tableName}`), 'result.items') ?? [];
 }
 
 export function fieldKind(field) {
+  // fm's three fieldType values are normal, calculated and summary.
   const type = path(field, 'options.fieldType');
-  if (CALC_TYPES.includes(type)) return 'calc';
+  if (type === 'calculated') return 'calc';
   if (type === 'summary') return 'summary';
   if (path(field, 'options.global')) return 'global';
   if (path(field, 'type') === 'container') return 'container';
@@ -77,7 +75,10 @@ export function tableCounts(fields) {
   for (const g of FIELD_GROUPS) counts[g.id] = fields.filter(g.test).length;
   for (const f of fields) {
     if (fieldKind(f) !== 'calc') continue;
-    if (fieldStorage(f) === 'unstored') counts.unstoredCalc += 1; else counts.storedCalc += 1;
+    // A global calculation is neither stored nor unstored: it belongs to neither bucket.
+    const storage = fieldStorage(f);
+    if (storage === 'unstored') counts.unstoredCalc += 1;
+    else if (storage === 'stored') counts.storedCalc += 1;
   }
   return counts;
 }
@@ -146,12 +147,14 @@ function totals(rows) {
 }
 
 function renderTables(solution, view) {
-  const rows = tableRows(solution).filter((r) => matches(r.name, view.filter));
+  // The totals are the scoreboard for the whole model, so they read the unfiltered rows.
+  const all = tableRows(solution);
+  const rows = all.filter((r) => matches(r.name, view.filter));
   const actions = Object.values(solution.files)
     .map((f) => rereadCatalog(f.target, view.multiFile ? `Re-read ${f.name ?? f.target}` : 'Re-read tables'))
     .join(' ');
   const selected = view.selection;
-  const body = totals(rows) + table(tableColumns(view.multiFile), rows, {
+  const body = totals(all) + table(tableColumns(view.multiFile), rows, {
     empty: 'No tables',
     rowAttrs: (r) => `data-select="${esc(r.key)}"${r.key === selected ? ' class="selected"' : ''}`,
   });
