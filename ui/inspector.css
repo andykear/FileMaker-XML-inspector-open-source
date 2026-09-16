@@ -253,6 +253,16 @@ ul.notes { margin: 8px 0 0; padding-left: 18px; color: var(--ink-2); }
   vertical-align: baseline;
 }
 
+/* A theme's own palette swatches are larger, in a row of their own. */
+.swatches { display: flex; gap: 6px; margin: 4px 0; }
+.swatches .swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 8px;
+  overflow: hidden;
+}
+
 /* ── Relationship graph ───────────────────────────────────────────────── */
 /* The geometry is fm's own, in FileMaker points; the viewBox scales it to the panel. */
 
