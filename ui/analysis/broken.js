@@ -8,13 +8,16 @@
 //                            verbatim in `detail`. fm's list, not ours: whatever
 //                            fields it carries (today: `path`, `step`) ride
 //                            through unread and unchanged.
-//   `missingMarker`       -- the literal token `<Field Missing>` or
-//                            `<Table Missing>` inside any string the solution
-//                            carries -- fm's own way of writing a reference it
+//   `missingMarker`       -- fm's own family of `<Word Missing>` tokens
+//                            (`<Field Missing>`, `<Table Missing>`,
+//                            `<Function Missing>`, and whatever other word fm
+//                            writes there) inside any string the solution
+//                            carries -- fm's own way of marking a reference it
 //                            could not resolve when it rendered the object.
-//                            `detail.context` is 40 characters on each side of
-//                            the marker, for a reader who needs to see it in
-//                            place without opening the file.
+//                            `detail.what` is the word fm used (`Field`,
+//                            `Function`, …); `detail.context` is 40 characters
+//                            on each side of the marker, for a reader who
+//                            needs to see it in place without opening the file.
 //   `unresolvedOccurrence` -- a table occurrence whose base table did not
 //                            resolve (`table.resolved === false`), read from
 //                            the occurrence's own detail when there is one,
@@ -71,7 +74,7 @@ function scriptProblems(solution) {
   return rows;
 }
 
-// ── `<Field Missing>` / `<Table Missing>` ────────────────────────────────
+// ── The `<Word Missing>` marker family ───────────────────────────────────
 
 // A relation has no name of its own -- fm identifies it by the two
 // occurrences it joins, the same convention `references()` uses.
@@ -105,7 +108,10 @@ function* records(solution) {
   }
 }
 
-const MARKER_RE = /<(?:Field|Table) Missing>/g;
+// fm's own family: `<Field Missing>`, `<Table Missing>`, `<Function Missing>`,
+// and whatever other capitalised word fm writes there -- one marker shape,
+// not a hand-written list of the words fm happens to use today.
+const MARKER_RE = /<([A-Z][A-Za-z ]*) Missing>/g;
 const CONTEXT = 40;
 
 function missingMarkers(solution) {
@@ -118,7 +124,7 @@ function missingMarkers(solution) {
         rows.push({
           target: src.target, kind: 'missingMarker',
           from: { kind: src.kind, id: src.id, name: src.name, where: at },
-          detail: { marker: m[0], context: value.slice(start, end) },
+          detail: { what: m[1], context: value.slice(start, end) },
         });
       }
     });

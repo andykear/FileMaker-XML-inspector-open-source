@@ -62,9 +62,12 @@ test('the fixture\'s script problems are measured: 352 problems on 15 scripts', 
   assert.ok(rows.every((r) => Object.keys(r.detail).sort().join(',') === 'path,step'));
 });
 
-// ── The `<Field Missing>` / `<Table Missing>` markers ──────────────────
+// ── The `<Word Missing>` marker family ──────────────────────────────────
+// Fix round 1: fm's marker is a family (`<Field Missing>`, `<Table Missing>`,
+// `<Function Missing>`, …), not two fixed strings. The scan matches the
+// generic shape and keeps the word fm used as `detail.what`.
 
-test('a <Field Missing> marker inside a calculation is reported with 40 characters of context', () => {
+test('a <Field Missing> marker inside a calculation is reported with its word and 40 characters of context', () => {
   const long = 'a'.repeat(50);
   const sol = handMade({
     table: { list: [{ id: 1, name: 'T' }] },
@@ -75,7 +78,7 @@ test('a <Field Missing> marker inside a calculation is reported with 40 characte
   assert.equal(rows[0].kind, 'missingMarker');
   assert.equal(rows[0].from.kind, 'field');
   assert.equal(rows[0].from.id, 'T::A');
-  assert.equal(rows[0].detail.marker, '<Field Missing>');
+  assert.equal(rows[0].detail.what, 'Field');
   assert.equal(rows[0].detail.context, `${'a'.repeat(40)}<Field Missing>${'a'.repeat(40)}`);
 });
 
@@ -88,14 +91,43 @@ test('a <Table Missing> marker is reported too, and both markers in one string a
   });
   const rows = broken(sol).filter((r) => r.kind === 'missingMarker');
   assert.equal(rows.length, 2);
-  assert.deepEqual(rows.map((r) => r.detail.marker).sort(), ['<Field Missing>', '<Table Missing>']);
+  assert.deepEqual(rows.map((r) => r.detail.what).sort(), ['Field', 'Table']);
 });
 
-test('the fixture carries no <Field Missing> or <Table Missing> marker (measured)', () => {
-  // Measured directly against tests/fixtures/ooe/calls.ndjson: fm's own
-  // `<Function Missing>` appears three times, but neither `<Field Missing>` nor
-  // `<Table Missing>` occurs anywhere in the recorded solution.
-  assert.deepEqual(broken(solution).filter((r) => r.kind === 'missingMarker'), []);
+test('a <Function Missing> marker is the same family, matched by the generic word pattern', () => {
+  const sol = handMade({
+    script: {
+      list: [{ id: 1, name: 's', type: 'script' }],
+      detailById: detail(1, { id: 1, name: 's', body: [{ stepID: 1, step: 'Set Variable', value: '/*<Function Missing>( 2 ) + 4*/' }] }),
+    },
+  });
+  const rows = broken(sol).filter((r) => r.kind === 'missingMarker');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].detail.what, 'Function');
+  assert.equal(rows[0].detail.context, '/*<Function Missing>( 2 ) + 4*/');
+});
+
+test('the fixture carries five <Function Missing> markers, measured, and no <Field Missing> or <Table Missing>', () => {
+  // Re-measured after widening the pattern from two fixed strings to the
+  // generic family: `<Field Missing>` and `<Table Missing>` still occur zero
+  // times on ooe. `<Function Missing>` occurs five times, all in the two
+  // mirrored "All script steps and all options" scripts (ids 39 and 55): a
+  // Set Field's calculated `record`, a Go to Layout's calculated `layoutName`,
+  // and three Set Variable `value`s (one of them inside a much larger Case()
+  // calculation, which is why its `context` below is not the whole value).
+  const rows = broken(solution).filter((r) => r.kind === 'missingMarker');
+  assert.deepEqual([...new Set(rows.map((r) => r.detail.what))], ['Function']);
+  assert.equal(rows.length, 5);
+  const by = rows.map((r) => `${r.from.name}|${r.from.where}`).sort();
+  assert.deepEqual(by, [
+    'All script steps and all options 20260318|body.118.value',
+    'All script steps and all options 20260318|body.5.value',
+    'All script steps and all options|body.124.layoutName',
+    'All script steps and all options|body.159.record',
+    'All script steps and all options|body.84.value',
+  ]);
+  const long = rows.find((r) => r.from.where === 'body.5.value');
+  assert.match(long.detail.context, /_calc_var_three = <Function Missing>/);
 });
 
 // ── Occurrences whose base table did not resolve ────────────────────────
@@ -223,6 +255,6 @@ test('the broken counts by kind on the fixture', () => {
   const rows = broken(solution);
   const byKind = {};
   for (const r of rows) byKind[r.kind] = (byKind[r.kind] ?? 0) + 1;
-  assert.deepEqual(byKind, { problem: 352 });
-  assert.equal(rows.length, 352);
+  assert.deepEqual(byKind, { problem: 352, missingMarker: 5 });
+  assert.equal(rows.length, 357);
 });
