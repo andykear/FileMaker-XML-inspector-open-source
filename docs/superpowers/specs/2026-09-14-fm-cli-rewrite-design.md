@@ -221,7 +221,7 @@ Porting order:
 3. Tabs: tables and fields; occurrences and relations with the graph; scripts with the shared renderer and step index; layouts with wireframe; security; remaining catalogs; then the derived analyses (unreferenced, broken references, risk, reference explorer); then exports and the Gaps tab.
 4. Coverage register built kind by kind, `fm-gaps check` and `report` working against ooe.
 5. Throwaway count cross-check: old inspector on ooe's SaXML export versus the new one on the live file. Mismatches are either gaps or bugs; resolve each, then discard the comparison.
-6. Delete `legacy/` when every inventory row is covered, derived, dropped, or registered.
+6. Delete `legacy/` when every inventory row is covered, derived, dropped, or registered. **Done 2026-09-16**: the gate held (every inventory row `covered`/`derived`/`dropped`/`gap` with a register mapping, the cross-check's 27 mismatches all classified, none unclassified), `legacy/` and its supporting scripts were deleted, and the inventory and cross-check docs are kept as the historical record.
 
 Testing:
 
