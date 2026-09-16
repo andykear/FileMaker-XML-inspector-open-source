@@ -182,3 +182,18 @@ test('every model string is escaped', () => {
   assert.match(html, /&lt;i&gt;evil&lt;\/i&gt;/);
   assert.match(html, /&lt;style&gt;bad&lt;\/style&gt;/);
 });
+
+test('styleUsage walks every layout once for all themes, and caches that walk per file', () => {
+  const theme = themeRows(root).find((r) => r.namedStyleCount > 0);
+  const first = styleUsage(root, theme.theme);
+  const again = styleUsage(root, theme.theme);
+  assert.deepEqual(again, first);
+  // Two themes of the same file share one walk; the answers still differ.
+  const other = themeRows(root).find((r) => r.id !== theme.id && r.namedStyleCount > 0);
+  assert.notDeepEqual(styleUsage(root, other.theme), first);
+  // A layout re-read invalidates the walk.
+  const slot = root.catalogs.layout;
+  root.catalogs.layout = { ...slot, detailById: { ...slot.detailById } };
+  assert.deepEqual(styleUsage(root, theme.theme), first);
+  root.catalogs.layout = slot;
+});

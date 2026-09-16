@@ -222,3 +222,14 @@ test('an errored describe shows the error instead of a body', () => {
   assert.match(html, /class="error">boom: no</);
   assert.ok(!html.includes('<ol class="script">'));
 });
+
+test('stepIndex is memoised on the solution until a script describe is replaced', () => {
+  const first = stepIndex(solution);
+  assert.equal(stepIndex(solution), first);
+  const slot = root.catalogs.script;
+  root.catalogs.script = { ...slot, detailById: { ...slot.detailById } };
+  const second = stepIndex(solution);
+  assert.notEqual(second, first, 'a re-read of the script catalog invalidates the index');
+  assert.deepEqual(second, first, 'and recomputes to the same answer from the same reads');
+  root.catalogs.script = slot;
+});

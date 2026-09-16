@@ -48,6 +48,18 @@ test('applyBatch stores describes under describeKey, verbatim, errors too', () =
   assert.equal(f.catalogs.layout.detailById['11'].readAt, 'now');
 });
 
+test('applyBatch replaces detailById rather than mutating it, so a cache can see the change', () => {
+  const f = createFile('t');
+  const ops = describeOps({ script: [{ id: 21, type: 'script' }, { id: 22, type: 'script' }] });
+  applyBatch(f, [ops[0]], { results: [ok(ops[0], { id: 21, name: 'S', body: [] })] }, 'now');
+  const first = f.catalogs.script.detailById;
+  applyBatch(f, [ops[1]], { results: [ok(ops[1], { id: 22, name: 'T', body: [] })] }, 'later');
+  const second = f.catalogs.script.detailById;
+  assert.notEqual(first, second, 'the object identity is the signal that a describe landed');
+  assert.deepEqual(Object.keys(second), ['21', '22']);
+  assert.deepEqual(Object.keys(first), ['21'], 'the old object is left alone');
+});
+
 test('applyBatch with fewer results than ops marks the rest as missing', () => {
   const f = createFile('t');
   const ops = describeOps({ script: [{ id: 1, type: 'script' }, { id: 2, type: 'script' }] });

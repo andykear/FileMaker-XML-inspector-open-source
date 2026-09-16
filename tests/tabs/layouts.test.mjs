@@ -215,3 +215,24 @@ test('a layout whose describe failed says so instead of drawing', () => {
   assert.ok(!html.includes('<svg class="wireframe"'));
   assert.equal(layoutRows(broken).find((r) => r.id === 1).objects, 0);
 });
+
+test('layoutRows is memoised per file until a re-read replaces the layout slot', () => {
+  // Every row walks every object of its layout, so the rows are computed once and
+  // handed back by identity. What invalidates them is a re-read: at catalog grain
+  // the whole slot is staged and swapped, at object grain model.js replaces
+  // detailById -- either way the cached input is no longer the file's input.
+  const first = layoutRows(root);
+  assert.equal(layoutRows(root), first);
+
+  const slot = root.catalogs.layout;
+  root.catalogs.layout = { ...slot, detailById: { ...slot.detailById } };
+  const afterCatalogReread = layoutRows(root);
+  assert.notEqual(afterCatalogReread, first);
+  assert.deepEqual(afterCatalogReread.map((r) => r.name), first.map((r) => r.name));
+
+  root.catalogs.layout.detailById = { ...root.catalogs.layout.detailById };
+  assert.notEqual(layoutRows(root), afterCatalogReread, 'an object re-read invalidates too');
+
+  root.catalogs.layout = slot;
+  assert.deepEqual(layoutRows(root).map((r) => r.name), first.map((r) => r.name));
+});

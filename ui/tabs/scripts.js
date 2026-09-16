@@ -72,8 +72,22 @@ export function renderScript(detail) {
   return `<ol class="script">${rows}</ol>`;
 }
 
-/** How often each step type is used, and in how many scripts, across every file. */
+/** How often each step type is used, and in how many scripts, across every file.
+ *  Every step of every script of every file, so it is memoised on the solution,
+ *  guarded by the identity of each file's `catalogs.script.detailById` -- what a
+ *  re-read replaces at either grain (see ui/model.js). */
+const stepIndexCache = new WeakMap();
+
 export function stepIndex(solution) {
+  const details = Object.values(solution?.files ?? {}).map((f) => path(f, 'catalogs.script.detailById'));
+  const hit = stepIndexCache.get(solution ?? {});
+  if (hit && hit.details.length === details.length && hit.details.every((d, i) => d === details[i])) return hit.index;
+  const index = computeStepIndex(solution);
+  if (solution !== null && typeof solution === 'object') stepIndexCache.set(solution, { details, index });
+  return index;
+}
+
+function computeStepIndex(solution) {
   const counts = new Map();
   for (const file of Object.values(solution?.files ?? {})) {
     for (const detail of detailsOf(file)) {

@@ -14,9 +14,15 @@ export function buildHash(tab, selection) {
   return selection ? `#${tab}/${encodeURIComponent(selection)}` : `#${tab}`;
 }
 
+/** Every keystroke in the filter box re-renders the whole tab, and a tab can be
+ *  thousands of rows. 120ms is about one fast typist's inter-key gap: long
+ *  enough that a burst renders once, short enough that a pause feels immediate. */
+export const FILTER_DEBOUNCE_MS = 120;
+
 export function createShell({ tabs, mount, onReread }) {
   let solution = null;
   let filter = '';
+  let filterTimer = null;
   const byId = new Map(tabs.map((t) => [t.id, t]));
 
   function current() {
@@ -37,7 +43,10 @@ export function createShell({ tabs, mount, onReread }) {
     mount.main.innerHTML = byId.get(tab).render(solution, view);
   }
 
-  mount.filter.addEventListener('input', () => { filter = mount.filter.value.trim().toLowerCase(); route(); });
+  mount.filter.addEventListener('input', () => {
+    clearTimeout(filterTimer);
+    filterTimer = setTimeout(() => { filter = mount.filter.value.trim().toLowerCase(); route(); }, FILTER_DEBOUNCE_MS);
+  });
   window.addEventListener('hashchange', route);
   mount.main.addEventListener('click', async (ev) => {
     const reread = ev.target.closest('button[data-reread-object], button[data-reread-catalog]');

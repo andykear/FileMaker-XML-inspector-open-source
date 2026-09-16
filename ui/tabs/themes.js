@@ -31,23 +31,40 @@ export function themeRows(file) {
   });
 }
 
-/** For every named style fm reports on this theme, how many objects -- walked
- *  recursively across every layout on this file that wears this theme -- carry
- *  it. `style` on an object is the style's display name, not its key. */
-export function styleUsage(file, theme) {
-  const themeId = String(get(theme, 'id'));
-  const names = get(theme, 'namedStyleNames') ?? {};
-  const counts = {};
+/** How often each named style is worn, per theme: one walk of every object of
+ *  every layout on the file, bucketed by the theme the layout wears. Walking
+ *  once for all themes rather than once per theme is the whole point, so it is
+ *  memoised per file on the identity of `catalogs.layout.detailById` -- what a
+ *  re-read replaces at either grain (see ui/model.js). */
+const styleUsageCache = new WeakMap();
+
+function styleCountsByTheme(file) {
+  const details = path(file, 'catalogs.layout.detailById');
+  const hit = styleUsageCache.get(file ?? {});
+  if (hit && hit.details === details) return hit.byTheme;
+  const byTheme = new Map();
   for (const item of layoutListOf(file)) {
     if (get(item, 'type') !== 'layout') continue;
-    const entry = get(path(file, 'catalogs.layout.detailById'), String(get(item, 'id')));
-    const detail = get(entry, 'result');
-    if (!detail || String(path(detail, 'theme.id')) !== themeId) continue;
+    const detail = get(get(details, String(get(item, 'id'))), 'result');
+    if (!detail) continue;
+    const themeId = String(path(detail, 'theme.id'));
+    if (!byTheme.has(themeId)) byTheme.set(themeId, {});
+    const counts = byTheme.get(themeId);
     walkObjects(path(detail, 'contents.objects'), (obj) => {
       const style = get(obj, 'style');
       if (style) counts[style] = (counts[style] ?? 0) + 1;
     });
   }
+  if (file !== null && typeof file === 'object') styleUsageCache.set(file, { details, byTheme });
+  return byTheme;
+}
+
+/** For every named style fm reports on this theme, how many objects -- across
+ *  every layout on this file that wears this theme -- carry it. `style` on an
+ *  object is the style's display name, not its key. */
+export function styleUsage(file, theme) {
+  const names = get(theme, 'namedStyleNames') ?? {};
+  const counts = styleCountsByTheme(file).get(String(get(theme, 'id'))) ?? {};
   return Object.entries(names)
     .map(([key, display]) => ({ key, display: String(display), used: counts[String(display)] ?? 0 }))
     .sort((a, b) => b.used - a.used || a.display.localeCompare(b.display));

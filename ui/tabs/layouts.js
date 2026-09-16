@@ -62,9 +62,25 @@ export function objectCounts(detail) {
   };
 }
 
+/** Every row walks every object of its layout, and the tab asks for the rows
+ *  several times per render (the tree, the totals, the Themes tab). The answer
+ *  is memoised per file on the identity of `catalogs.layout.detailById`, which
+ *  is what a re-read replaces at either grain: a catalog re-read stages a whole
+ *  new slot, and an object re-read replaces `detailById` (see ui/model.js). */
+const layoutRowsCache = new WeakMap();
+
+export function layoutRows(file) {
+  const details = path(file, 'catalogs.layout.detailById');
+  const hit = layoutRowsCache.get(file);
+  if (hit && hit.details === details) return hit.rows;
+  const rows = computeLayoutRows(file);
+  if (file !== null && typeof file === 'object') layoutRowsCache.set(file, { details, rows });
+  return rows;
+}
+
 /** fm's flattened list carries three types: `layout`, `folder` and `separator` (the
  *  divider FileMaker draws). Only a layout gets a row. */
-export function layoutRows(file) {
+function computeLayoutRows(file) {
   return layoutsOf(file).filter((item) => get(item, 'type') === 'layout').map((item) => {
     const id = get(item, 'id');
     const entry = entryOf(file, id);

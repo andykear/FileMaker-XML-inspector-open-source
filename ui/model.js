@@ -49,9 +49,16 @@ export function applyBatch(file, ops, response, readAt) {
       }
       return;
     }
-    slot.detailById[describeKey(op)] = line?.status === 'ok'
-      ? { op, readAt, result: line.result }
-      : { op, readAt, error: line?.error ?? NO_RESULT };
+    // `detailById` is replaced, never mutated in place. A re-read at catalog
+    // grain swaps the whole slot, but a re-read at object grain lands here, and
+    // a derived view that caches off the model has to be able to tell that its
+    // input changed -- object identity is how it tells.
+    slot.detailById = {
+      ...slot.detailById,
+      [describeKey(op)]: line?.status === 'ok'
+        ? { op, readAt, result: line.result }
+        : { op, readAt, error: line?.error ?? NO_RESULT },
+    };
   });
 }
 
