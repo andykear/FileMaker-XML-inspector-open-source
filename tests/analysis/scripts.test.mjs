@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import { references } from '../../ui/analysis/refs.js';
-import { PSOS_ONLY_STEPS, callGraph, callTreeOf, scriptIssues, scriptKey } from '../../ui/analysis/scripts.js';
+import { PSOS_ONLY_STEPS, callGraph, callTreeOf, scriptIssues, scriptKey, times } from '../../ui/analysis/scripts.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -567,4 +567,39 @@ test('every issue carries FileMaker\'s own 1-based line beside the 0-based body 
   assert.deepEqual(rows.map((r) => [r.step.index, r.step.line]), [[0, 1], [1, 2]]);
   // On the fixture too: whatever the index is, the line is one more.
   assert.ok(scriptIssues(solution).every((r) => r.step.line === r.step.index + 1));
+});
+
+test('callTreeOf collapses parallel edges into one child carrying its count', () => {
+  const graph = callGraph(solution);
+  const tree = callTreeOf(graph, scriptKey(ROOT, 55), 3);
+  // Measured on ooe: script 55 performs `noop` on 19 of its steps. Nineteen
+  // identical branches said "this script calls nineteen things"; it calls four.
+  const noop = tree.children.find((c) => c.name === 'noop');
+  assert.deepEqual([noop.via, noop.count], ['step', 19]);
+  assert.equal(tree.children.length, 4, tree.children.map((c) => c.name).join(', '));
+  assert.deepEqual(tree.children.map((c) => c.count).sort((a, b) => a - b), [1, 3, 5, 19]);
+  // The counts add back up to the edges the graph still carries, one per site.
+  const sites = graph.edges.filter((e) => e.from === scriptKey(ROOT, 55)).length;
+  assert.equal(tree.children.reduce((n, c) => n + c.count, 0), sites);
+  assert.equal(times('step', noop.count), 'step ×19');
+  assert.equal(times('step', 1), 'step');
+});
+
+test('callGraph itself keeps every naming site', () => {
+  const graph = callGraph(solution);
+  const toNoop = graph.edges.filter((e) => e.from === scriptKey(ROOT, 55) && e.name === 'noop');
+  assert.equal(toNoop.length, 19, 'the graph is the list of sites, not of pairs');
+  // Each carries its own origin, which is what the Explorer's Referenced-by
+  // table lists one row at a time.
+  assert.equal(new Set(toNoop.map((e) => e.origin.where)).size, 19);
+});
+
+test('a name no script answers collapses per (name, via) too', () => {
+  const sol = oneScript([
+    step(1, 'Perform Script', { script: 'gone' }),
+    step(1, 'Perform Script', { script: 'gone' }),
+    step(1, 'Perform Script', { script: 'elsewhere' }),
+  ]);
+  const tree = callTreeOf(callGraph(sol), scriptKey('file:///x.fmp12', 7), 3);
+  assert.deepEqual(tree.children.map((c) => [c.name, c.count, c.resolved]), [['gone', 2, false], ['elsewhere', 1, false]]);
 });

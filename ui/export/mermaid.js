@@ -23,7 +23,7 @@
 // Pure: no document, no node:, no server/.
 import { mermaidId, mermaidLabel } from './common.js';
 import { occurrenceRows, relationRows } from '../tabs/graph.js';
-import { callGraph } from '../analysis/scripts.js';
+import { callGraph, times } from '../analysis/scripts.js';
 
 const SEP = '\u0000';
 const filesOf = (solution) => Object.values(solution?.files ?? {});
@@ -77,6 +77,9 @@ const CALL_NOTATION = [
   '%% A solid arrow is a name that resolved to a script in this read; a dashed one',
   '%% resolved to nothing. The arrow\'s label is where the name was written: a script',
   '%% step, a layout trigger, a button on a layout object, or a custom menu item.',
+  '%% One object may name one script many times over: those are one arrow labelled',
+  '%% `step x19`, not nineteen arrows Mermaid would draw on top of each other. The',
+  '%% call graph itself keeps every site -- the Explorer lists them one by one.',
 ];
 
 /** The label of a node that is not a script: the object that names one. The id
@@ -85,8 +88,15 @@ const CALL_NOTATION = [
 const originLabel = (o) => (o.name === undefined ? `${o.kind} ${o.id}` : `${o.name} (${o.kind} ${o.id})`);
 
 /** `flowchart TD`: one node per script, plus a node for every other object that
- *  names one and for every name that resolved to nothing; one edge per naming
- *  site, labelled by where it was written. */
+ *  names one and for every name that resolved to nothing; one arrow per
+ *  `(from, to, via)`, labelled by where the name was written and carrying `×N`
+ *  when N sites of that kind name it.
+ *
+ *  Why collapse: a script that calls `noop` on 19 of its steps produced 19
+ *  identical arrows, drawn on top of each other and readable as one -- so the
+ *  diagram showed the 19 and told the reader 1. One arrow that says `step ×19`
+ *  tells the truth in the space a diagram has. `callGraph` itself is untouched:
+ *  it keeps every site, and the Explorer's Referenced-by table lists each. */
 export function mermaidCallGraph(solution) {
   const graph = callGraph(solution);
   const nodes = ['flowchart TD', header(solution, 'script call graph'), ...CALL_NOTATION];
@@ -103,13 +113,20 @@ export function mermaidCallGraph(solution) {
     return id;
   };
   for (const node of graph.nodes) declare(node.key, node.name, node.name);
-  const edges = [];
+  // Insertion order is the order the edges arrive in, so collapsing does not
+  // reshuffle the diagram: the first site of a pair is where its arrow sits.
+  const arrows = new Map();
   for (const edge of graph.edges) {
     const from = declare(edge.from, edge.origin.name ?? String(edge.origin.id), originLabel(edge.origin));
     const to = edge.resolved
       ? declare(edge.to, edge.name, edge.name)
       : declare(`missing${SEP}${edge.origin.target}${SEP}${edge.name}`, edge.name, `${edge.name} (missing)`);
-    edges.push(`    ${from} ${edge.resolved ? '-->' : '-.->'}|${mermaidLabel(edge.via)}| ${to}`);
+    const key = `${from}${SEP}${to}${SEP}${edge.via}`;
+    const at = arrows.get(key);
+    if (at) at.count += 1;
+    else arrows.set(key, { from, to, via: edge.via, resolved: edge.resolved, count: 1 });
   }
+  const edges = [...arrows.values()].map((a) =>
+    `    ${a.from} ${a.resolved ? '-->' : '-.->'}|${mermaidLabel(times(a.via, a.count))}| ${a.to}`);
   return [...nodes, ...edges].join('\n') + '\n';
 }

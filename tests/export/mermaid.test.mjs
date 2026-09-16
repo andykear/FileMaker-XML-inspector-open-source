@@ -101,19 +101,41 @@ test('mermaidCallGraph starts with flowchart TD and declares one node per script
   assert.equal(labels.filter((l) => graph.nodes.some((n) => n.name === l)).length >= graph.nodes.length, true);
 });
 
-test('one edge per graph edge, labelled by via, and every edge joins declared nodes', () => {
+test('one arrow per (from, to, via), labelled by via, and every arrow joins declared nodes', () => {
   const out = mermaidCallGraph(solution);
   const graph = callGraph(solution);
   const edges = lines(out).map((l) => l.match(EDGE)).filter(Boolean);
-  assert.equal(edges.length, graph.edges.length);
-  const vias = new Set(edges.map((e) => e[3]));
+  // The graph keeps every naming site; the diagram draws one arrow per
+  // (from, to, via), because parallel arrows land on top of each other and a
+  // reader counts one. Measured on ooe before it was pinned: 62 sites, 16 pairs.
+  const pairs = new Set(graph.edges.map((e) => `${e.from}|${e.to}|${e.via}`));
+  assert.equal(graph.edges.length, 62);
+  assert.equal(pairs.size, 16);
+  assert.equal(edges.length, pairs.size);
+  const vias = new Set(edges.map((e) => e[3].replace(/ \u00d7\d+$/, '')));
   assert.deepEqual([...vias].sort(), [...new Set(graph.edges.map((e) => e.via))].sort());
   const declared = new Set(lines(out).map((l) => l.match(NODE)).filter(Boolean).map((m) => m[1]));
   for (const e of edges) {
     assert.ok(declared.has(e[1]), e[0]);
     assert.ok(declared.has(e[4]), e[0]);
   }
-  assert.equal(edges.filter((e) => e[2] === '-.->').length, graph.edges.filter((e) => !e.resolved).length);
+  const unresolvedPairs = new Set(graph.edges.filter((e) => !e.resolved).map((e) => `${e.from}|${e.name}|${e.via}`));
+  assert.equal(edges.filter((e) => e[2] === '-.->').length, unresolvedPairs.size);
+  // Every arrow's count adds back up to the sites the graph carries.
+  const total = edges.reduce((n, e) => n + Number(/ \u00d7(\d+)$/.exec(e[3])?.[1] ?? 1), 0);
+  assert.equal(total, graph.edges.length);
+});
+
+test('parallel edges are one arrow carrying how many sites it stands for', () => {
+  const out = mermaidCallGraph(solution);
+  const edges = lines(out).map((l) => l.match(EDGE)).filter(Boolean);
+  const labelled = edges.map((e) => e[3]).filter((l) => l.includes('\u00d7')).sort();
+  // Measured on ooe: script 55 performs `noop` on 19 steps, and layouts 1 and 21
+  // each carry 12 triggers naming it.
+  assert.ok(labelled.includes('step \u00d719'), labelled.join(' / '));
+  assert.equal(labelled.filter((l) => l === 'trigger \u00d712').length, 2, labelled.join(' / '));
+  // A single site is still just the via, with no count hung on it.
+  assert.ok(edges.some((e) => e[3] === 'step'));
 });
 
 /** A hand-made graph: one script calling a name no script answers. The fixture

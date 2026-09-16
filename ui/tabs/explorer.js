@@ -14,7 +14,7 @@ import { badge, count, esc, link, matches, section, table } from '../dom.js';
 import { emptyNote, fileName, kindSelection, linkOr, selectRow, selectionKey, totalsLine, withFile } from './common.js';
 import { memoise } from '../analysis/memo.js';
 import { nameIndex, references } from '../analysis/refs.js';
-import { callGraph, callTreeOf, scriptKey } from '../analysis/scripts.js';
+import { callGraph, callTreeOf, scriptKey, times } from '../analysis/scripts.js';
 
 // ── Where a kind is shown ─────────────────────────────────────────────
 
@@ -223,7 +223,7 @@ function treeHtml(node) {
     ? linkOr(refHash('script', node.target, node.id), node.name)
     : esc(node.name);
   const tags = [
-    node.via ? badge(node.via, 'info') : '',
+    node.via ? badge(times(node.via, node.count ?? 1), 'info') : '',
     node.resolved ? '' : badge('unresolved', 'bad'),
     node.cycle ? badge('cycle', 'warn') : '',
     node.truncated ? badge('more below', 'muted') : '',
@@ -237,7 +237,8 @@ function callTreeSection(solution, sel) {
   const tree = callTreeOf(callGraph(solution), scriptKey(sel.target, sel.id), 3);
   if (!tree) return '';
   return '<h3>Call tree</h3>'
-    + '<p class="muted">What this script calls, three levels down. A script already on the path is marked and not walked again.</p>'
+    + '<p class="muted">What this script calls, three levels down. A script already on the path is marked and not walked again. '
+    + 'Naming one script from several steps is one branch, marked &times;N: the sites themselves are in the Referenced-by table above.</p>'
     + `<ul class="calltree">${treeHtml(tree)}</ul>`;
 }
 

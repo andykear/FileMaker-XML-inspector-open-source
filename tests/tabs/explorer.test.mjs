@@ -215,3 +215,14 @@ test("a reference written on a script step shows FileMaker's line beside the key
   assert.ok(th, 'no Line column with a title on it');
   assert.match(th[1], /line number/);
 });
+
+test('the call tree marks a collapsed branch with the count it stands for', () => {
+  const html = tab.render(solution, viewOf(selectionKey(ROOT, 'script', '55')));
+  const at = html.indexOf('<h3>Call tree</h3>');
+  assert.ok(at > 0);
+  const block = html.slice(at);
+  // Measured on ooe: script 55 performs `noop` on 19 of its steps, and the
+  // tree shows one branch saying so rather than nineteen identical ones.
+  assert.ok(block.includes('step &times;19') || block.includes('step ×19'), block.slice(0, 600));
+  assert.equal([...block.matchAll(/>noop</g)].length, 1, 'noop appears once in the tree');
+});

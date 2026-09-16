@@ -10,9 +10,11 @@
 // export and the Explorer all count from 1, and a report that said "step 7" of
 // a step FileMaker calls 8 would send a reader to the wrong line. `keys` names
 // the fm keys that DECIDED the issue, so a reader can go look at the same key
-// fm wrote; `disabled` is read by every check and is not repeated there. Every check skips a disabled step: FileMaker does not
-// run it, so it is not a finding -- and, the other way round, a mention inside
-// a disabled step is not a mention (`dead-set-variable` below).
+// fm wrote; `disabled` is read by every check and is not repeated there.
+//
+// Every check skips a disabled step: FileMaker does not run it, so it is not a
+// finding -- and, the other way round, a mention inside a disabled step is not
+// a mention (`dead-set-variable` below).
 //
 //   dead-set-variable    a `Set Variable` writing a `$local` that no LATER
 //                        string of the same script mentions. The scan is over
@@ -341,6 +343,11 @@ function computeCallGraph(solution) {
 
 const indexCache = new WeakMap();
 
+/** How a collapsed run of parallel edges is spelled, in one place, so the
+ *  Mermaid label and the Explorer's call tree cannot drift: `step` for one,
+ *  `step ×19` for nineteen. */
+export const times = (via, count) => (count > 1 ? `${via} ×${count}` : String(via));
+
 function graphIndex(graph) {
   const hit = indexCache.get(graph);
   if (hit) return hit;
@@ -354,9 +361,25 @@ function graphIndex(graph) {
   return index;
 }
 
-function walk(key, depth, seen, index, via) {
+/** The out-edges of one node, one entry per `(to, via)` with how many sites it
+ *  stands for. Nineteen Perform Script steps naming `noop` are one child of the
+ *  tree, `noop (step ×19)`, not nineteen identical branches each walked and
+ *  drawn again -- which said "this script calls nineteen things" when it calls
+ *  one. Insertion order is edge order, so the first site keeps the place. */
+function collapse(out) {
+  const by = new Map();
+  for (const edge of out) {
+    const key = `${edge.resolved ? edge.to : `missing\u0000${edge.name}`}\u0000${edge.via}`;
+    const at = by.get(key);
+    if (at) at.count += 1;
+    else by.set(key, { edge, count: 1 });
+  }
+  return [...by.values()];
+}
+
+function walk(key, depth, seen, index, via, count) {
   const node = index.nodes.get(key);
-  const tree = { key, target: node.target, id: node.id, name: node.name, via, resolved: true, children: [] };
+  const tree = { key, target: node.target, id: node.id, name: node.name, via, count, resolved: true, children: [] };
   if (seen.has(key)) { tree.cycle = true; return tree; }
   const out = index.out.get(key) ?? [];
   if (depth <= 0) {
@@ -364,10 +387,10 @@ function walk(key, depth, seen, index, via) {
     return tree;
   }
   const next = new Set(seen).add(key);
-  for (const edge of out) {
+  for (const { edge, count: n } of collapse(out)) {
     tree.children.push(edge.resolved
-      ? walk(edge.to, depth - 1, next, index, edge.via)
-      : { key: null, target: edge.origin.target, id: null, name: edge.name, via: edge.via, resolved: false, children: [] });
+      ? walk(edge.to, depth - 1, next, index, edge.via, n)
+      : { key: null, target: edge.origin.target, id: null, name: edge.name, via: edge.via, count: n, resolved: false, children: [] });
   }
   return tree;
 }
@@ -378,10 +401,11 @@ function walk(key, depth, seen, index, via) {
  *  in the graph and not in the tree. A node
  *  already on the path back to the root is `cycle` and is not walked again; a
  *  node at the depth limit that still calls something is `truncated`; a name no
- *  script answers is a child with no key. `null` when the key is not a script
- *  of this solution. */
+ *  script answers is a child with no key. Parallel edges are collapsed: a child
+ *  carries `count`, how many sites of that `via` name it, and `times()` is how
+ *  that is spelled. `null` when the key is not a script of this solution. */
 export function callTreeOf(graph, key, depth = 3) {
   const index = graphIndex(graph);
   if (!index.nodes.has(key)) return null;
-  return walk(key, depth, new Set(), index, null);
+  return walk(key, depth, new Set(), index, null, 1);
 }
