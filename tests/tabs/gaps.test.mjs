@@ -10,7 +10,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
-import { registerFacts, registerGroups, renderingGaps, tab } from '../../ui/tabs/gaps.js';
+import { GAP_LISTS, registerFacts, registerGroups, renderingGaps, tab } from '../../ui/tabs/gaps.js';
 
 const REGISTER = JSON.parse(await readFile(new URL('../fixtures/register-summary.json', import.meta.url), 'utf8'));
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
@@ -36,6 +36,7 @@ const outcome = () => ({
   regressed: [{ id: 'script:step', attribute: 'step name' }],
   attributeErrors: [{ id: 'custom-menu:item', attribute: 'menu item action', reason: 'selector matched nothing' }],
   unexplained: [{ id: 'table:base', keys: ['newKey'] }],
+  nestedUnexplained: [{ id: 'table:base', keys: ['options.newNested'] }],
   errored: [{ id: 'theme:theme', reason: 'probe refused: 1200' }],
   erroredExpected: [{ id: 'layout-object:button', reason: 'probe refused: 1200' }],
   expectedResolved: [{ id: 'persistent-store:store', expectedError: 'probe refused: 3' }],
@@ -133,6 +134,31 @@ test('a run where most probes could not find their object says so rather than re
   // The ooe-shaped run: 302 entries, one expected failure and nothing else.
   const ooeShaped = { ...outcome(), entries: 302, errored: [], probeFailures: 0 };
   assert.doesNotMatch(tab.render(bare({ register: REGISTER, gaps: ooeShaped }), view), /not the reference solution/);
+});
+
+test('GAP_LISTS covers every list the reduced outcome carries', () => {
+  // The tab and the Markdown report both build from this one constant, so a
+  // list the server forwards and this does not name is invisible in both.
+  const keys = new Set(GAP_LISTS.map((l) => l.key));
+  const meta = new Set(['entries', 'probeFailures', 'fmVersion', 'build', 'ranAt', 'fatal']);
+  for (const key of Object.keys(outcome())) {
+    if (!meta.has(key)) assert.ok(keys.has(key), `GAP_LISTS does not name ${key}`);
+  }
+  for (const l of GAP_LISTS) {
+    assert.ok(l.title && l.note && l.columns?.length, l.key);
+  }
+});
+
+test('a nested key no attribute claims is on the page', () => {
+  const html = tab.render(bare({ register: REGISTER, gaps: outcome() }), view);
+  assert.match(html, /Nested keys no attribute claims/);
+  assert.match(html, /options\.newNested/);
+  assert.match(html, /the only list a gap closed by a nested key shows up in/);
+});
+
+test('a check of nothing does not say 0 of 0 probes could not find their object', () => {
+  const empty = { ...outcome(), entries: 0, probeFailures: 0 };
+  assert.doesNotMatch(tab.render(bare({ register: REGISTER, gaps: empty }), view), /not the reference solution/);
 });
 
 test('renderingGaps: measured on the ooe fixture', () => {

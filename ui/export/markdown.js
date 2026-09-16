@@ -26,6 +26,7 @@ import { FIELD_GROUPS, fieldsOf, tableCounts } from '../tabs/tables.js';
 import { scriptStats } from '../tabs/scripts.js';
 import { relationRows } from '../tabs/graph.js';
 import { accountRows, passwordState, securityTotals } from '../tabs/security.js';
+import { GAP_LISTS } from '../tabs/gaps.js';
 import { unreferenced } from '../analysis/unreferenced.js';
 import { PROBLEM_KIND, broken } from '../analysis/broken.js';
 import { scriptIssues } from '../analysis/scripts.js';
@@ -241,16 +242,19 @@ function brokenSection(solution) {
 
 // ── Gaps ──────────────────────────────────────────────────────────────
 
-const GAP_ROWS = [['Still missing', 'stillMissing'], ['Newly reported', 'newlyReported'],
-  ['Regressed', 'regressed'], ['Errored', 'errored']];
-
 /** The Gaps tab's own result when the page has run the live check; the sentence
  *  that says how to get one when it has not. A gap check reads the running fm,
- *  which an export cannot do for itself. */
+ *  which an export cannot do for itself.
+ *
+ *  The lists are `GAP_LISTS`, the Gaps tab's own: this used to carry a shorter
+ *  hand-written list of four, so the report and the page it came from showed
+ *  different halves of one answer. One constant, one set of headings, and each
+ *  row's note is the tab's note. */
 function gaps(solution) {
   const g = get(solution, 'gaps');
   if (!g) return 'Run the live check on the Gaps tab and export again to see the register\'s answer here.\n';
-  return mdTable(['Gap', 'Count'], GAP_ROWS.map(([label, key]) => [label, (get(g, key) ?? []).length]), { align: 'lr' });
+  return mdTable(['Gap', 'Count', 'What it means'],
+    GAP_LISTS.map((l) => [l.title, (get(g, l.key) ?? []).length, l.note]), { align: 'lrl' });
 }
 
 // ── The report ────────────────────────────────────────────────────────

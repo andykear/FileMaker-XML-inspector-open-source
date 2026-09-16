@@ -14,6 +14,7 @@ import { accountRows, securityTotals } from '../../ui/tabs/security.js';
 import { unreferenced } from '../../ui/analysis/unreferenced.js';
 import { scriptIssues } from '../../ui/analysis/scripts.js';
 import { broken } from '../../ui/analysis/broken.js';
+import { GAP_LISTS } from '../../ui/tabs/gaps.js';
 import { markdownReport, SECTIONS } from '../../ui/export/markdown.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
@@ -167,6 +168,12 @@ test('Gaps says to run the check when the solution carries none, and the counts 
   assert.ok(r2.includes('| Newly reported | 1 |'));
   assert.ok(r2.includes('| Regressed | 0 |'));
   assert.ok(r2.includes('| Errored | 3 |'));
+  // The report's lists are the Gaps tab's own, so the page a reader looked at
+  // and the report they exported from it cannot show different halves.
+  for (const l of GAP_LISTS) {
+    assert.ok(r2.includes(`| ${l.title} | `), `the report does not carry ${l.key}`);
+    assert.ok(r2.includes(l.note), `the report does not carry the note for ${l.key}`);
+  }
   assert.ok(!r2.includes('Run the live check on the Gaps tab'));
 });
 

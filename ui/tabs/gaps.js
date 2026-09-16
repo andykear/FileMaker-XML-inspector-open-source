@@ -129,10 +129,19 @@ function registerSection(solution, view) {
 const ID_REASON = [{ key: 'id', label: 'Entry' }, { key: 'reason', label: 'Reason' }];
 const ID_ATTRIBUTE = [{ key: 'id', label: 'Entry' }, { key: 'attribute', label: 'Attribute' }];
 
-/** The lists the outcome carries, in the order a reader wants them: what broke, what
- *  moved, what closed. Each one's note says what the list MEANS, because the name of
- *  a list is never enough to act on. */
-const LIVE_LISTS = [
+const ID_KEYS = [{ key: 'id', label: 'Entry' },
+  { key: 'keys', label: 'Keys', render: (r) => esc((r.keys ?? []).join(', ')) }];
+
+/** Every list a live check's outcome carries, in the order a reader wants them:
+ *  what broke, what moved, what closed, what is still open. Each one's `note`
+ *  says what the list MEANS, because the name of a list is never enough to act
+ *  on, and each one's `title` is the heading both surfaces print.
+ *
+ *  Exported because ui/export/markdown.js's Gaps section reads the same
+ *  outcome: one list of lists, so the page and the report cannot show different
+ *  halves of the same answer. A list the toolkit adds appears in both the day
+ *  server/gaps.mjs forwards it and its row is added here. */
+export const GAP_LISTS = [
   { key: 'errored', title: 'Errored', columns: ID_REASON,
     note: 'The probe failed and no expectedError accepts the failure.' },
   { key: 'erroredExpected', title: 'Errored, and expected to', columns: ID_REASON,
@@ -146,9 +155,12 @@ const LIVE_LISTS = [
     note: 'The probe the register expects to fail succeeded: the gap closed.' },
   { key: 'attributeErrors', title: 'Attribute not verified', columns: [...ID_ATTRIBUTE, { key: 'reason', label: 'Reason' }],
     note: 'The attribute\'s own probe or selector failed, so it was scored neither way.' },
-  { key: 'unexplained', title: 'Keys no attribute claims',
-    columns: [{ key: 'id', label: 'Entry' }, { key: 'keys', label: 'Keys', render: (r) => esc((r.keys ?? []).join(', ')) }],
+  { key: 'unexplained', title: 'Keys no attribute claims', columns: ID_KEYS,
     note: 'fm answered with a key the register does not account for.' },
+  { key: 'nestedUnexplained', title: 'Nested keys no attribute claims', columns: ID_KEYS,
+    note: 'The same question one level down, and the only list a gap closed by a nested key shows up in.' },
+  { key: 'stillMissing', title: 'Still missing', columns: ID_ATTRIBUTE,
+    note: 'The register says fm does not report this, and it still did not: the gap is where it was.' },
 ];
 
 const CHECK_BUTTON = '<button data-action="gaps-check">Run the register\'s probes</button>';
@@ -168,15 +180,17 @@ function liveSection(solution) {
   // one of them fails -- a refused probe and a selector that matched nothing are
   // the same fact, no such object here -- and a page that called that 300 fm bugs
   // would be lying. Half is the line: the reference solution answers 1 of 302.
-  const foreign = outcome.probeFailures >= outcome.entries / 2
+  // `entries === 0` would make `0 >= 0` true and print "0 of 0 probes could not
+  // find their object" about a register that named nothing to probe.
+  const foreign = outcome.entries > 0 && outcome.probeFailures >= outcome.entries / 2
     ? `<p class="muted">${count(outcome.probeFailures)} of ${count(outcome.entries)} probes could not find their object. `
       + 'The register\'s probes address the reference solution by id, so most of them could not find their object '
       + 'because this is not the reference solution -- read the errors below as "not here", not as fm faults.</p>'
     : '';
   const body = `<p class="muted">Ran ${esc(outcome.ranAt)} against fm ${esc(outcome.fmVersion)} (${esc(outcome.build)}).</p>`
-    + totalsLine([['Entries', outcome.entries], ...LIVE_LISTS.map((l) => [l.title, (outcome[l.key] ?? []).length])])
+    + totalsLine([['Entries', outcome.entries], ...GAP_LISTS.map((l) => [l.title, (outcome[l.key] ?? []).length])])
     + foreign
-    + LIVE_LISTS.map((l) => `<h3>${esc(l.title)}</h3><p class="muted">${esc(l.note)}</p>`
+    + GAP_LISTS.map((l) => `<h3>${esc(l.title)}</h3><p class="muted">${esc(l.note)}</p>`
       + table(l.columns, outcome[l.key] ?? [], { empty: 'None' })).join('');
   return section('Live check', body, { actions: CHECK_BUTTON });
 }

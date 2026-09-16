@@ -90,6 +90,11 @@ function reduceOutcome(outcome, meta) {
     regressed: outcome.regressed.map(pairRef),
     attributeErrors: outcome.attributeErrors.map((a) => ({ id: a.entry.id, attribute: a.attribute.name, reason: a.reason })),
     unexplained: outcome.unexplained.map((u) => ({ id: u.entry.id, keys: u.keys })),
+    // The same question one level down, and the only place a gap closed by a
+    // NESTED key shows up at all -- `unexplained` lists a probe's top-level
+    // keys only. Dropping it, as this did, meant the page could not see the
+    // one kind of news the toolkit's own reporter prints a heading for.
+    nestedUnexplained: outcome.nestedUnexplained.map((u) => ({ id: u.entry.id, keys: u.keys })),
     errored,
     erroredExpected,
     expectedResolved: outcome.expectedResolved.map((e) => ({ id: e.id, expectedError: e.expectedError })),
@@ -100,6 +105,13 @@ function reduceOutcome(outcome, meta) {
     // fact: no such object here. Counted rather than read out of the reason text,
     // which is the toolkit's prose and not a contract.
     probeFailures: errored.length + erroredExpected.length,
+    // `outcome.keyDiff` is deliberately not forwarded: it is this build's keys
+    // against the PREVIOUS build's stored evidence, read out of the evidence
+    // tree under `root`, and `runLiveCheck` gives the checker a fresh temp
+    // directory precisely so nothing is written into the toolkit's own tree.
+    // A fresh root has no previous build in it, so keyDiff is empty on every
+    // run this app makes. `fm-gaps check` against the real evidence tree is
+    // where that answer lives, and it is the owner's to run.
     ...(outcome.fatal ? { fatal: outcome.fatal } : {}),
     fmVersion: meta.version,
     build: meta.build,
