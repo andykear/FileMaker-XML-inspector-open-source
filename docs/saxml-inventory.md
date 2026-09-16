@@ -82,7 +82,7 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseRelationships | qs:'LeftField > FieldReference' | covered | relation.predicates[].leftField |  |
 | parseRelationships | qs:'RelationshipCatalog' | covered | read:relation listing |  |
 | parseRelationships | qs:'RightField > FieldReference' | covered | relation.predicates[].rightField |  |
-| parseRelationships | qs:'SortSpecification' | gap | catalog-relation-sort | The relationship's stored sort order. relation.leftToRight.sortRelated / rightToLeft.sortRelated say a sort exists but not on which fields or in which direction. |
+| parseRelationships | qs:'SortSpecification' | covered | relation.rightToLeft.sortSpec.fields[]{field,order} | The relationship's stored sort order. fm 0.7.0 reports the sort on whichever side sorts: `leftToRight.sortSpec` / `rightToLeft.sortSpec` appear when that side's `sortRelated` is true, with `fields[].field` naming each sort field, `fields[].order` its direction, and the length of `fields[]` giving the number of sort fields. "Put blanks last" and "keep records sorted" (`maintain`) are still unreported; they stay on the register's `relation` entry. |
 | parseRelationships | qs:'TableOccurrenceCatalog' | covered | read:tableOccurrence listing |  |
 | parseRelationships | qs:'TableOccurrenceReference' | covered | relation.left.name + relation.right.name |  |
 | parseRelationships | qsa:':scope > Relationship' | covered | read:relation items[] |  |
@@ -116,7 +116,7 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseLayouts | qs:':scope > LocalCSS' | gap | catalog-object-styles | The per-object local CSS override text and its property count (s.layouts.objects_with_local_css, local_css_node_count, local_css_objects). fm reports only the named style under objects[].style. |
 | parseLayouts | qs:':scope > MenuSetReference' | gap | catalog-layout-menuset | Which custom menu set a layout installs. read:customMenuSet lists the sets and read:layout describes the layout, but no key joins them. |
 | parseLayouts | qs:':scope > Options' | covered | layout.viewStyles + layout.hidden + layout.flags | saveRecord and the layout-level quickFind inside this element are flags.set names confirmRecordSave and disableQuickFind (fm's 34-name layout flag table). |
-| parseLayouts | qs:':scope > PartsList' | gap | catalog-layout-parts | Layout part bands. Verified on the samples: layout.contents.objects[] carries 19 object types and none is a part; only geometry.bodyHeight survives. Header/Footer/Top Navigation/Sub-summary presence, part count and part geometry are all unavailable. |
+| parseLayouts | qs:':scope > PartsList' | covered | layout.parts[]{type,height,offset,name,breakField} | Layout part bands. fm 0.7.0 reports them at the layout's top level rather than inside `contents.objects[]`: one entry per part, `type` one of titleHeader, header, leadingGrandSummary, leadingSubSummary, body, trailingSubSummary, trailingGrandSummary, footer, titleFooter, topNavigation, bottomNavigation, plus `height`, `offset`, `name` and, on a sub-summary, `breakField{name,id,tableOccurrence{id,name}}`. Part presence, count, order and geometry all come from this array; the options word does not (catalog-layout-parts). |
 | parseLayouts | qs:':scope > Portal' | covered | layout.contents.objects[].type = portal |  |
 | parseLayouts | qs:':scope > ScriptTriggers' | covered | layout.scriptTriggers[] + layout.contents.objects[].scriptTriggers[] | Layout describe also gives scriptTriggerCount directly. The object-level key is present on 206 of 473 objects in the samples — absent on object kinds that cannot hold a trigger, `[]` when a kind can and has none — so consumers must guard for its absence rather than assume it is always there. |
 | parseLayouts | qs:':scope > Table' | covered | layout.contents.objects[].tableOccurrence | The portal's table occurrence. |
@@ -271,17 +271,17 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseCustomMenus | qs:'MenuItemList' | covered | customMenu.items[] | Item count is items.length; needs a describe, the listing has name/id/position only. |
 | parseCustomMenus | qsa:':scope > CustomMenu' | covered | read:customMenu items[] |  |
 | parseCustomMenus | qsa:':scope > CustomMenuSet' | covered | read:customMenuSet items[] |  |
-| parseThemeStyleCss | qsa:'CSS' | gap | catalog-theme-styles | The theme's CSS CDATA, from which every per-style colour, font, border and fill in the Themes tab is parsed. No fm catalog for themes or styles. |
-| parseThemes | attr:'custom' | gap | catalog-theme-styles | Marks a theme as developer-made rather than shipped. |
-| parseThemes | attr:'isCustom' | gap | catalog-theme-styles | Alternate spelling of the same flag. |
-| parseThemes | attr:'name' | gap | catalog-theme-styles | The theme's internal id. layout.theme.{id,name,displayName,group} names the theme a layout wears, but there is no catalog of the themes in the file, so an unused theme is invisible. |
-| parseThemes | qs:':scope > Display' | gap | catalog-theme-styles | The theme's human-readable name. |
-| parseThemes | qs:'Display' | gap | catalog-theme-styles | Fallback selector for the same. |
-| parseThemes | qs:'Metadata' | gap | catalog-theme-styles | Holds the theme's namedstyles list and colour elements. |
-| parseThemes | qs:'ThemeCatalog' | gap | catalog-theme-styles | The list of themes defined in the file. |
-| parseThemes | qs:'namedstyles' | gap | catalog-theme-styles | The per-theme style list; style_count and the unused-style detection both need it. |
-| parseThemes | qsa:':scope > Theme' | gap | catalog-theme-styles |  |
-| parseThemes | qsa:'color,Color' | gap | catalog-theme-styles | The theme palette. |
+| parseThemeStyleCss | qsa:'CSS' | covered | `read:theme` describe `css` | The theme's whole stylesheet. fm 0.7.0's theme describe returns the same text the SaXML CDATA carried, as one `css` string, so every per-style colour, font, border and fill in the Themes tab still has to be parsed out of the CSS text exactly as the legacy parsed it out of the CDATA. |
+| parseThemes | attr:'custom' | covered | `read:theme` describe `isCustom` | Marks a theme as developer-made rather than shipped. fm also reports `isDefault` and `isDeprecated` alongside it. |
+| parseThemes | attr:'isCustom' | covered | `read:theme` describe `isCustom` | Alternate spelling of the same flag; one fm key answers both. |
+| parseThemes | attr:'name' | covered | `read:theme` describe `name` | The theme's internal id. `read:theme` lists every theme defined in the file, so a theme no layout wears is visible now; `layout.theme.{id,name,displayName,group}` still names the theme each layout wears. |
+| parseThemes | qs:':scope > Display' | covered | `read:theme` describe `displayName` | The theme's human-readable name; `group` names the family it is filed under. |
+| parseThemes | qs:'Display' | covered | `read:theme` describe `displayName` | Fallback selector for the same name. |
+| parseThemes | qs:'Metadata' | covered | `read:theme` describe `namedStyleNames` + `colorPalette.swatch1..5` | Structural wrapper that held the theme's namedstyles list and colour elements; fm returns both as keys on the theme describe. The metadata this element also carried that fm does not report - base theme name and version, locale, platform, theme version, chart colour scheme, the 24 layout-builder metrics, the tag list and modification who/when - stays on the register's `theme` entry. |
+| parseThemes | qs:'ThemeCatalog' | covered | `read:theme` list `items[]` | The list of themes defined in the file. |
+| parseThemes | qs:'namedstyles' | covered | `read:theme` describe `namedStyleNames` | The per-theme style list: one key per named style, its value the style's display name. style_count and the unused-style detection both read it. On ooe fm returns 94 of the 95 style keys the legacy finds; the 95th is defined on the second theme only. |
+| parseThemes | qsa:':scope > Theme' | covered | `read:theme` list `items[]` | Iterating the themes; fm returns the array, then a describe per theme. |
+| parseThemes | qsa:'color,Color' | covered | `read:theme` describe `colorPalette.swatch1..5` | The theme palette, five swatches. The colours individual styles use are inside the `css` text, not broken out as keys. |
 | parseExternalSources | attr:'direction' | covered | authorization.type | inbound / outbound. |
 | parseExternalSources | attr:'driver' | covered | externalDataSource.dsn (DSN, not the ODBC driver name) | fm reports the ODBC data source name, not the driver; sourceType 'odbc' still names the kind. |
 | parseExternalSources | attr:'file' | covered | authorization.filenames[] | Plus filenamesRaw. |
@@ -312,27 +312,27 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseTags | qsa:'FieldCatalog' | covered | read:field {table} per table | Structural. |
 | parseTags | qsa:'Layout' | covered | read:layout items[] | Iteration is covered; the TagList read on each layout is the gap (catalog-tags). |
 | parseTags | qsa:'Script' | covered | read:script items[] | Iteration is covered; the TagList read on each script is the gap (catalog-tags). |
-| parseModifications | attr:'Display' | covered | layout.theme.displayName + customFunction.prototype | Fallback name for an object with no name attribute. Where that object is a Theme, the theme catalog is itself gap: catalog-theme-styles. |
+| parseModifications | attr:'Display' | covered | layout.theme.displayName + customFunction.prototype | Fallback name for an object with no name attribute. Where that object is a Theme, `read:theme` names it (`displayName`). |
 | parseModifications | attr:'modifications' | gap | catalog-modification-info | The per-object modification counter that the whole hotspots tab ranks on. Not reported for any object, layouts included - layout.modified carries who and when, never how many. The counter itself is DDR bookkeeping; the ask to Claris is the who/when triple (account, user name, timestamp) on every catalog, which fm reports for layouts only (register: catalog-modification-info). |
 | parseModifications | attr:'name' | covered | the name key of each catalog | Names the modified object. |
 | parseModifications | attr:'timestamp' | gap | catalog-modification-info | Last-modified timestamp. Covered for layouts only, by layout.modified.timestamp. |
 | parseModifications | attr:'userName' | gap | catalog-modification-info | Last-modifying user. Covered for layouts only, by layout.modified.by / layout.modified.account. |
 | parseModifications | qsa:'UUID[modifications]' | gap | catalog-modification-info | The audit element on fields, tables, layouts, scripts, TOs, themes, custom functions, custom menus, value lists and privilege sets. Only layouts have an fm equivalent (layout.modified), and it carries no count. |
-| parseBitFlags | attr:'Options' | gap | catalog-layout-parts | Part Definition options word. Parts are not reported at all, which is the real gap; once they are, fm will presumably decode the word like every other. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
+| parseBitFlags | attr:'Options' | gap | catalog-layout-parts | Part Definition options word. fm 0.7.0 does report the parts themselves (`layout.parts[]{type,height,offset,name,breakField}`); what is missing is the options word behind page breaks, page numbering, alternate row state and active row state. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
 | parseBitFlags | attr:'inputMode' | covered | layout.contents.objects[].inputMode + keyboardType | fm reports the decoded word (automatic, roman, ...) instead of the raw option number. The raw number only mattered to the retired Bit Flags tab. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
 | parseBitFlags | attr:'name' | covered | layout.name | Only used as the source label on a flag row. |
 | parseBitFlags | attr:'show' | gap | catalog-portal-setup | Portal 'show' bits: delete is covered by objects[].allowDelete; create, sort and filter are the portal-setup gap (fm help: sort and filter are 'reported nowhere yet'). The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
-| parseBitFlags | attr:'type' | covered | layout.contents.objects[].type + objects[].control | Object kind and field control style (editBox, checkboxSet, popupMenu, ...) are both named keys. Part types remain catalog-layout-parts. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
+| parseBitFlags | attr:'type' | covered | layout.contents.objects[].type + objects[].control | Object kind and field control style (editBox, checkboxSet, popupMenu, ...) are both named keys. Part types are `layout.parts[].type`; only the raw part type code is still unreported (catalog-layout-parts). The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
 | parseBitFlags | qs:':scope > Field' | covered | layout.contents.objects[].{field, control, browseEntry, findEntry, exitOnTab, exitOnReturn, exitOnEnter, selectContentsOnEntry, autoComplete, ...} | Every field-object option word is decoded into named keys (about 45 on a field object). The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
 | parseBitFlags | qs:':scope > Options' | covered | layout.flags.{raw,set} + layout.contents.objects[].<named keys> + account.{enabled,forceExpire,hasPassword} | The raw option word survives only on layouts (flags.raw beside flags.set naming 22 bits); everywhere else fm reports the decoded keys and not the number. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
 | parseBitFlags | qs:':scope > Portal' | covered | layout.contents.objects[].{allowDelete, rows, initialRow, allowVerticalScrolling, scrollBarVisibility, resetScrollBarOnExit} | Portal option words decoded; create/sort/filter are catalog-portal-setup. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
 | parseBitFlags | qs:':scope > Usage' | covered | layout.contents.objects[].{control, inputMode, keyboardType, repetitionCount, repetitionOrientation} | Field Usage word decoded into named keys. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
 | parseBitFlags | qs:'AccountsCatalog' | covered | account.{enabled, forceExpire, hasPassword, userType, privilegeSet} | The catalog-level options word is not reported, but each account's attributes are decoded; the word's own meaning was never documented. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
-| parseBitFlags | qs:'Definition' | gap | catalog-layout-parts | Part Definition (options word and part type). Parts are not reported. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
+| parseBitFlags | qs:'Definition' | gap | catalog-layout-parts | Part Definition: options word and part type. The part type is `layout.parts[].type` now; the definition kind and the options word are not reported. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
 | parseBitFlags | qs:'LayoutCatalog' | covered | read:layout (flatten) + layout.flags | Entry point for the layout flag group; layout.flags.set names 22 bits and flags.raw carries the word. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
 | parseBitFlags | qsa:'Layout' | covered | layout.flags.{raw,set} | Per-layout options word, decoded and raw. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
 | parseBitFlags | qsa:'LayoutObject' | covered | layout.contents.objects[].<named keys> | Per-object options word decoded into named keys (locked, hideWhenPrinting, slideLeft, slideUp, resizeEnclosingPart, applyInFindMode and the kind-specific ones). The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
-| parseBitFlags | qsa:'Part' | gap | catalog-layout-parts | Per-part options word. Parts are not reported. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
+| parseBitFlags | qsa:'Part' | gap | catalog-layout-parts | Per-part options word. The parts are reported (`layout.parts[]`), the options word is not. The Bit Flags tab is retired: it catalogued raw option words because SaXML leaves them undecoded; fm reports every option as a named key, so there is nothing to decipher. |
 | parseDeepAnalysis | attr:'enable' | covered | script.body[].disabled | Disabled steps are skipped by every script-issue check; fm marks them with disabled true. |
 | parseDeepAnalysis | attr:'fieldtype' | covered | field.options.fieldType |  |
 | parseDeepAnalysis | attr:'global' | covered | field.options.global | stored_with_globals check. |
@@ -367,11 +367,11 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseDeepAnalysis | qsa:'Calculation' | covered | calculation-valued keys across field, script.body[] and layout objects |  |
 | parseDeepAnalysis | qsa:'FieldCatalog' | covered | read:field {table} per table | Structural. |
 | parseDeepAnalysis | qsa:'LayoutObject' | covered | layout.contents.objects[] |  |
-| parseDeepAnalysis | qsa:'Part' | gap | catalog-layout-parts | Part iteration for the layout-side checks; no part object exists in layout.contents.objects[]. |
+| parseDeepAnalysis | qsa:'Part' | covered | layout.parts[] | Part iteration for the layout-side checks; fm 0.7.0 reports the array at the layout's top level. |
 | parseDeepAnalysis | qsa:'StepsForScripts Calculation' | covered | script.body[] calculation-valued keys | value, condition, parameter, calculation and slots.calc.* carry every formula the expensive-function and dead-variable scans read. |
 | parseUnreferenced | attr:'UUID' | derived | derived from layout.contents.objects[].valueList.{id,name} | fm has no ValueListReference UUID; the used/unused join is by id or name. |
 | parseUnreferenced | attr:'datatype' | covered | field.type | Shown on the unreferenced-field drill-down. |
-| parseUnreferenced | attr:'displayName' | covered | layout.contents.objects[].style | The named style an object wears. The theme-side list of all defined styles, which is what turns this into an unused-style report, is gap: catalog-theme-styles. |
+| parseUnreferenced | attr:'displayName' | covered | layout.contents.objects[].style | The named style an object wears. The theme-side list of all defined styles, which is what turns this into an unused-style report, is `read:theme` describe `namedStyleNames`. |
 | parseUnreferenced | attr:'enable' | covered | script.body[].disabled |  |
 | parseUnreferenced | attr:'fieldtype' | covered | field.options.fieldType |  |
 | parseUnreferenced | attr:'global' | covered | field.options.global |  |
@@ -403,7 +403,7 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseUnreferenced | qs:'LayoutReference' | covered | script.body[].layout |  |
 | parseUnreferenced | qs:'LayoutReference[id="0"]' | covered | script.body[].layout by calculation | Drives s.unrefs.layouts_dynamic_warning: a Go to Layout chosen by calculation means the unreferenced-layout list cannot be trusted. |
 | parseUnreferenced | qs:'LeftField > FieldReference' | covered | relation.predicates[].leftField |  |
-| parseUnreferenced | qs:'Metadata > namedstyles' | gap | catalog-theme-styles | The per-theme list of defined styles. Without it there is nothing to subtract the used styles from, so s.unrefs.unused_styles and unused_styles_detail have no source. |
+| parseUnreferenced | qs:'Metadata > namedstyles' | covered | `read:theme` describe `namedStyleNames` | The per-theme list of defined styles. Subtracting the used set from it is what produces s.unrefs.unused_styles and unused_styles_detail. |
 | parseUnreferenced | qs:'RelationshipCatalog' | covered | read:relation listing |  |
 | parseUnreferenced | qs:'RightField > FieldReference' | covered | relation.predicates[].rightField |  |
 | parseUnreferenced | qs:'ScriptCatalog' | covered | read:script listing |  |
@@ -412,13 +412,13 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseUnreferenced | qs:'TableOccurrenceCatalog' | covered | read:tableOccurrence listing |  |
 | parseUnreferenced | qs:'TableOccurrenceReference' | covered | layout.tableOccurrence + relation.left/right + layout.contents.objects[].field.tableOccurrence |  |
 | parseUnreferenced | qs:'Text' | covered | field.options.calculation.text | The CDATA formula child of a Calculation. |
-| parseUnreferenced | qs:'ThemeCatalog' | gap | catalog-theme-styles | Needed to enumerate every theme and its styles. |
+| parseUnreferenced | qs:'ThemeCatalog' | covered | `read:theme` list `items[]` | Enumerates every theme, each then described for its style list. |
 | parseUnreferenced | qs:'ValueListCatalog' | covered | read:valueList listing |  |
 | parseUnreferenced | qsa:':scope > Calculation' | covered | field.options.*.calculation.text |  |
 | parseUnreferenced | qsa:':scope > Field[fieldtype]' | covered | read:field items[] |  |
 | parseUnreferenced | qsa:':scope > ObjectList > Field, :scope > Field' | covered | read:field items[] | Handles both SaXML field-catalog shapes; fm has one. |
 | parseUnreferenced | qsa:':scope > TableOccurrence' | covered | read:tableOccurrence items[] |  |
-| parseUnreferenced | qsa:':scope > Theme' | gap | catalog-theme-styles |  |
+| parseUnreferenced | qsa:':scope > Theme' | covered | `read:theme` list `items[]` |  |
 | parseUnreferenced | qsa:':scope > ValueList' | covered | read:valueList items[] |  |
 | parseUnreferenced | qsa:'BaseTable' | covered | read:table items[] |  |
 | parseUnreferenced | qsa:'BaseTableReference' | covered | tableOccurrence.table + field.table |  |
@@ -431,7 +431,7 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | parseUnreferenced | qsa:'JoinPredicate' | covered | relation.predicates[] |  |
 | parseUnreferenced | qsa:'Layout' | covered | read:layout items[] |  |
 | parseUnreferenced | qsa:'LayoutObject LocalCSS' | gap | catalog-object-styles | Collects the style names layout objects actually use. layout.contents.objects[].style gives the display name for an object wearing a named style, but an object carrying local CSS and no style name is silent, so the used-style set is incomplete. |
-| parseUnreferenced | qsa:'Part LocalCSS' | gap | catalog-layout-parts | Styles used by layout part bands. Parts are not reported at all. |
+| parseUnreferenced | qsa:'Part LocalCSS' | gap | catalog-layout-parts | Styles used by layout part bands. `layout.parts[]` carries geometry, name and break field only - no style name and no CSS - so styles worn by a part cannot join the used-style set. |
 | parseUnreferenced | qsa:'Portal > Calculation' | gap | catalog-portal-setup | The portal filter calculation. A field referenced only from a portal filter will be reported unreferenced. |
 | parseUnreferenced | qsa:'Relationship Calculation' | dropped | owner ruling 2026-09-14 | The legacy code speculatively queried a Calculation element under Relationship ("rare, but possible"). FileMaker has no calculation-based join predicates (owner confirmed), so the query never matched and nothing is lost. relation.predicates[] carries leftField, op, rightField. |
 | parseUnreferenced | qsa:'Relationship' | covered | read:relation items[] |  |
@@ -478,13 +478,13 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | render | s.globals.global_variable_count | gap | catalog-calculation-tokens | Same source problem; the count would be low by every read-only variable. |
 | render | s.globals.max_global_contacts | gap | catalog-calculation-tokens | Same source problem. |
 | render | s.graph.cascade_delete | derived | derived from relation.leftToRight.cascadeDelete + relation.rightToLeft.cascadeDelete |  |
-| render | s.graph.detail.relationships_all | covered | relation.{left,right,predicates[],leftToRight,rightToLeft} | Every column including the sorted tick (sortRelated); only the sort's field list is missing (catalog-relation-sort). |
+| render | s.graph.detail.relationships_all | covered | relation.{left,right,predicates[],leftToRight,rightToLeft} | Every column including the sorted tick (sortRelated) and, since fm 0.7.0, the sort itself (`rightToLeft.sortSpec.fields[]{field,order}`); only blanksLast and maintain are unreported. |
 | render | s.graph.detail.tos_all | covered | tableOccurrence.{name,table.name} |  |
 | render | s.graph.relationship_count | derived | derived from read:relation listing total |  |
 | render | s.graph.table_occurrence_count | derived | derived from read:tableOccurrence listing total |  |
 | render | s.graph.to_zero_relationships | derived | derived from tableOccurrence.related[] (empty) or the union of relation.left/right |  |
 | render | s.layouts.button_bars | derived | derived from layout.contents.objects[].type = buttonBar |  |
-| render | s.layouts.detail | gap | catalog-layout-parts | Most sublists are covered (all, hidden, in_sidebar, with_triggers, with_portals, with_charts, with_buttons, with_tab_controls, with_slide_controls, with_web_viewers, with_popovers, with_button_bars, dividers). with_header, with_footer, with_subsummary and with_nav_part need part bands; with_local_css needs catalog-object-styles; with_filtered_portals needs catalog-portal-setup. |
+| render | s.layouts.detail | covered | layout.parts[].type + layout.{hidden,scriptTriggers,contents.objects[]} | with_header, with_footer, with_subsummary and with_nav_part come from `parts[].type`; the rest (all, hidden, in_sidebar, with_triggers, with_portals, with_charts, with_buttons, with_tab_controls, with_slide_controls, with_web_viewers, with_popovers, with_button_bars, dividers) were already covered. with_local_css still needs catalog-object-styles and with_filtered_portals catalog-portal-setup. |
 | render | s.layouts.info | covered | layout.{id,theme,tableOccurrence,scriptTriggerCount,hidden,viewStyles,flags.set} | id, theme, base_to, triggers, hidden, default_view, allow_form/list/table, save_record (flags.set confirmRecordSave) and quick_find (flags.set disableQuickFind) are covered; menu_set is catalog-layout-menuset. |
 | render | s.layouts.layout_count | derived | derived from read:layout {flatten:true} items with type = layout | Minus the hyphen-named dividers, same rule as today. |
 | render | s.layouts.local_css_objects | gap | catalog-object-styles | Per-layout, per-object-type counts of local CSS overrides. |
@@ -502,7 +502,7 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | render | s.mods.most_recent | gap | catalog-modification-info | Covered for layouts only, by layout.modified.timestamp. |
 | render | s.mods.top_modified | gap | catalog-modification-info | Ranks on the modification counter, which is reported for nothing. |
 | render | s.mods.total_modifications | gap | catalog-modification-info |  |
-| render | s.name | gap | catalog-theme-styles | Theme-style row: the style's name in the Theme Styles pane. |
+| render | s.name | covered | `read:theme` describe `namedStyleNames.<style key>` | Theme-style row: the style's display name in the Theme Styles pane. |
 | render | s.persistent.count | derived | derived from read:persistentData listing total |  |
 | render | s.persistent.detail.all | gap | catalog-modification-info | name, id, instanceID, type, value and length are covered by persistentData.{key,id,instance.name,dataType,value}; the modifiedBy, account, modifiedAt, mods and uuid columns have no source. |
 | render | s.plugins.detail | gap | catalog-plugins |  |
@@ -541,11 +541,11 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | render | s.tags.tagged_tos | covered | tableOccurrence.tags | Describe by id; the listing has no tags. |
 | render | s.tags.total_assignments | gap | catalog-tags | Sums tag counts across all four object kinds, two of which have no source. |
 | render | s.tags.unique_count | gap | catalog-tags | Same. |
-| render | s.theme | gap | catalog-theme-styles | Theme-style row: which theme a style belongs to. |
-| render | s.themes.detail | gap | catalog-theme-styles |  |
-| render | s.themes.theme_count | gap | catalog-theme-styles | layout.theme names the theme each layout wears, so a distinct-themes-in-use count is derivable, but a theme defined and unused is invisible. |
-| render | s.themes.themes_detail | gap | catalog-theme-styles | Per-theme palette, style list and colour usage. |
-| render | s.unrefs.all_styles_detail | gap | catalog-theme-styles |  |
+| render | s.theme | covered | `read:theme` describe `name` + `displayName` | Theme-style row: which theme a style belongs to. The style list is per theme, so the owning theme is whichever describe returned the key. |
+| render | s.themes.detail | covered | `read:theme` list `items[]` + describe `{displayName,isCustom,namedStyleNames,colorPalette,layoutsUsing,layouts}` | The Themes tab's per-theme rows. |
+| render | s.themes.theme_count | covered | `read:theme` list `items[]` total | Counts the themes defined in the file, not only the distinct themes layouts wear. |
+| render | s.themes.themes_detail | covered | `read:theme` describe `colorPalette.swatch1..5` + `namedStyleNames` + `layoutsUsing` / `layouts` | Per-theme palette, style list and usage: `layoutsUsing` counts the layouts wearing the theme and `layouts` names them. Per-style colours and fonts still have to be parsed out of the `css` text. |
+| render | s.unrefs.all_styles_detail | covered | `read:theme` describe `namedStyleNames` | Every style defined in the file, per theme. |
 | render | s.unrefs.broken | covered | script.problems[] + <Field Missing> / <Table Missing> in calculation text | Confirmed in the samples: fm returns both the markers inside calculation text and its own live re-check per script. |
 | render | s.unrefs.calc_deps | derived | derived from calculation text across catalogs + the table, field, script and layout name indexes |  |
 | render | s.unrefs.confidence.reasons | gap | catalog-plugins | Four of the five uncertainty signals are derivable from calculation text (Evaluate, GetField, dynamic ExecuteSQL) and from read:externalDataSource; plugin_call_count is not, because nothing marks a call as a plugin call. |
@@ -559,10 +559,10 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | render | s.unrefs.tables | derived | derived from read:table minus tableOccurrence.table |  |
 | render | s.unrefs.to_removability.completely_unused | derived | derived from tableOccurrence.related[] + layout.tableOccurrence + field references |  |
 | render | s.unrefs.to_removability.relationship_only | derived | derived from tableOccurrence.related[] + layout.tableOccurrence + field references |  |
-| render | s.unrefs.unused_styles | gap | catalog-theme-styles | Needs the theme's namedstyles list to subtract used styles from. |
-| render | s.unrefs.unused_styles_detail | gap | catalog-theme-styles | Same. |
+| render | s.unrefs.unused_styles | covered | `read:theme` describe `namedStyleNames` minus `layout.contents.objects[].style` | "Used" is derived: the style display names layout objects wear, subtracted from the theme's namedStyleNames. An object carrying local CSS and no style name is still invisible (catalog-object-styles), so the used set can undercount. |
+| render | s.unrefs.unused_styles_detail | covered | `read:theme` describe `namedStyleNames` minus `layout.contents.objects[].style` | Same. |
 | render | s.unrefs.value_lists | derived | derived from read:valueList minus layout.contents.objects[].valueList + field.options.validation.valueList |  |
-| render | s.used | gap | catalog-theme-styles | Theme-style row: whether a style is used by any object. |
+| render | s.used | covered | derived from `layout.contents.objects[].style` against `read:theme` `namedStyleNames` | Theme-style row: whether a style is worn by any object. |
 | render | s.valueLists.detail.all | covered | valueList.{name,type,values[],field} |  |
 | render | s.valueLists.detail.dynamic_list | covered | valueList.type + valueList.field.{occurrence,field} |  |
 | render | s.valueLists.detail.dynamic_related_only_list | covered | valueList.options.showRelatedOnly + valueList.startTable |  |
@@ -573,24 +573,24 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 
 | Classification | Rows |
 |---|---|
-| covered | 387 |
+| covered | 414 |
 | derived | 66 |
-| gap | 102 |
+| gap | 75 |
 | dropped | 8 |
 
-Counted from this file on 2026-09-14 by grepping the Classification column for each of the three words; 387 + 66 + 102 + 8 = 563, the number of rows in the table. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
+Counted from this file on 2026-09-16 by tallying the Classification column of every table row; 414 + 66 + 75 + 8 = 563, the number of rows in the table. The rows themselves have not moved since 2026-09-14; what changed is that fm 0.7.0 turned 27 gap rows into covered rows - all 23 of `catalog-theme-styles`, the one `catalog-relation-sort` row, and three of the seven `catalog-layout-parts` rows - leaving 10 gap ids. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
 
 ## Gap ids introduced
 
+Ten ids, after fm 0.7.0 closed `catalog-theme-styles` and `catalog-relation-sort` outright and narrowed `catalog-layout-parts` (2026-09-16).
+
 From the brief's list:
 
-- `catalog-theme-styles` (23 rows): fm has no theme catalog. A layout reports `theme{id,name,displayName,group}` and an object a `style` display name, but nothing enumerates the themes in the file, their named styles, their palettes or their CSS. The Themes tab, the unused-style report and the style columns of the Reference Explorer all depend on it.
 - `catalog-file-metadata` (24 rows): no catalog for File Options. Login mode, saved password, minimum FileMaker version, the three hide-sharing checkboxes, the startup layout and file-level script triggers have no read op and no Get() function (fm help: file-level options are deliberately not members of any catalog). Encryption state, file name, path, size, persistent ID and locale ARE readable through evaluate:calculation with Get() functions, so those rows are covered.
 - `catalog-calculation-tokens` (4 rows): FileMaker's tokenised form of every calculation. A FileMaker 2026 SaXML export with DDR info carries each formula twice: as text and as FileMaker's own parse of it, a list of Chunk elements typed FieldReference, VariableReference, FunctionRef, CustomFunctionRef, ScriptRef and so on, which says exactly what a formula references. fm reports the text only; no read op and not validate:calculation exposes the tokens. Every cross-reference analysis (unreferenced fields and occurrences, broken references, global variables, custom function usage) therefore has to scan calculation text, which is approximate where FileMaker's parser is exact: variable names with spaces, references inside comments or string literals, `::` inside quoted text.
 - `catalog-plugins` (7 rows): nothing marks a calculation call site as a plugin function call. The Plugins tab and the plugin-call uncertainty signal behind the Fields confidence tier depend on it.
 - `catalog-modification-info` (14 rows): no object reports a modification count, and only a layout reports who and when (`layout.modified`). The Modification Hotspots tab and the audit columns of the Persistent Data tab depend on it.
-- `catalog-relation-sort` (1 row): `relation.leftToRight.sortRelated` says a relationship sorts related records but not on which fields or in which direction. The relationship detail pane depends on it.
-- `catalog-layout-parts` (7 rows): verified against the samples - `layout.contents.objects[]` carries 19 object types and no part. Only `geometry.bodyHeight` survives. Part presence, count, type, geometry and per-part styles have no source; the Wireframe tab and the header/footer/sub-summary/navigation layout lists depend on them.
+- `catalog-layout-parts` (4 rows, narrowed on 2026-09-16): fm 0.7.0 reports `layout.parts[]{type,height,offset,name,breakField}`, which covers part presence, count, type, order and geometry, so the Wireframe tab and the header/footer/sub-summary/navigation layout lists have a source now. What is left is the part's options word (page breaks, page numbering, alternate and active row state), the raw part type code, the part definition kind, the object count per part, and any style or CSS a part wears - a part entry carries no style key at all.
 - `catalog-object-styles` (4 rows): an object's local CSS override. `objects[].style` gives the named style's display name, but an object carrying CSS text and no style name - the exact local-override case the legacy counts - is invisible.
 
 New in this pass:

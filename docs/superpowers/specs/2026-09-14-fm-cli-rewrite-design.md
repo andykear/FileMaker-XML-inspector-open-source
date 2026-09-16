@@ -138,6 +138,8 @@ New, cheap: fonts, graph notes, authorizations (file access pairings).
 
 Dropped, registered: theme mood board and colour palette (no theme catalog; a layout carries only its theme name and an object its style name), file metadata (encryption, minimum version), DDR pre-rendered text index, bit flag catalogue, plugin catalog, modification hotspots (only layouts report `modified`), relation sort specs, the opaque step kinds.
 
+2026-09-16, fm 0.7.0: three of those are readable now and move into Plan 4's scope rather than staying dropped. `read:theme` lists the file's themes and describes one with `css`, `colorPalette.swatch1..5`, `namedStyleNames`, `isCustom`, `layoutsUsing` and `layouts`, which gives back the theme mood board, the colour palette and the unused-style report; `layout.parts[]` reports each part's `type`, `height`, `offset`, `name` and `breakField`, which gives back the part bands (the options word is still missing, so `catalog-layout-parts` survives in reduced form); and `relation.{leftToRight,rightToLeft}.sortSpec.fields[]{field,order}` reports the relation sort spec (blanksLast and maintain are still missing). The list above is left as written, as the record of what was true on 2026-09-14.
+
 Deferred, not dropped: compare mode (two solution snapshots can be diffed later since the model is JSON), saved report snapshot.
 
 ## 4. Coverage register and the intake loop
