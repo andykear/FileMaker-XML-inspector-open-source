@@ -13,7 +13,7 @@ export { buildHash, parseHash };
  *  enough that a burst renders once, short enough that a pause feels immediate. */
 export const FILTER_DEBOUNCE_MS = 120;
 
-export function createShell({ tabs, mount, onReread, onExport }) {
+export function createShell({ tabs, mount, onReread, onExport, onAction }) {
   let solution = null;
   let filter = '';
   let filterTimer = null;
@@ -64,6 +64,15 @@ export function createShell({ tabs, mount, onReread, onExport }) {
         ? JSON.parse(reread.dataset.rereadObject)
         : { kind: 'catalog', target: reread.dataset.target, catalog: reread.dataset.rereadCatalog };
       await onReread(slot);
+      return;
+    }
+    // The generic one: a tab names an action and the app decides what it does.
+    // Deliberately after the re-read buttons, which are the same click with a
+    // shape of their own, and before row selection, so a button inside a
+    // selectable row is the button's click and not the row's.
+    const action = ev.target.closest('[data-action]');
+    if (action) {
+      await onAction?.(action.dataset.action, action.dataset);
       return;
     }
     const row = ev.target.closest('[data-select]');

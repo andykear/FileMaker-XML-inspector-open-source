@@ -37,6 +37,7 @@ function stubShell({ render = () => '<p>body</p>' } = {}) {
   const mount = { nav: fakeElement(), main: fakeElement(), filter: fakeElement(), export: fakeElement() };
   const rereads = [];
   const exports = [];
+  const actions = [];
   const saved = { window: globalThis.window, location: globalThis.location };
   globalThis.window = { addEventListener() {} };
   globalThis.location = { hash: '' };
@@ -45,9 +46,10 @@ function stubShell({ render = () => '<p>body</p>' } = {}) {
     mount,
     onReread: async (slot) => { rereads.push(slot); },
     onExport: (kind) => { exports.push(kind); },
+    onAction: async (name, dataset) => { actions.push([name, dataset]); },
   });
   shell.setSolution({ files: { a: {}, b: {} }, unreachable: [] });
-  return { shell, mount, rereads, exports, restore: () => Object.assign(globalThis, saved) };
+  return { shell, mount, rereads, exports, actions, restore: () => Object.assign(globalThis, saved) };
 }
 
 test('the shell renders the nav and the active tab, and view is what the tab was rendered with', () => {
@@ -98,6 +100,29 @@ test('a click on a re-read button calls onReread with the parsed slot and select
     await mount.main.handlers.click(clickOn({ [selector]: catalogButton }));
     assert.deepEqual(rereads[1], { kind: 'catalog', target: 'fmnet://localhost/ooe', catalog: 'valueList' });
   } finally { restore(); }
+});
+
+test('a click on a data-action button calls onAction with the name and the dataset, and selects nothing', async () => {
+  const { mount, actions, restore } = stubShell();
+  try {
+    const button = { dataset: { action: 'gaps-check', target: 'fmnet://localhost/ooe' } };
+    await mount.main.handlers.click(clickOn({ '[data-action]': button, '[data-select]': { dataset: { select: 'a|b' } } }));
+    assert.deepEqual(actions, [['gaps-check', button.dataset]]);
+    assert.equal(globalThis.location.hash, '', 'an action is not a selection');
+  } finally { restore(); }
+});
+
+test('a shell with no onAction ignores an action click rather than throwing', async () => {
+  const saved = { window: globalThis.window, location: globalThis.location };
+  globalThis.window = { addEventListener() {} };
+  globalThis.location = { hash: '' };
+  try {
+    const mount = { nav: fakeElement(), main: fakeElement(), filter: fakeElement() };
+    const shell = createShell({ tabs: [{ id: 'tables', label: 'Tables', render: () => '<p>x</p>' }], mount, onReread: async () => {} });
+    shell.setSolution({ files: {}, unreachable: [] });
+    await mount.main.handlers.click(clickOn({ '[data-action]': { dataset: { action: 'nope' } } }));
+    assert.equal(globalThis.location.hash, '');
+  } finally { Object.assign(globalThis, saved); }
 });
 
 test('a click on neither a row nor a button changes nothing', () => {

@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createDirectApi } from './read.mjs';
+import { loadRegisterSummary, runLiveCheck } from './gaps.mjs';
 
 const UI_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'ui');
 /** The browser cannot reach node_modules, and ui/ must stay free of a copy of the
@@ -85,6 +86,7 @@ export function createServer(opts) {
   // resolve() also strips a trailing separator, which the traversal guard below
   // compares against.
   const uiDir = resolve(opts.uiDir ?? UI_DIR);
+  let register = null;
 
   return createHttpServer(async (req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1');
@@ -117,6 +119,19 @@ export function createServer(opts) {
           throw e;
         }
         return send(res, 200, result);
+      }
+      // The register is 302 entries of prose that never change while the process
+      // runs: read once, held, and served as the same bytes every time.
+      if (req.method === 'GET' && url.pathname === '/api/register') {
+        register ??= Buffer.from(JSON.stringify(loadRegisterSummary()));
+        return send(res, 200, register);
+      }
+      // Every probe goes through readOps, so the read-only guard covers them; the
+      // register itself is never written back.
+      if (req.method === 'POST' && url.pathname === '/api/gaps/check') {
+        const body = await readJson(req);
+        if (typeof body.target !== 'string') return send(res, 400, { error: 'body must be { target: string }' });
+        return send(res, 200, await runLiveCheck(opts, body.target));
       }
       if (req.method === 'POST' && url.pathname === '/api/resolve-target') {
         const body = await readJson(req);

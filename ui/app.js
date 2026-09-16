@@ -4,7 +4,7 @@
 import { createApi } from './api.js';
 import { esc } from './dom.js';
 import { discover, reread } from './discovery.js';
-import { createShell } from './shell.js';
+import { createShell, parseHash } from './shell.js';
 import { markdownReport } from './export/markdown.js';
 import { mermaidCallGraph, mermaidRelationships } from './export/mermaid.js';
 import { exportFilename, jsonExport } from './export/json.js';
@@ -17,9 +17,10 @@ import { tab as securityTab } from './tabs/security.js';
 import { tab as themesTab } from './tabs/themes.js';
 import { tab as analysisTab } from './tabs/analysis.js';
 import { tab as explorerTab } from './tabs/explorer.js';
+import { tab as gapsTab } from './tabs/gaps.js';
 import { tab as catalogsTab } from './tabs/catalogs.js';
 
-const TABS = [solutionTab, tablesTab, graphTab, scriptsTab, layoutsTab, securityTab, themesTab, analysisTab, explorerTab, catalogsTab];
+const TABS = [solutionTab, tablesTab, graphTab, scriptsTab, layoutsTab, securityTab, themesTab, analysisTab, explorerTab, gapsTab, catalogsTab];
 
 /** What the Export menu's four entries are. The exporters are pure functions to
  *  a string (ui/export/); this file is the only one that knows about Blob, an
@@ -144,8 +145,45 @@ function rereadLabel(slot) {
 
 function rereadSlot(slot) {
   return run(rereadLabel(slot), async () => {
+    const previous = solution;
     solution = await reread(api, solution, slot, { onProgress: progress });
+    // A full re-read builds a new solution object. The register and the last
+    // live check are not read from the file at all, so they survive it -- what
+    // fm can report did not change because we read the file again.
+    if (previous?.register) solution.register = previous.register;
+    if (previous?.gaps) solution.gaps = previous.gaps;
   });
+}
+
+/** The coverage register is ~3MB of prose and only the Gaps tab wants it, so it is
+ *  fetched when that tab is first shown rather than with the solution. Stored ON the
+ *  solution, by mutation: the tabs that memoise on the solution's identity (the
+ *  explorer's object list, the rendering gaps below) must not have it replaced under
+ *  them for a field none of them reads. */
+async function loadRegister() {
+  if (!solution || solution.register) return;
+  await run('Loading the coverage register', async () => {
+    solution.register = await api.register();
+  });
+}
+
+/** The register's own probes against the file in front of us. One fm invocation,
+ *  every op read-only, and the register is never written back. */
+async function runGapsCheck() {
+  if (!solution) {
+    guard('Nothing read yet, so there is nothing to check');
+    return;
+  }
+  await loadRegister();
+  await run('Running the register\'s probes', async () => {
+    solution.gaps = await api.gapsCheck(solution.root);
+  });
+}
+
+function onAction(name) {
+  if (name === 'gaps-register') return loadRegister();
+  if (name === 'gaps-check') return runGapsCheck();
+  return undefined;
 }
 
 const shell = createShell({
@@ -153,6 +191,12 @@ const shell = createShell({
   mount: { nav: $('nav'), main: $('main'), filter: $('filter'), export: $('export') },
   onReread: rereadSlot,
   onExport: exportAs,
+  onAction,
+});
+
+// Opening the Gaps tab is what asks for the register; so is landing on it.
+window.addEventListener('hashchange', () => {
+  if (parseHash(location.hash).tab === gapsTab.id) loadRegister();
 });
 
 $('reread-solution').addEventListener('click', () => {
@@ -170,4 +214,8 @@ window.inspector = {
   shell,
 };
 
-run('Discovering the solution', discoverSolution);
+run('Discovering the solution', discoverSolution).then((ok) => {
+  // A page opened straight at #gaps: the hash never changes, so the listener
+  // above never fires and the register has to be asked for here.
+  if (ok && parseHash(location.hash).tab === gapsTab.id) loadRegister();
+});

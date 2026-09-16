@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readOps, createDirectApi } from '../server/read.mjs';
 import { createServer } from '../server/server.mjs';
+import { isReadOnlyOp } from 'fm-adt-toolkit/read-only';
 
 const cli = { path: '/stub/fm', version: '0.6.0', contract: 3 };
 
@@ -249,5 +250,54 @@ test('the toolkit step-display module is served under /vendor', async () => {
     assert.equal(cat.status, 200);
     const escape = await fetch(base + '/vendor/fm-adt-toolkit/../../package.json');
     assert.equal(escape.status, 404);
+  });
+});
+
+test('GET /api/register serves the installed register, reduced', async () => {
+  await withServer({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps([]) }, async (base) => {
+    const res = await fetch(base + '/api/register');
+    assert.equal(res.status, 200);
+    const text = await res.text();
+    const entries = JSON.parse(text);
+    assert.equal(entries.length, 302, 'the installed register, every entry');
+    assert.ok(entries.some((e) => e.id.startsWith('theme')), 'the theme entry is there');
+    // The summary drops what a page cannot use: evidence pointers and per-attribute reasons.
+    assert.doesNotMatch(text, /"evidence"/);
+    assert.doesNotMatch(text, /"attributeReasons"/);
+    const one = entries.find((e) => e.id === 'account:amazon');
+    assert.deepEqual(Object.keys(one.lastChecked), ['version', 'build', 'date']);
+    assert.ok(one.attributes.every((a) => 'name' in a && 'path' in a && 'fmKey' in a && 'reported' in a && 'knownFrom' in a));
+  });
+});
+
+test('POST /api/gaps/check runs the register\'s probes once, read-only, and reduces the outcome', async () => {
+  const calls = [];
+  await withServer({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps(calls) }, async (base) => {
+    const res = await post(base, '/api/gaps/check', { target: 'fmnet://localhost/ooe' });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(calls.length, 1, 'one fm invocation for the whole register');
+    assert.ok(calls[0].ops.length > 50, 'every distinct probe in the one batch');
+    assert.ok(calls[0].ops.every(isReadOnlyOp), 'read-only ops only');
+    assert.equal(body.entries, 302);
+    for (const key of ['stillMissing', 'newlyReported', 'regressed', 'errored', 'erroredExpected', 'expectedResolved', 'unexplained', 'attributeErrors']) {
+      assert.ok(Array.isArray(body[key]), key);
+    }
+    assert.equal(body.fmVersion, '0.6.0');
+    assert.equal(typeof body.build, 'string');
+    assert.match(body.ranAt, /^\d{4}-\d\d-\d\dT/);
+    // Nothing is echoed back whole: an entry is an id, an attribute a name.
+    assert.ok(body.errored.every((e) => typeof e.id === 'string' && !('attributes' in e)));
+    assert.ok(body.stillMissing.every((m) => typeof m.id === 'string' && typeof m.attribute === 'string'));
+  });
+});
+
+test('POST /api/gaps/check with no target is a 400 and never spawns fm', async () => {
+  const calls = [];
+  await withServer({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps(calls) }, async (base) => {
+    const res = await post(base, '/api/gaps/check', { target: 42 });
+    assert.equal(res.status, 400);
+    assert.match((await res.json()).error, /target/);
+    assert.equal(calls.length, 0);
   });
 });
