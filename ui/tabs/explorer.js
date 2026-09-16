@@ -12,6 +12,7 @@
 // string through esc.
 import { badge, count, esc, link, matches, section, table } from '../dom.js';
 import { emptyNote, fileName, kindSelection, linkOr, selectRow, selectionKey, totalsLine, withFile } from './common.js';
+import { memoise } from '../analysis/memo.js';
 import { nameIndex, references } from '../analysis/refs.js';
 import { callGraph, callTreeOf, scriptKey } from '../analysis/scripts.js';
 
@@ -74,13 +75,13 @@ const nameTarget = (entry) => entry.occurrenceTarget ?? entry.target;
 // by `Occurrence::Field`; everything else by fm's own id.
 const idOf = (kind, entry) => (kind === 'table' || kind === 'field' ? entry.name : String(entry.id));
 
-const entryCache = new WeakMap();
-
 /** Every named object of every reached file, one row each, sorted by kind then
- *  name. Memoised on the solution object, which a re-read replaces. */
-export function objectEntries(solution) {
-  const hit = entryCache.get(solution);
-  if (hit) return hit;
+ *  name. Memoised through ui/analysis/memo.js, which keys on the catalog slots
+ *  a re-read swaps rather than on the solution object, so a catalog or object
+ *  re-read recomputes the list. */
+export const objectEntries = (solution) => memoise(solution, computeObjectEntries);
+
+function computeObjectEntries(solution) {
   const idx = nameIndex(solution);
   const out = [];
   for (const [kind, map] of KINDS) {
@@ -100,7 +101,6 @@ export function objectEntries(solution) {
   }
   out.sort((a, b) => ORDER_OF[a.kind] - ORDER_OF[b.kind] || a.name.localeCompare(b.name) || a.target.localeCompare(b.target));
   Object.freeze(out);
-  if (solution !== null && typeof solution === 'object') entryCache.set(solution, out);
   return out;
 }
 

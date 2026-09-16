@@ -49,11 +49,14 @@
 // solution that does, Task 3 would see a dangling name that is not one.
 //
 // Pure: no document, no node:, no server/. Every fm key read through access.js.
-// Memoised per solution in a WeakMap, so a tab may ask as often as it likes and
-// a re-read (which replaces the object) recomputes. The memoised list and each
-// index entry array are frozen: they are shared by every caller.
+// Memoised through ui/analysis/memo.js, so a tab may ask as often as it likes
+// and a re-read at ANY grain recomputes: the memo keys on the catalog slots a
+// re-read swaps (`list`, `detailById`) and on `file.facts`, not on the solution
+// object, which only a solution-grain re-read replaces. The memoised list and
+// each index entry array are frozen: they are shared by every caller.
 import { foldKey } from 'fm-adt-toolkit/step-display';
 import { get, path } from '../access.js';
+import { memoise } from './memo.js';
 import { walkObjects } from '../tabs/layouts.js';
 import { fieldsOf } from '../tabs/tables.js';
 
@@ -141,8 +144,6 @@ export function tokenise(text) {
 
 // ── The name index ────────────────────────────────────────────────────
 
-const indexCache = new WeakMap();
-
 function push(map, name, entry) {
   if (typeof name !== 'string' || name === '') return;
   const list = map.get(name);
@@ -197,9 +198,9 @@ function sourceFile(file, to, sources, filesByName) {
  *  `unresolvedSources` is the other half of the answer: every occurrence whose
  *  external data source could not be followed, so a caller can tell "no field of
  *  that name" from "nothing was read about that name". */
-export function nameIndex(solution) {
-  const hit = indexCache.get(solution);
-  if (hit) return hit;
+export const nameIndex = (solution) => memoise(solution, computeNameIndex);
+
+function computeNameIndex(solution) {
   const idx = {
     tables: new Map(), occurrences: new Map(), fields: new Map(), scripts: new Map(),
     layouts: new Map(), valueLists: new Map(), customFunctions: new Map(), themesStyles: new Map(),
@@ -268,7 +269,6 @@ export function nameIndex(solution) {
   // Shared by every caller and memoised: frozen, so one tab cannot edit another
   // tab's answer. The maps stay mutable only to this function, which is done.
   for (const map of Object.values(idx)) if (map instanceof Map) for (const list of map.values()) Object.freeze(list);
-  if (solution !== null && typeof solution === 'object') indexCache.set(solution, idx);
   return idx;
 }
 
@@ -309,8 +309,6 @@ const NAMED_OBJECT = {
 const owner = (at) => at.split('.').at(-2) ?? '';
 
 // ── The scan ──────────────────────────────────────────────────────────
-
-const refsCache = new WeakMap();
 
 const INDEX_OF = {
   field: 'fields', table: 'tables', occurrence: 'occurrences', script: 'scripts',
@@ -504,18 +502,17 @@ function predicateRefs(solution, out, resolve) {
   }
 }
 
-/** Every reference in the solution, in one list. Memoised on the solution
- *  object: a re-read builds a new one (see ui/model.js), so identity is the
- *  cache key that cannot go stale. */
-export function references(solution) {
-  const hit = refsCache.get(solution);
-  if (hit) return hit;
+/** Every reference in the solution, in one list. Memoised through
+ *  ui/analysis/memo.js, which keys on the catalog slots a re-read swaps rather
+ *  than on the solution object, so a catalog or object re-read recomputes it. */
+export const references = (solution) => memoise(solution, computeReferences);
+
+function computeReferences(solution) {
   const idx = nameIndex(solution);
   const resolve = resolver(idx);
   const out = [];
   for (const src of sources(solution)) scanRecord(src.record, src, out, resolve, idx);
   predicateRefs(solution, out, resolve);
   Object.freeze(out);
-  if (solution !== null && typeof solution === 'object') refsCache.set(solution, out);
   return out;
 }

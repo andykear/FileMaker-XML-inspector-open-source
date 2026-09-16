@@ -21,6 +21,7 @@
 import { badge, count, esc, kv, matches, section, table } from '../dom.js';
 import { CATALOG, catalogEntry, renderStepFromCatalog, stepConventions } from 'fm-adt-toolkit/step-display';
 import { get, path } from '../access.js';
+import { memoise } from '../analysis/memo.js';
 import { emptyNote, plural, totalsLine } from './common.js';
 
 // ── What fm cannot read yet ───────────────────────────────────────────
@@ -182,22 +183,18 @@ function liveSection(solution) {
 
 // ── The renderer's own gaps ───────────────────────────────────────────
 
-const renderCache = new WeakMap();
-
 /** Every script step of every reached file put through the shared renderer, and every
  *  gap it reports, grouped by step type and gap kind. A step type the catalog has no
  *  entry for is counted apart and not rendered: the catalog says nothing about it, so
  *  it has no gaps -- it is a hole of a different shape.
  *
- *  Memoised on the solution and guarded by the identity of each file's
- *  `catalogs.script.detailById` -- what a re-read replaces at EITHER grain (see
- *  ui/model.js). Guarding on the solution object alone would be wrong: only a
- *  solution-grain re-read builds a new one, so re-reading one script would leave the
- *  old counts on screen. Same rule as stepIndex in ui/tabs/scripts.js. */
-export function renderingGaps(solution) {
-  const details = Object.values(solution?.files ?? {}).map((f) => path(f, 'catalogs.script.detailById'));
-  const hit = renderCache.get(solution ?? {});
-  if (hit && hit.details.length === details.length && hit.details.every((d, i) => d === details[i])) return hit.out;
+ *  Memoised through ui/analysis/memo.js, which keys on the catalog slots a re-read
+ *  swaps at any grain (`list`, `detailById`) rather than on the solution object.
+ *  Keying on the solution object alone would be wrong: only a solution-grain re-read
+ *  builds a new one, so re-reading one script would leave the old counts on screen. */
+export const renderingGaps = (solution) => memoise(solution, computeRenderingGaps);
+
+function computeRenderingGaps(solution) {
   const conventions = stepConventions(CATALOG);
   const groups = new Map();
   const byKind = {};
@@ -251,7 +248,6 @@ export function renderingGaps(solution) {
     byKind,
     groups: [...groups.values()].sort((a, b) => b.count - a.count || a.step.localeCompare(b.step)),
   };
-  if (solution !== null && typeof solution === 'object') renderCache.set(solution, { details, out });
   return out;
 }
 

@@ -27,8 +27,11 @@
 // row, reported under the first spelling the read reached.
 //
 // Pure: no document, no node:, no server/. Every fm key read through
-// get/path. Memoised per solution in a WeakMap, like every other analysis.
+// get/path. Memoised through ui/analysis/memo.js, like every other analysis:
+// the memo keys on the catalog slots a re-read swaps, not on the solution
+// object.
 import { get, path } from '../access.js';
+import { memoise } from './memo.js';
 import { references } from './refs.js';
 
 /** Why a mention count is a reading of the text and not a fact about the file.
@@ -51,12 +54,11 @@ const filesOf = (solution) => Object.values(get(solution, 'files') ?? {});
 const detailsOf = (file) => Object.values(path(file, 'catalogs.script.detailById') ?? {})
   .map((e) => get(e, 'result')).filter((r) => r !== undefined && r !== null);
 
-const cache = new WeakMap();
+/** Every `$$` global, by name, frozen and memoised through
+ *  ui/analysis/memo.js, so a re-read at any grain recomputes it. */
+export const globals = (solution) => memoise(solution, computeGlobals);
 
-/** Every `$$` global, by name, frozen and memoised on the solution object. */
-export function globals(solution) {
-  const hit = cache.get(solution);
-  if (hit) return hit;
+function computeGlobals(solution) {
   const rows = new Map();
   const rowFor = (name) => {
     const key = name.toLowerCase();
@@ -90,6 +92,5 @@ export function globals(solution) {
     .map((row) => ({ ...row, files: [...row.files].sort() }))
     .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
   Object.freeze(out);
-  if (solution !== null && typeof solution === 'object') cache.set(solution, out);
   return out;
 }

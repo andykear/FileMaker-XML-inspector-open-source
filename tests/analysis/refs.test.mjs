@@ -392,3 +392,26 @@ test('a child key fm respells is still dropped, so a nested object is scanned on
   assert.equal(rows.length, 1);
   assert.equal(rows[0].from.id, '5.2', 'the child is credited to itself, once');
 });
+
+test('the memo keys on the catalog slots, not on the solution object', () => {
+  // The module-level `solution` here is shared by every test in this file, so
+  // nothing is mutated: the identity checks are what this one is about, and
+  // tests/analysis/memo.test.mjs does the re-read half on its own solution.
+  assert.equal(references(solution), references(solution), 'the same solution answers with the identical array');
+  assert.equal(nameIndex(solution), nameIndex(solution));
+  // A hand-made solution whose script slot is replaced recomputes, exactly as
+  // an object-grain re-read makes it (ui/model.js applyBatch replaces
+  // detailById rather than mutating it).
+  const one = handMade({
+    script: {
+      list: [{ id: 1, name: 'caller', type: 'script' }],
+      detailById: detail(1, { id: 1, name: 'caller', body: [{ stepID: 1, step: 'Perform Script', script: 'gone' }] }),
+    },
+  });
+  const first = references(one);
+  assert.equal(references(one), first);
+  one.files['file:///x.fmp12'].catalogs.script.detailById = {};
+  const second = references(one);
+  assert.notEqual(second, first);
+  assert.equal(second.length, 0, 'the replaced slot is empty, so nothing names anything');
+});

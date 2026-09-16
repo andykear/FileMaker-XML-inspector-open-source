@@ -44,9 +44,12 @@
 // words), so it never becomes a reference and this file never reports it.
 //
 // Pure: no document, no node:, no server/. Every fm key read through
-// get/path. Memoised per solution in a WeakMap, like every other analysis.
+// get/path. Memoised through ui/analysis/memo.js, like every other analysis:
+// the memo keys on the catalog slots a re-read swaps, not on the solution
+// object.
 import { get, path } from '../access.js';
 import { fieldsOf } from '../tabs/tables.js';
+import { memoise } from './memo.js';
 import { references, strings } from './refs.js';
 
 const filesOf = (solution) => Object.values(get(solution, 'files') ?? {});
@@ -174,13 +177,12 @@ function danglingNames(solution) {
 
 // ── The analysis ──────────────────────────────────────────────────────────
 
-const cache = new WeakMap();
-
 /** Every reference the solution's own read already shows is broken, in one
- *  frozen list. Memoised on the solution object, which a re-read replaces. */
-export function broken(solution) {
-  const hit = cache.get(solution);
-  if (hit) return hit;
+ *  frozen list. Memoised through ui/analysis/memo.js, so a re-read at any grain
+ *  recomputes it. */
+export const broken = (solution) => memoise(solution, computeBroken);
+
+function computeBroken(solution) {
   const out = [
     ...scriptProblems(solution),
     ...missingMarkers(solution),
@@ -188,6 +190,5 @@ export function broken(solution) {
     ...danglingNames(solution),
   ];
   Object.freeze(out);
-  if (solution !== null && typeof solution === 'object') cache.set(solution, out);
   return out;
 }

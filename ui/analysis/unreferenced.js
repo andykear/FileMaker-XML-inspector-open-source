@@ -38,11 +38,13 @@
 // read, not about the file, and another run could answer differently.
 //
 // Pure: no document, no node:, no server/. Every fm key read through access.js.
-// Memoised per solution in a WeakMap, like every other analysis.
+// Memoised through ui/analysis/memo.js, like every other analysis: the memo keys
+// on the catalog slots a re-read swaps, not on the solution object.
 import { foldKey } from 'fm-adt-toolkit/step-display';
 import { get, path } from '../access.js';
 import { fieldsOf } from '../tabs/tables.js';
 import { styleUsage } from '../tabs/themes.js';
+import { memoise } from './memo.js';
 import { nameIndex, references, strings } from './refs.js';
 
 const listOf = (file, catalog) => path(file, `catalogs.${catalog}.list`) ?? [];
@@ -323,13 +325,11 @@ function confidenceOf(solution) {
 
 // ── The analysis ──────────────────────────────────────────────────────
 
-const cache = new WeakMap();
-
 /** Everything nothing names, per kind, plus the confidence of the whole list.
- *  Memoised on the solution object, which a re-read replaces (ui/model.js). */
-export function unreferenced(solution) {
-  const hit = cache.get(solution);
-  if (hit) return hit;
+ *  Memoised through ui/analysis/memo.js, so a re-read at any grain recomputes. */
+export const unreferenced = (solution) => memoise(solution, computeUnreferenced);
+
+function computeUnreferenced(solution) {
   const used = usageByKey(solution);
   const out = {
     fields: unreferencedFields(solution, used),
@@ -346,6 +346,5 @@ export function unreferenced(solution) {
   // filters cannot leave the next one a shorter list.
   for (const rows of Object.values(out)) if (Array.isArray(rows)) Object.freeze(rows);
   Object.freeze(out);
-  if (solution !== null && typeof solution === 'object') cache.set(solution, out);
   return out;
 }

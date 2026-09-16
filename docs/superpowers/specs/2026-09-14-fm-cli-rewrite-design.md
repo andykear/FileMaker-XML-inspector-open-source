@@ -133,6 +133,7 @@ Amended 2026-09-16 (fm 0.7.0): fm respells option keys between builds (0.7.0 mov
 - `reread` throws on an fm fatal, with the fatal itself on `err.fatal`, and leaves the slot exactly as it was: the new list and describes are staged in a throwaway file and swapped in only after every read in the grain has succeeded.
 - Discovery is depth first. Each sibling is fully read, and its own siblings walked, before the next sibling in the list is resolved, so an unreachable sibling's failure is recorded before anything later in the list.
 - Hosted target keys are case-folded (`server/targets.mjs` `targetKey`, mirrored in `ui/discovery.js`): the FileMaker host treats file names case-insensitively, so a file naming itself, or naming a sibling in another case, must not be read twice.
+- Memos key on the catalog slots a re-read swaps, not on the solution object.
 
 ### Feature disposition (initial; the inventory confirms it)
 

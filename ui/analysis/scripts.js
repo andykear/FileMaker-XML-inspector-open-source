@@ -73,9 +73,12 @@
 // by name alone, fm's `fileName` on such a step being calculation text.
 //
 // Pure: no document, no node:, no server/. Every fm key read through
-// get/path. Memoised per solution in a WeakMap, like every other analysis.
+// get/path. Memoised through ui/analysis/memo.js, like every other analysis:
+// the memo keys on the catalog slots a re-read swaps, not on the solution
+// object.
 import { foldKey } from 'fm-adt-toolkit/step-display';
 import { get, path } from '../access.js';
+import { memoise } from './memo.js';
 import { nameIndex, references, strings, tokenise } from './refs.js';
 
 // ── The steps FileMaker does not run on a server ──────────────────────
@@ -260,20 +263,18 @@ function issuesOfScript(target, detail, rows) {
   }
 }
 
-const issueCache = new WeakMap();
-
 /** Every script issue in the solution, in one frozen list, in body order.
- *  Memoised on the solution object, which a re-read replaces. */
-export function scriptIssues(solution) {
-  const hit = issueCache.get(solution);
-  if (hit) return hit;
+ *  Memoised through ui/analysis/memo.js, so a re-read at any grain -- including
+ *  the one script this issue came from -- recomputes it. */
+export const scriptIssues = (solution) => memoise(solution, computeScriptIssues);
+
+function computeScriptIssues(solution) {
   const rows = [];
   for (const file of filesOf(solution)) {
     const target = get(file, 'target');
     for (const detail of detailsOf(file)) issuesOfScript(target, detail, rows);
   }
   Object.freeze(rows);
-  if (solution !== null && typeof solution === 'object') issueCache.set(solution, rows);
   return rows;
 }
 
@@ -297,13 +298,16 @@ export const scriptKey = (target, id) => graphKey('script', target, id);
 // ui/analysis/broken.js, which drops the same shape).
 const looksLikeAppleScript = (name) => name.includes('"') || /[\r\n]/.test(name);
 
-const graphCache = new WeakMap();
-
 /** Every script as a node, every place one is named as an edge. Frozen and
- *  memoised, like every other analysis. */
-export function callGraph(solution) {
-  const hit = graphCache.get(solution);
-  if (hit) return hit;
+ *  memoised through ui/analysis/memo.js, like every other analysis.
+ *
+ *  Every naming site is its own edge, parallel ones included: the Explorer's
+ *  Referenced-by table lists each site, so the graph must carry each. The two
+ *  DRAWINGS of it collapse parallel edges instead (`callTreeOf` below,
+ *  `mermaidCallGraph` in ui/export/mermaid.js). */
+export const callGraph = (solution) => memoise(solution, computeCallGraph);
+
+function computeCallGraph(solution) {
   const scripts = nameIndex(solution).scripts;
   const nodes = [];
   for (const entries of scripts.values()) {
@@ -327,7 +331,6 @@ export function callGraph(solution) {
   }
   const graph = { nodes: Object.freeze(nodes), edges: Object.freeze(edges) };
   Object.freeze(graph);
-  if (solution !== null && typeof solution === 'object') graphCache.set(solution, graph);
   return graph;
 }
 
