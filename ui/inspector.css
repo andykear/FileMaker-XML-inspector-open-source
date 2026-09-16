@@ -292,6 +292,21 @@ svg.graph .note-text { font: 11px -apple-system, ui-sans-serif, system-ui, sans-
 
 /* ── Script tree and script body ──────────────────────────────────────── */
 
+/* The Explorer's call tree: nested, one guide rule per level, so depth is
+   readable without indentation alone carrying it. */
+ul.calltree { margin: 2px 0 2px; padding-left: 14px; list-style: none; }
+ul.calltree ul.calltree { border-left: 1px solid var(--line-soft); margin-left: 3px; }
+ul.calltree > li { padding: 1px 4px; line-height: 1.7; }
+
+/* The Analysis totals: each item carries a title naming its derivation, so it
+   is a hover target and says so. */
+p.totals > span[title] { cursor: help; border-bottom: 1px dotted var(--line-strong); }
+
+/* A <details> inside a table cell (the psos step list, a global's set sites)
+   must not stretch the row. */
+td > details > summary { white-space: nowrap; }
+td > details > ul.notes { margin: 4px 0 0; }
+
 ul.tree { margin: 2px 0 6px; padding-left: 18px; list-style: none; }
 ul.tree > li { padding: 1px 4px; border-radius: 4px; cursor: pointer; }
 ul.tree > li:hover { background: var(--surface-mute); }
