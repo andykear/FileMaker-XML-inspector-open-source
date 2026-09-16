@@ -69,6 +69,8 @@ Endpoints, JSON only, bound to 127.0.0.1:
 - `POST /api/read` body `{ target, ops }` returns `{ results, notices, summary, fatal, exitCode }`. Any op that is not read-only is refused with 400 before fm is spawned. Read-only means `read:*`, plus `evaluate:calculation` and `validate:calculation`, which fm's own help guarantees never change a file ("a file's bytes are identical after evaluating"). The formulas the inspector evaluates are fixed strings in its own code, never user input. The check is the toolkit's `assertReadOnly`, shared with `fm-gaps check`; there is no other write path.
 - `POST /api/resolve-target` body `{ from, path }` returns `{ target }` or `{ unresolvable, reason }`. `file:Name` resolves to a sibling of `from`: `fmnet://host/Name` for a hosted root, `<dir>/Name.fmp12` for a local one (existence checked). `$$variable`, `odbc:`, `filemac:`/`filewin:` absolute paths and anything else are `unresolvable` with the reason. No fm call.
 
+Besides the page's own files, the server serves the toolkit's `dist/` under `/vendor/fm-adt-toolkit/`, and the page maps the bare specifier `fm-adt-toolkit/step-display` to it through an import map, so the browser loads the same step renderer the tests import.
+
 The page owns the solution model and drives discovery:
 
 1. Read the root file (section 3).
@@ -110,7 +112,7 @@ File-level facts come from `evaluate:calculation` with `Get()` functions, since 
 
 Read plan per file, two fm invocations:
 
-1. Lists: the 18 `read:<catalog>` list ops (`flatten:true` for script and layout, `detail:true` for externalDataSource).
+1. Lists: the 19 `read:<catalog>` list ops (`flatten:true` for script, layout and customFunction, `detail:true` for externalDataSource and for theme, whose list item is its own describe).
 2. Describes derived from the lists: `read:field {table, detail:true}` per table; `read:layout {id, detail:true}` per layout; `read:script {id}` per script; `read:tableOccurrence {id}` per occurrence; `read:relation {id}` per relation; `read:valueList {id}`, `read:customFunction {id}`, `read:privilegeSet {id}`, `read:customMenu {id}`, `read:account {id}` per member. About 150 ops on ooe.
 
 Derived views are plain functions in `ui/` over the model, computed after a read and recomputed after any re-read:
@@ -229,4 +231,4 @@ Testing:
 
 ## Out of scope
 
-Writing to any FileMaker file. Compare mode and saved reports (deferred). Any theme rendering until fm exposes styles. A packaged desktop app.
+Writing to any FileMaker file. Compare mode and saved reports (deferred). A packaged desktop app.
