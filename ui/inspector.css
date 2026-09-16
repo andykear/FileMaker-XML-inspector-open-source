@@ -319,3 +319,37 @@ ol.script > li > b { font-weight: 600; color: var(--ink); }
 ol.script .detail { color: var(--ink-2); }
 ol.script > li.disabled { color: var(--ink-4); text-decoration: line-through; }
 ol.script > li.disabled > b, ol.script > li.disabled .detail { color: var(--ink-4); }
+
+/* ── Layout wireframe ─────────────────────────────────────────────────── */
+/* The geometry is fm's own, in FileMaker points; the viewBox scales it to the panel.
+   Each object type carries --o (its ink) and optionally --f/--fo (its fill), so the
+   svg rect and the legend chip below it stay the same colour. */
+
+.wireframe-wrap { overflow-x: auto; background: var(--surface-soft); border: 1px solid var(--line-soft); border-radius: 8px; padding: 6px; }
+svg.wireframe { display: block; max-width: 100%; height: auto; max-height: 72vh; border: 1px solid var(--line-strong); background: var(--surface); }
+
+svg.wireframe .part { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1; }
+svg.wireframe .part.header, svg.wireframe .part.titleHeader { fill: var(--navy-tint); }
+svg.wireframe .part.footer, svg.wireframe .part.titleFooter { fill: var(--surface-mute); }
+svg.wireframe .part.topNavigation, svg.wireframe .part.bottomNavigation { fill: var(--navy-soft); }
+svg.wireframe .part.leadingGrandSummary, svg.wireframe .part.trailingGrandSummary { fill: var(--brand-tint); }
+svg.wireframe .part.leadingSubSummary, svg.wireframe .part.trailingSubSummary { fill: var(--warn-tint); }
+svg.wireframe .part-label { font: 600 11px -apple-system, ui-sans-serif, system-ui, sans-serif; fill: var(--ink-3); }
+
+.obj { --o: var(--ink-4); }
+.obj.field { --o: var(--ink-2); --f: var(--surface); --fo: 1; }
+.obj.label { --o: var(--ink-3); --f: none; }
+.obj.button, .obj.buttonBar, .obj.popoverButton { --o: var(--brand-deep); --f: var(--brand-tint); --fo: .85; }
+.obj.portal, .obj.tabControl, .obj.slideControl, .obj.popover { --o: var(--navy); --fo: .12; }
+.obj.tabPanel, .obj.slidePanel { --o: var(--navy-bright); --fo: .06; }
+.obj.webViewer, .obj.chart { --o: var(--info); --fo: .14; }
+.obj.line, .obj.graphic, .obj.rectangle, .obj.roundedRectangle, .obj.oval, .obj.group { --o: var(--ink-4); --fo: .08; }
+
+svg.wireframe .obj { fill: var(--f, var(--o)); fill-opacity: var(--fo, .14); stroke: var(--o); stroke-width: 1; }
+svg.wireframe .obj.label { stroke-dasharray: 3 2; }
+svg.wireframe .obj.group { stroke-dasharray: 5 3; fill: none; }
+svg.wireframe .obj.highlight { stroke: var(--brand); stroke-width: 3; fill: var(--brand); fill-opacity: .22; }
+
+ul.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 0 0; padding: 0; list-style: none; font-size: 11px; color: var(--ink-3); }
+ul.legend > li { display: flex; align-items: center; gap: 4px; }
+ul.legend .obj { width: 10px; height: 10px; border: 1px solid var(--o); background: var(--o); opacity: .55; border-radius: 2px; }
