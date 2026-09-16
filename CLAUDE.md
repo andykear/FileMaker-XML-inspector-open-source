@@ -20,6 +20,7 @@ The Clockwork Inspector is being rewritten to read live FileMaker files through 
 - `bin/` — the entry point: parses args, locates fm, starts the server.
 - `server/` — the one fm spawn plus the HTTP endpoints.
 - `ui/` — the browser-safe model, discovery and page; no server code.
+- `ui/tabs/` — one pure renderer per tab; the shell routes `#tab/selection`.
 - `tests/fixtures/ooe` — the recorded solution, with `meta.json` naming the fm build.
 
 ## Shared code

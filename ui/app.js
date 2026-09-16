@@ -11,8 +11,9 @@ import { tab as scriptsTab } from './tabs/scripts.js';
 import { tab as layoutsTab } from './tabs/layouts.js';
 import { tab as securityTab } from './tabs/security.js';
 import { tab as themesTab } from './tabs/themes.js';
+import { tab as catalogsTab } from './tabs/catalogs.js';
 
-const TABS = [solutionTab, tablesTab, graphTab, scriptsTab, layoutsTab, securityTab, themesTab];
+const TABS = [solutionTab, tablesTab, graphTab, scriptsTab, layoutsTab, securityTab, themesTab, catalogsTab];
 
 const api = createApi('');
 const $ = (id) => document.getElementById(id);
