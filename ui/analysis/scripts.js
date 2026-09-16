@@ -285,7 +285,7 @@ const VIA = { script: 'step', layout: 'trigger', layoutObject: 'button', customM
 /** The key a graph end is found by. fm ids are unique per catalog and NOT
  *  across catalogs -- ooe's layout 2 and script 2 are different objects -- so
  *  the KIND is half of every key. Keying both `target|2` made every trigger on
- *  that layout read as a call from that script: 14 layout ids and 12 custom
+ *  that layout read as a call from that script: 14 layout ids and 11 custom
  *  menu ids collide with script ids on ooe alone. The prefix is the reference's
  *  own `from.kind`, so `edge.from` and `edge.origin.kind` cannot drift apart.
  *  A UI builds its own Scripts-tab selection from a node's `target` and `id`. */
