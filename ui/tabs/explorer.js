@@ -136,6 +136,17 @@ function isFrom(sel, entry, ref) {
   return from.kind === kind && from.target === sel.target && id === sel.id;
 }
 
+/** FileMaker's own line number for a reference written on a script step, or ''
+ *  for one written anywhere else. `where` is the path ui/analysis/refs.js
+ *  builds, which starts `body[<index>]` for a step and counts from 0; every
+ *  number this page SHOWS counts from 1, the way FileMaker does and the way the
+ *  Scripts, Gaps and Analysis tabs already do. The path itself stays on the row
+ *  beside it: it is fm's own spelling and is what a reader greps for. */
+const lineOf = (from) => {
+  const at = from.kind === 'script' ? /^body\[(\d+)\]/.exec(String(from.where ?? '')) : null;
+  return at ? Number(at[1]) + 1 : '';
+};
+
 /** Which of several objects of one name a reference meant: the one in the
  *  naming file, or the only one there is. The rule ui/analysis/scripts.js uses
  *  for the call graph, so a link here and an edge there agree. */
@@ -151,7 +162,7 @@ export function outgoing(solution, sel) {
     const map = idx[(KINDS.find(([k]) => k === ref.kind) ?? [])[1]];
     const to = map ? ownerOf(map.get(ref.name) ?? [], ref) : undefined;
     return {
-      kind: ref.kind, name: ref.name, where: ref.from.where ?? '', how: ref.how, resolved: ref.resolved,
+      kind: ref.kind, name: ref.name, where: ref.from.where ?? '', line: lineOf(ref.from), how: ref.how, resolved: ref.resolved,
       hash: to ? refHash(ref.kind, nameTarget(to), idOf(ref.kind, to)) : null,
     };
   });
@@ -165,7 +176,7 @@ export function incoming(solution, sel) {
   const entries = map.get(entry.name) ?? [];
   return references(solution).filter((ref) => ref.kind === sel.kind && ref.name === entry.name
     && ownerOf(entries, ref) === entry.entry).map((ref) => ({
-    kind: ref.from.kind, name: String(ref.from.name ?? ''), where: ref.from.where ?? '', how: ref.how,
+    kind: ref.from.kind, name: String(ref.from.name ?? ''), where: ref.from.where ?? '', line: lineOf(ref.from), how: ref.how,
     target: ref.from.target, hash: refHash(ref.from.kind, ref.from.target, ref.from.id),
   }));
 }
@@ -181,7 +192,8 @@ const LIST_COLUMNS = [
 const REF_COLUMNS = [
   { key: 'kind', label: 'Kind' },
   { key: 'name', label: 'Name', render: (r) => linkOr(r.hash, r.name) },
-  { key: 'where', label: 'Where' },
+  { key: 'where', label: 'Where', title: 'The key path the name was written under, as ui/analysis/refs.js spells it: a script step is body[<index>], counted from 0.' },
+  { key: 'line', label: 'Line', num: true, title: "FileMaker's own line number for a name written on a script step: body[<index>] + 1. Blank for a name written anywhere else." },
   { key: 'how', label: 'How', render: (r) => badge(r.how, r.how === 'named' ? 'good' : 'muted') },
   { key: 'link', label: 'Go to', render: (r) => (r.hash ? link(r.hash, r.hash.slice(0, r.hash.indexOf('/'))) : '') },
 ];

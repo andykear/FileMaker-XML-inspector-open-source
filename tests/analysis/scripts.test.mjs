@@ -68,7 +68,7 @@ test('every issue says which script, which step and which fm keys decided it', (
   assert.deepEqual(rows, [{
     target: 'file:///x.fmp12',
     script: { id: 7, name: 'S' },
-    step: { index: 0, stepID: SET_WEB_VIEWER, step: 'Set Web Viewer' },
+    step: { index: 0, line: 1, stepID: SET_WEB_VIEWER, step: 'Set Web Viewer' },
     check: 'psos-only-step',
     detail: { step: 'Set Web Viewer' },
     keys: ['stepID'],
@@ -557,4 +557,14 @@ test('the ooe ids that collide across catalogs, which is why a key carries its k
   assert.equal(menus.filter((id) => scripts.has(id)).length, 11);
   assert.deepEqual([...new Set(callGraph(solution).edges.map((e) => e.from.split(':')[0]))].sort(),
     ['customMenu', 'layout', 'layoutObject', 'script']);
+});
+
+test('every issue carries FileMaker\'s own 1-based line beside the 0-based body index', () => {
+  const rows = scriptIssues(oneScript([
+    step(SET_WEB_VIEWER, 'Set Web Viewer', { objectName: '"a"' }),
+    step(SET_WEB_VIEWER, 'Set Web Viewer', { objectName: '"b"' }),
+  ]));
+  assert.deepEqual(rows.map((r) => [r.step.index, r.step.line]), [[0, 1], [1, 2]]);
+  // On the fixture too: whatever the index is, the line is one more.
+  assert.ok(scriptIssues(solution).every((r) => r.step.line === r.step.index + 1));
 });

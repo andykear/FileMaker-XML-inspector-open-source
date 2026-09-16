@@ -26,7 +26,11 @@
 // A third rule: an occurrence's fields are the SOURCE file's. `Inv_Remote::X`
 // on an occurrence whose `table.dataSource` is external is a field of the file
 // that source opens, whatever the occurrence is called here -- and when no file
-// in the read answers that source, a field of that name is not judged at all.
+// in the read answers that source, the field is not judged at all. Not judged
+// means one field of one TABLE: the occurrence declares the base table it
+// reads, so the suppression is keyed on `target + table + field`, never on the
+// bare field name, which would take a second table's identically named field
+// down with it (see `unjudgeable`).
 //
 // `confidence` qualifies the WHOLE list: `high` when every reference path this
 // tool knows was readable and nothing in the file names an object at run time;
@@ -125,20 +129,44 @@ function tierOf(uses) {
   return uses.every((r) => r.how === 'text') ? 'text-only' : undefined;
 }
 
-/** Field names reached through an occurrence whose external data source could
- *  not be followed. The occurrence's fields are in a file this read never saw,
- *  so a field of that name anywhere may be the one it means: it cannot be
- *  judged, and a list that cannot judge a row must not print it as unused. */
+/** Fields reached through an occurrence whose external data source could not be
+ *  followed, as the `\u0000`-joined keys `unreferencedFields` builds its rows under.
+ *
+ *  Keying this on the FIELD NAME alone, which is what it used to do, suppressed
+ *  the name everywhere: two tables with a field called `Name`, only one of them
+ *  behind an unfollowable source, and NEITHER was listed. That is a row the list
+ *  could have judged and silently did not.
+ *
+ *  What is knowable is the TABLE. The name a reference carries is
+ *  `Occurrence::Field`, and the occurrence declares the base table it reads
+ *  (`table.name`), so the pair that cannot be judged is that table's field, and
+ *  no other table's. Which FILE holds it is the one thing the unfollowable
+ *  source hid, so the pair is suppressed in every file of the read: any table of
+ *  that name may be the one the source opens, and a list that cannot say which
+ *  must not print any of them as unused.
+ *
+ *  The keys are therefore `target\u0000table\u0000field`, one per file, never the bare
+ *  field name.  */
 function unjudgeable(solution) {
-  const names = new Set();
-  const unresolved = new Set((nameIndex(solution).unresolvedSources ?? []).map((u) => `${u.target}\u0000${u.occurrence}`));
-  if (unresolved.size === 0) return names;
+  const keys = new Set();
+  const unresolved = new Map();
+  for (const u of nameIndex(solution).unresolvedSources ?? []) {
+    unresolved.set(`${get(u, 'target')}\u0000${get(u, 'occurrence')}`, get(u, 'table'));
+  }
+  if (unresolved.size === 0) return keys;
+  const targets = filesOf(solution).map((file) => get(file, 'target'));
   for (const ref of references(solution)) {
     if (ref.kind !== 'field' || ref.resolved) continue;
     const at = ref.name.indexOf('::');
-    if (at > 0 && unresolved.has(`${ref.from.target}\u0000${ref.name.slice(0, at)}`)) names.add(ref.name.slice(at + 2));
+    if (at <= 0) continue;
+    const table = unresolved.get(`${ref.from.target}\u0000${ref.name.slice(0, at)}`);
+    // An occurrence that names no base table says nothing about which table a
+    // field of that name belongs to, so it suppresses nothing.
+    if (typeof table !== 'string') continue;
+    const field = ref.name.slice(at + 2);
+    for (const target of targets) keys.add(keyOf('field', { target, table, field }));
   }
-  return names;
+  return keys;
 }
 
 function unreferencedFields(solution, used) {
@@ -150,8 +178,9 @@ function unreferencedFields(solution, used) {
       const table = get(t, 'name');
       for (const f of fieldsOf(file, table)) {
         const field = get(f, 'name');
-        const tier = tierOf(used.get(keyOf('field', { target, table, field })));
-        if (tier && !cannotJudge.has(field)) rows.push({ target, table, field, name: `${table}::${field}`, id: get(f, 'id'), tier });
+        const key = keyOf('field', { target, table, field });
+        const tier = tierOf(used.get(key));
+        if (tier && !cannotJudge.has(key)) rows.push({ target, table, field, name: `${table}::${field}`, id: get(f, 'id'), tier });
       }
     }
   }

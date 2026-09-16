@@ -15,7 +15,7 @@ import { badge, count, esc, matches, section, table } from '../dom.js';
 import { emptyNote, fileName, linkOr, plural, withFile } from './common.js';
 import { refHash } from './explorer.js';
 import { unreferenced } from '../analysis/unreferenced.js';
-import { broken } from '../analysis/broken.js';
+import { PROBLEM_KIND, broken } from '../analysis/broken.js';
 import { scriptIssues } from '../analysis/scripts.js';
 import { GLOBALS_NOTE, globals } from '../analysis/globals.js';
 
@@ -42,9 +42,22 @@ export function analysisTotals(solution) {
   };
 }
 
+// fm's own `problem` rows are not broken references and must not be added to
+// them: they are fm's report about its own RENDERING of a step (352 of them on
+// ooe, against 5 real broken references), and one number covering both would
+// say the solution is two orders of magnitude more broken than it is.
+// `PROBLEM_KIND` is ui/analysis/broken.js's: the file that makes the kinds is
+// the one that names them.
+
+/** Every broken-reference kind but fm's own problem steps. Counted as "the rest
+ *  of the total" rather than from a list of kinds, so a new kind out of
+ *  ui/analysis/broken.js lands here instead of vanishing. */
+export const brokenReferenceCount = (t) => t.broken.total - (t.broken.byKind[PROBLEM_KIND] ?? 0);
+
 const TITLES = {
   unreferenced: 'ui/analysis/unreferenced.js: every field, table, occurrence, script, layout, value list, custom function and named style that no reference in the read names.',
-  broken: 'ui/analysis/broken.js: fm\'s own script problems, its <Word Missing> markers, occurrences whose base table did not resolve, and named references that resolve to nothing.',
+  brokenReferences: 'ui/analysis/broken.js: its <Word Missing> markers, occurrences whose base table did not resolve, and named references that resolve to nothing. fm\'s own problem steps are counted beside this, not in it.',
+  problems: 'ui/analysis/broken.js, the `problem` kind: fm\'s own script.problems[] entries, which are fm\'s report about its own rendering of a step and not a finding about the file.',
   issues: 'ui/analysis/scripts.js: every step-level check, counted from the `check` each row carries.',
   globals: 'ui/analysis/globals.js: every $$ global named anywhere, with the enabled Set Variable steps that write it.',
 };
@@ -53,7 +66,8 @@ function totalsLineWithTitles(solution) {
   const t = analysisTotals(solution);
   const items = [
     ['Unreferenced', t.unreferenced.total, TITLES.unreferenced],
-    ['Broken', t.broken.total, TITLES.broken],
+    ['Broken references', brokenReferenceCount(t), TITLES.brokenReferences],
+    ['fm problem steps', t.broken.byKind[PROBLEM_KIND] ?? 0, TITLES.problems],
     ['Script issues', t.issues.total, TITLES.issues],
     ['Globals', t.globals.total, TITLES.globals],
   ];
@@ -150,10 +164,20 @@ function detailText(detail) {
   return Object.entries(detail).map(([k, v]) => `${k}: ${detailValue(v)}`).join(' · ');
 }
 
+// The Where column carries two spellings and neither is this file's: a
+// `problem` row's is fm's own `path`, a JSON pointer into the step it is about
+// (`/3/options/1`, slash-separated and counted from 0); every other row's is
+// the dotted key path ui/analysis/refs.js and ui/analysis/broken.js build
+// (`body[3].script`). Saying so on the header is cheaper than a reader guessing
+// that a `/N` is a line number.
 const BROKEN_COLUMNS = [
   { key: 'fromKind', label: 'In' },
   { key: 'name', label: 'Name', render: (r) => linkOr(r.hash, r.name) },
-  { key: 'where', label: 'Where' },
+  {
+    key: 'where',
+    label: 'Where',
+    title: 'Where the name was written. A problem row carries fm\'s own path for it, which is fm\'s JSON pointer into the object (/3/options/1, counted from 0), not a line number; every other row carries the key path this tool builds (body[3].script).',
+  },
   { key: 'detail', label: 'Detail' },
 ];
 
@@ -202,7 +226,9 @@ export function psosByScript(rows) {
   return [...by.values()].sort((a, b) => b.rows.length - a.rows.length || String(a.script.name).localeCompare(String(b.script.name)));
 }
 
-const stepText = (r) => `step ${r.step.index} ${r.step.step ?? ''}`.trim();
+/** FileMaker's own line number, which is `index + 1` (ui/analysis/scripts.js):
+ *  the Scripts tab and the Gaps tab both count from 1, so this one does too. */
+const stepText = (r) => `line ${r.step.line} ${r.step.step ?? ''}`.trim();
 
 // The Scripts tab routes `#scripts/<target>|<id>` and has no per-step anchor
 // yet, so the step is text in the row rather than a link that would not land.
@@ -260,7 +286,7 @@ const globalColumns = (solution) => [
     label: 'Set where',
     render: (r) => (r.sets.length
       ? `<details><summary>${plural(r.sets.length, 'site')}</summary><ul class="notes">${r.sets
-        .map((s) => `<li>${linkOr(refHash('script', s.target, s.script.id), s.script.name)} step ${esc(s.step.index)}</li>`)
+        .map((s) => `<li>${linkOr(refHash('script', s.target, s.script.id), s.script.name)} line ${esc(s.step.line)}</li>`)
         .join('')}</ul></details>`
       : '<span class="empty">never set</span>'),
   },

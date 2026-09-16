@@ -11,7 +11,8 @@ import { discover } from '../../ui/discovery.js';
 import { parseHash } from '../../ui/dom.js';
 import { scriptIssues } from '../../ui/analysis/scripts.js';
 import { GLOBALS_NOTE } from '../../ui/analysis/globals.js';
-import { analysisTotals, issueGroups, psosByScript, tab } from '../../ui/tabs/analysis.js';
+import { PROBLEM_KIND } from '../../ui/analysis/broken.js';
+import { analysisTotals, brokenReferenceCount, issueGroups, psosByScript, tab } from '../../ui/tabs/analysis.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -58,10 +59,25 @@ test('the totals line names the derivation of every item in a title attribute', 
   const html = tab.render(solution, view);
   const line = html.slice(html.indexOf('class="muted totals"'), html.indexOf('</p>'));
   const items = [...line.matchAll(/title="([^"]*)"/g)].map((m) => m[1]);
-  assert.equal(items.length, 4); // unreferenced, broken, issues, globals
+  assert.equal(items.length, 5); // unreferenced, broken references, fm problem steps, issues, globals
   for (const title of items) assert.ok(title.length > 20, `thin title: ${title}`);
   assert.ok(line.includes('>385<'));
-  assert.ok(line.includes('>357<'));
+  // The two halves of what used to be one 357: 352 of fm's own problem steps
+  // beside 5 real broken references. Measured on ooe before it was pinned.
+  assert.ok(line.includes('Broken references <span class="num">5</span>'), line);
+  assert.ok(line.includes('fm problem steps <span class="num">352</span>'), line);
+  assert.ok(!line.includes('>357<'), 'the two kinds are no longer added together');
+});
+
+test('the headline splits fm problem steps out of broken references', () => {
+  const t = analysisTotals(solution);
+  assert.equal(t.broken.total, 357);
+  assert.equal(brokenReferenceCount(t), 5);
+  assert.equal(t.broken.byKind[PROBLEM_KIND], 352);
+  // Counted as the rest of the total, so a new kind out of ui/analysis/broken.js
+  // lands in "Broken references" rather than vanishing from the headline.
+  const invented = { broken: { total: 10, byKind: { problem: 4, somethingNew: 6 } } };
+  assert.equal(brokenReferenceCount(invented), 6);
 });
 
 test('Confidence: the tier as a badge, every reason and every note', () => {
@@ -141,11 +157,14 @@ test('the psos group renders 24 rows with a count, not 715 rows', () => {
   assert.ok(block.includes('>305<'));
 });
 
-test('a step row names the step index, because the Scripts tab has no step anchor yet', () => {
+test('a step row names FileMaker\'s line number, because the Scripts tab has no step anchor yet', () => {
   const html = tab.render(solution, view);
   const at = html.indexOf('dead-set-variable');
   const block = html.slice(at, at + 4000);
-  assert.ok(/step 7/.test(block), 'no step index in the dead-set-variable rows');
+  // The dead Set Variable of the Control script is body index 7, which is the
+  // line FileMaker prints as 8 -- the number the Scripts tab's own gutter shows.
+  assert.ok(/line 8/.test(block), 'no line number in the dead-set-variable rows');
+  assert.ok(!/step 7/.test(block), 'the 0-based body index is not what a reader is shown');
   assert.ok(!/#\d+"/.test(block.slice(0, 2000)), 'a stepID anchor was linked, which the Scripts tab cannot route');
 });
 
@@ -233,4 +252,17 @@ test('every model string goes through esc', () => {
   const html = tab.render(oneScript([], evil), handView);
   assert.ok(html.includes('&lt;img src=x onerror=1&gt;'));
   assert.ok(!html.includes('<img src=x'));
+});
+
+test("the Broken table's Where header says fm's /N paths are fm's own JSON pointers", () => {
+  const html = tab.render(solution, view);
+  const section = html.slice(html.indexOf('<h2>Broken references</h2>'), html.indexOf('<h2>Script issues'));
+  const th = /<th title="([^"]*)">Where<\/th>/.exec(section);
+  assert.ok(th, 'no title on the Where header');
+  assert.match(th[1], /JSON pointer/);
+  assert.match(th[1], /not a line number/);
+  // The two spellings the column really carries, on the page to be read next
+  // to the sentence: fm's pointer on a problem row, our key path on the rest.
+  assert.ok(section.includes('<td>/4</td>'), "fm's own pointer rides through unread");
+  assert.ok(section.includes('<td>body[84].value</td>'), 'and a marker carries the key path');
 });

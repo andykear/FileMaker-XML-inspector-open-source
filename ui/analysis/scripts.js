@@ -2,10 +2,15 @@
 // What a script body says about itself: seven checks, the call graph between
 // scripts, and one tree walk for the explorer.
 //
-// An issue is { target, script:{id,name}, step:{index,stepID,step}, check,
-// detail, keys }. `keys` names the fm keys that DECIDED the issue, so a reader
-// can go look at the same key fm wrote; `disabled` is read by every check and
-// is not repeated there. Every check skips a disabled step: FileMaker does not
+// An issue is { target, script:{id,name}, step:{index,line,stepID,step}, check,
+// detail, keys }. `index` is the step's position in fm's `body` array, which is
+// what another analysis joins on; `line` is `index + 1`, the line number
+// FileMaker itself prints beside the step and the only one of the two that is
+// ever shown -- the Scripts tab, the Gaps tab, the Analysis tab, the Markdown
+// export and the Explorer all count from 1, and a report that said "step 7" of
+// a step FileMaker calls 8 would send a reader to the wrong line. `keys` names
+// the fm keys that DECIDED the issue, so a reader can go look at the same key
+// fm wrote; `disabled` is read by every check and is not repeated there. Every check skips a disabled step: FileMaker does not
 // run it, so it is not a finding -- and, the other way round, a mention inside
 // a disabled step is not a mention (`dead-set-variable` below).
 //
@@ -223,7 +228,7 @@ function issuesOfScript(target, detail, rows) {
   const add = (i, check, why, keys) => rows.push({
     target,
     script,
-    step: { index: i, stepID: get(body[i], 'stepID'), step: get(body[i], 'step') },
+    step: { index: i, line: i + 1, stepID: get(body[i], 'stepID'), step: get(body[i], 'step') },
     check,
     detail: why,
     keys,

@@ -27,7 +27,7 @@ import { scriptStats } from '../tabs/scripts.js';
 import { relationRows } from '../tabs/graph.js';
 import { accountRows, passwordState, securityTotals } from '../tabs/security.js';
 import { unreferenced } from '../analysis/unreferenced.js';
-import { broken } from '../analysis/broken.js';
+import { PROBLEM_KIND, broken } from '../analysis/broken.js';
 import { scriptIssues } from '../analysis/scripts.js';
 import { globals } from '../analysis/globals.js';
 
@@ -148,8 +148,8 @@ function scriptSection(solution) {
     perObject(solution, psos, (r) => r.script.name),
     { align: 'llr', empty: 'No step on the server-incompatible list.' });
   const others = issues.filter((r) => r.check !== PSOS);
-  const detail = mdTable(['File', 'Script', 'Step', 'Check', 'Detail'],
-    others.map((r) => [nameIn(solution, r.target), r.script.name, r.step.index, r.check, describe(r.detail)]),
+  const detail = mdTable(['File', 'Script', 'Line', 'Check', 'Detail'],
+    others.map((r) => [nameIn(solution, r.target), r.script.name, r.step.line, r.check, describe(r.detail)]),
     { empty: 'Nothing else fired.' });
   return `${byCheck}\n### ${PSOS}, by script\n\n`
     + 'A step FileMaker does not run on a server, wherever it sits: which scripts are ever'
@@ -214,16 +214,27 @@ function containers(solution) {
 
 function brokenSection(solution) {
   const rows = broken(solution);
+  const problems = rows.filter((r) => r.kind === PROBLEM_KIND);
+  // The same split the Analysis tab's headline makes, and for the same reason:
+  // fm's `problem` rows are fm's report about its own rendering of a step, not
+  // broken references, and one number covering both would read as a solution
+  // two orders of magnitude more broken than it is.
+  const totals = mdTable(['Total', 'Count'], [
+    ['Broken references', rows.length - problems.length],
+    ['fm problem steps', problems.length],
+  ], { align: 'lr' })
+    + '\nA broken reference is a `<Word Missing>` marker fm wrote, an occurrence whose base table did not'
+    + ' resolve, or a named reference that resolves to nothing. An fm problem step is an entry of fm\'s own'
+    + ' `script.problems[]`: its report about its own rendering of a step, not a finding about the file.\n';
   const byKind = mdTable(['Kind', 'Count'], tally(rows, (r) => r.kind), { align: 'lr', empty: 'Nothing is broken.' });
-  const problems = rows.filter((r) => r.kind === 'problem');
   const perScript = mdTable(['File', 'Script', 'Problems'],
     perObject(solution, problems, (r) => r.from.name),
     { align: 'llr', empty: 'fm flagged no step.' });
-  const others = rows.filter((r) => r.kind !== 'problem');
+  const others = rows.filter((r) => r.kind !== PROBLEM_KIND);
   const detail = mdTable(['File', 'Kind', 'Found in', 'Where', 'Detail'],
     others.map((r) => [nameIn(solution, r.target), r.kind, `${r.from.kind} ${r.from.name ?? r.from.id}`, r.from.where ?? '', describe(r.detail)]),
     { empty: 'Nothing else.' });
-  return `${byKind}\n### fm's own script problems, by script\n\n`
+  return `${totals}\n${byKind}\n### fm's own script problems, by script\n\n`
     + 'These are fm\'s report about its own rendering of a step, not a finding about the file.\n\n'
     + `${perScript}\n### Every other broken reference\n\n${detail}`;
 }

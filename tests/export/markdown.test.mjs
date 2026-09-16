@@ -139,6 +139,26 @@ test("Broken references are counted by kind and fm's own script problems are sum
   assert.ok(report.includes(`| ${worst[0]} | ${worst[1]} |`), `${worst[0]} summarised as ${worst[1]} problems`);
 });
 
+test('the Broken references section splits fm problem steps out of broken references', () => {
+  const rows = broken(solution);
+  const problems = rows.filter((r) => r.kind === 'problem').length;
+  assert.ok(report.includes(`| Broken references | ${rows.length - problems} |`), 'the broken-reference total');
+  assert.ok(report.includes(`| fm problem steps | ${problems} |`), 'fm\'s own problem steps, counted apart');
+  assert.ok(!report.includes(`| Broken references | ${rows.length} |`), 'the two are not added together');
+  assert.ok(report.includes("its report about its own rendering of a step"), 'and the report says why');
+});
+
+test('a script-issue row names FileMaker\'s line, not the 0-based body index', () => {
+  const rows = scriptIssues(solution).filter((r) => r.check !== 'psos-only-step');
+  assert.ok(rows.length > 0);
+  const at = report.indexOf('### Every other finding');
+  const block = report.slice(at, report.indexOf('\n## ', at));
+  assert.ok(block.includes('| File | Script | Line | Check | Detail |'), 'the column is the line');
+  for (const r of rows.slice(0, 5)) {
+    assert.ok(block.includes(`| ${r.script.name} | ${r.step.line} | ${r.check} |`), `${r.script.name} line ${r.step.line}`);
+  }
+});
+
 test('Gaps says to run the check when the solution carries none, and the counts when it does', () => {
   assert.ok(report.includes('Run the live check on the Gaps tab'));
   const withGaps = { ...solution, gaps: { stillMissing: [1, 2], newlyReported: [1], regressed: [], errored: [1, 2, 3] } };

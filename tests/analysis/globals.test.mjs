@@ -54,7 +54,7 @@ test('a global set by a Set Variable carries the set site; a local is not a glob
   const rows = globals(sol);
   assert.deepEqual(rows.map((r) => r.name), ['$$g']);
   assert.deepEqual(rows[0].sets, [{
-    target: 'file:///x.fmp12', script: { id: 7, name: 'S' }, step: { index: 0, stepID: SET_VARIABLE },
+    target: 'file:///x.fmp12', script: { id: 7, name: 'S' }, step: { index: 0, line: 1, stepID: SET_VARIABLE },
   }]);
   assert.deepEqual(rows[0].files, ['file:///x.fmp12']);
 });
@@ -108,10 +108,20 @@ test('the ooe fixture: three globals, one of them ever set', () => {
   assert.deepEqual(rows[2].sets, [{
     target: ROOT,
     script: { id: 55, name: 'All script steps and all options 20260318' },
-    step: { index: 117, stepID: 141 },
+    step: { index: 117, line: 118, stepID: 141 },
   }]);
   // $$var's only mention is that set: written once, read nowhere. The other
   // two are the opposite -- read in three and two calculations, set nowhere in
   // the solution the read reached.
   assert.equal(rows[2].mentions, rows[2].sets.length);
+});
+
+test('a set site carries FileMaker\'s own 1-based line beside the body index', () => {
+  const sol = oneScript([
+    step(1, 'Comment', {}),
+    step(SET_VARIABLE, 'Set Variable', { name: '$$g', value: '"one"' }),
+  ]);
+  assert.deepEqual(globals(sol)[0].sets.map((s) => [s.step.index, s.step.line]), [[1, 2]]);
+  // On the fixture too.
+  assert.ok(globals(solution).every((r) => r.sets.every((s) => s.step.line === s.step.index + 1)));
 });

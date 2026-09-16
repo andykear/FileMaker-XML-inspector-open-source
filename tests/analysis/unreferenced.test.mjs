@@ -458,3 +458,39 @@ test('every row says which file it came from', () => {
     assert.ok(out[key].every((r) => typeof r.target === 'string' && r.target.length > 0), `${key} rows carry a target`);
   }
 });
+
+test('the suppression is keyed on the owning table, not on the bare field name', () => {
+  // Two tables in the read share a field name. Only `Invoice` is behind the
+  // unfollowable source, so only `Invoice::InvoiceNumber` cannot be judged:
+  // `Credit::InvoiceNumber` is nobody's and must still be listed. Keyed on the
+  // bare name, as this used to be, both disappeared.
+  const twoTables = {
+    target: 'file:///b.fmp12',
+    name: 'B',
+    catalogs: {
+      table: { list: [{ id: 1, name: 'Invoice' }, { id: 2, name: 'Credit' }] },
+      field: {
+        detailById: {
+          'table:Invoice': { op: {}, readAt: null, result: { items: [{ id: 1, name: 'InvoiceNumber', options: {} }] } },
+          'table:Credit': { op: {}, readAt: null, result: { items: [{ id: 2, name: 'InvoiceNumber', options: {} }] } },
+        },
+      },
+    },
+  };
+  // `file:C` is in nobody's read, so `Inv_Remote`'s fields cannot be followed.
+  const sol = handMadeFiles([{ target: 'file:///a.fmp12', name: 'A', catalogs: remote('file:C') }, twoTables]);
+  assert.deepEqual(unreferenced(sol).fields.map((r) => r.name), ['Credit::InvoiceNumber']);
+});
+
+test('an occurrence with no base table name suppresses nothing', () => {
+  const nameless = {
+    externalDataSource: { list: [{ name: 'Elsewhere', id: 1, paths: ['file:C'], sourceType: 'filemaker' }] },
+    tableOccurrence: { list: [{ id: 9, name: 'Inv_Remote', table: { id: 130, resolved: true, dataSource: 'Elsewhere' } }] },
+    layout: {
+      list: [{ id: 5, name: 'L', type: 'layout' }],
+      detailById: detail(5, { id: 5, name: 'L', contents: { objects: [{ id: 3, type: 'field', field: { name: 'Inv_Remote::InvoiceNumber' } }] } }),
+    },
+  };
+  const sol = handMadeFiles([{ target: 'file:///a.fmp12', name: 'A', catalogs: nameless }, fileB]);
+  assert.deepEqual(unreferenced(sol).fields.map((r) => r.name), ['Invoice::InvoiceNumber', 'Invoice::Spare']);
+});

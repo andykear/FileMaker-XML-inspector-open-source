@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import { broken } from '../../ui/analysis/broken.js';
+import { references } from '../../ui/analysis/refs.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -120,13 +121,13 @@ test('the fixture carries five <Function Missing> markers, measured, and no <Fie
   assert.equal(rows.length, 5);
   const by = rows.map((r) => `${r.from.name}|${r.from.where}`).sort();
   assert.deepEqual(by, [
-    'All script steps and all options 20260318|body.118.value',
-    'All script steps and all options 20260318|body.5.value',
-    'All script steps and all options|body.124.layoutName',
-    'All script steps and all options|body.159.record',
-    'All script steps and all options|body.84.value',
+    'All script steps and all options 20260318|body[118].value',
+    'All script steps and all options 20260318|body[5].value',
+    'All script steps and all options|body[124].layoutName',
+    'All script steps and all options|body[159].record',
+    'All script steps and all options|body[84].value',
   ]);
-  const long = rows.find((r) => r.from.where === 'body.5.value');
+  const long = rows.find((r) => r.from.where === 'body[5].value');
   assert.match(long.detail.context, /_calc_var_three = <Function Missing>/);
 });
 
@@ -257,4 +258,55 @@ test('the broken counts by kind on the fixture', () => {
   for (const r of rows) byKind[r.kind] = (byKind[r.kind] ?? 0) + 1;
   assert.deepEqual(byKind, { problem: 352, missingMarker: 5 });
   assert.equal(rows.length, 357);
+});
+
+test('a marker on a script step is spelled the way refs.js spells the same place', () => {
+  // Both analyses walk the same strings; only one notation may reach a reader,
+  // or a marker row and a reference row about one step read as two places.
+  const markers = broken(solution).filter((r) => r.kind === 'missingMarker');
+  assert.ok(markers.length > 0);
+  const stepPaths = references(solution).filter((r) => r.from.kind === 'script').map((r) => String(r.from.where));
+  assert.ok(stepPaths.length > 0);
+  for (const where of stepPaths) assert.match(where, /^body\[\d+\]\./, where);
+  for (const m of markers) assert.match(m.from.where, /^body\[\d+\]\./, m.from.where);
+  // Not merely the same shape: on at least one step both analyses found
+  // something, and they name that step identically. (Not every marker step has
+  // a reference -- `body[124].layoutName` on ooe is calculation text whose only
+  // token is the missing function itself, so refs.js finds no name there.)
+  const shared = markers.filter((m) => {
+    const prefix = m.from.where.slice(0, m.from.where.indexOf(']') + 1);
+    return stepPaths.some((p) => p.startsWith(`${prefix}.`));
+  });
+  assert.ok(shared.length > 0, 'no marker step carries a reference too');
+});
+
+test('a field option marker carries the options prefix refs.js uses', () => {
+  const sol = handMade({
+    table: { list: [{ id: 1, name: 'T' }] },
+    field: {
+      detailById: {
+        'table:T': {
+          op: {}, readAt: null,
+          result: { items: [{ id: 1, name: 'A', options: { autoEnter: { calculation: 'GetX ( <Function Missing> )' } } }] },
+        },
+      },
+    },
+  });
+  const row = broken(sol).find((r) => r.kind === 'missingMarker');
+  assert.equal(row.from.where, 'options.autoEnter.calculation');
+  assert.equal(row.from.id, 'T::A');
+});
+
+test("a marker in a script's own problems[] is still found, outside the body split", () => {
+  const sol = handMade({
+    script: {
+      list: [{ id: 7, name: 'S', type: 'script' }],
+      detailById: detail(7, {
+        id: 7, name: 'S', body: [],
+        problems: [{ path: '/0', step: 'Set Field <Function Missing>' }],
+      }),
+    },
+  });
+  const markers = broken(sol).filter((r) => r.kind === 'missingMarker');
+  assert.deepEqual(markers.map((r) => r.from.where), ['problems.0.step']);
 });

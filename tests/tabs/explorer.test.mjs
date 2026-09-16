@@ -196,3 +196,22 @@ test('every model string goes through esc', () => {
   assert.ok(html.includes('&lt;img src=x onerror=1&gt;'));
   assert.ok(!html.includes('<img src=x'));
 });
+
+test("a reference written on a script step shows FileMaker's line beside the key path", () => {
+  const sel = selectionOf(viewOf(selectionKey(ROOT, 'script', '55')));
+  const rows = outgoing(solution, sel);
+  const onSteps = rows.filter((r) => /^body\[\d+\]\./.test(r.where));
+  assert.ok(onSteps.length > 0);
+  for (const r of onSteps) {
+    assert.equal(r.line, Number(/^body\[(\d+)\]/.exec(r.where)[1]) + 1, r.where);
+  }
+  // A reference written anywhere but a step carries no line rather than a 1.
+  const layout = outgoing(solution, selectionOf(viewOf(selectionKey(ROOT, 'layout', '1'))));
+  assert.ok(layout.length > 0);
+  assert.ok(layout.every((r) => r.line === ''));
+  // And the column is on the page, with the sentence that says what it is.
+  const html = tab.render(solution, viewOf(selectionKey(ROOT, 'script', '55')));
+  const th = /<th class="num" title="([^"]*)">Line<\/th>/.exec(html);
+  assert.ok(th, 'no Line column with a title on it');
+  assert.match(th[1], /line number/);
+});

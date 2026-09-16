@@ -47,6 +47,7 @@
 // get/path. Memoised through ui/analysis/memo.js, like every other analysis:
 // the memo keys on the catalog slots a re-read swaps, not on the solution
 // object.
+import { foldKey } from 'fm-adt-toolkit/step-display';
 import { get, path } from '../access.js';
 import { fieldsOf } from '../tabs/tables.js';
 import { memoise } from './memo.js';
@@ -60,6 +61,13 @@ const detailsOf = (file, catalog) => Object.values(path(file, `catalogs.${catalo
 
 // ── fm's own `problems[]` ────────────────────────────────────────────────
 
+/** The one kind in this list that is NOT a broken reference: fm's report about
+ *  its own rendering of a step. Named here, where the kinds are made, because
+ *  two surfaces have to split the total on it -- the Analysis tab's headline and
+ *  the Markdown report -- and 352 problem rows beside 5 real broken references
+ *  would otherwise read as one number. */
+export const PROBLEM_KIND = 'problem';
+
 function scriptProblems(solution) {
   const rows = [];
   for (const file of filesOf(solution)) {
@@ -67,7 +75,7 @@ function scriptProblems(solution) {
     for (const detail of detailsOf(file, 'script')) {
       for (const problem of get(detail, 'problems') ?? []) {
         rows.push({
-          target, kind: 'problem',
+          target, kind: PROBLEM_KIND,
           from: { kind: 'script', id: get(detail, 'id'), name: get(detail, 'name'), where: get(problem, 'path') },
           detail: { ...problem },
         });
@@ -88,11 +96,28 @@ function nameOf(catalog, detail) {
   return typeof left === 'string' && typeof right === 'string' ? `${left} ↔ ${right}` : String(get(detail, 'id'));
 }
 
-// Every described object the solution carries, as a record to scan plus who
-// it is. Deliberately coarser than Task 1's per-step sources: a marker's
-// owner (which script, which layout) is enough context, so there is no need
-// to walk into individual steps or layout objects -- `strings()` already
-// recurses into them on its own and the key path it reports is `where`.
+/** A shallow copy minus one key, matched the way `get` matches -- exact
+ *  spelling first, then fm's case-and-separator fold -- so a build that respells
+ *  `body` does not smuggle every step back in under the wrong prefix. The same
+ *  helper ui/analysis/refs.js keeps for the same reason. */
+const without = (obj, key) => {
+  const drop = foldKey(key);
+  const copy = {};
+  for (const [k, v] of Object.entries(obj ?? {})) if (foldKey(k) !== drop) copy[k] = v;
+  return copy;
+};
+
+// Every described object the solution carries, as a record to scan, who it is,
+// and the prefix its `where` paths hang off. Deliberately coarser than Task 1's
+// per-step sources -- a marker's owner is enough context, and `strings()`
+// recurses into the children on its own -- with one exception: a script's body
+// IS split per step, so a marker's `where` reads `body[84].value`, exactly the
+// spelling ui/analysis/refs.js gives a reference on the same step. Two rows
+// about one place in two notations is a reader's problem, not a reader's job.
+// A field's options carry the `options` prefix for the same reason. What is
+// left coarse is the layout walk: refs.js numbers a layout object by fm's own
+// id (`object[12]`) and `strings()` numbers it by position, and no marker on
+// the reference solution lands there -- when one does, that is the next split.
 function* records(solution) {
   for (const file of filesOf(solution)) {
     const target = get(file, 'target');
@@ -100,12 +125,21 @@ function* records(solution) {
       const table = get(t, 'name');
       for (const f of fieldsOf(file, table)) {
         const name = `${table}::${get(f, 'name')}`;
-        yield { target, record: get(f, 'options'), kind: 'field', id: name, name };
+        yield { target, record: get(f, 'options'), kind: 'field', id: name, name, prefix: 'options' };
       }
     }
     for (const catalog of ['script', 'layout', 'valueList', 'customFunction', 'customMenu', 'tableOccurrence', 'relation']) {
       for (const detail of detailsOf(file, catalog)) {
-        yield { target, record: detail, kind: catalog, id: get(detail, 'id'), name: nameOf(catalog, detail) };
+        const src = { target, kind: catalog, id: get(detail, 'id'), name: nameOf(catalog, detail) };
+        if (catalog !== 'script') {
+          yield { ...src, record: detail, prefix: '' };
+          continue;
+        }
+        const body = get(detail, 'body') ?? [];
+        for (let i = 0; i < body.length; i += 1) yield { ...src, record: body[i], prefix: `body[${i}]` };
+        // Everything else the script carries -- `problems` above all -- still
+        // goes through whole, minus the body already yielded.
+        yield { ...src, record: without(detail, 'body'), prefix: '' };
       }
     }
   }
@@ -126,7 +160,7 @@ function missingMarkers(solution) {
         const end = Math.min(value.length, m.index + m[0].length + CONTEXT);
         rows.push({
           target: src.target, kind: 'missingMarker',
-          from: { kind: src.kind, id: src.id, name: src.name, where: at },
+          from: { kind: src.kind, id: src.id, name: src.name, where: src.prefix ? `${src.prefix}.${at}` : at },
           detail: { what: m[1], context: value.slice(start, end) },
         });
       }

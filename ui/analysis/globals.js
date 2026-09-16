@@ -2,8 +2,11 @@
 // Every `$$` global the solution mentions: where it is set, how often it is
 // mentioned at all, and in which files.
 //
-// A row is { name, sets: [{ target, script:{id,name}, step:{index,stepID} }],
-// mentions, files }. The two counts answer different questions and are read
+// A row is { name, sets: [{ target, script:{id,name}, step:{index,line,stepID} }],
+// mentions, files }. `index` is the step's position in fm's `body` array;
+// `line` is `index + 1`, the line number FileMaker prints beside the step, and
+// is the one a page shows -- every tab and every export in this repo counts
+// lines from 1. The two counts answer different questions and are read
 // differently:
 //
 //   `sets`      every ENABLED `Set Variable` whose `name` key is a `$$` global.
@@ -75,7 +78,7 @@ function computeGlobals(solution) {
         const name = get(step, 'name');
         if (!isGlobal(name)) return;
         const row = rowFor(name);
-        row.sets.push({ target, script: { id: get(detail, 'id'), name: get(detail, 'name') }, step: { index, stepID: get(step, 'stepID') } });
+        row.sets.push({ target, script: { id: get(detail, 'id'), name: get(detail, 'name') }, step: { index, line: index + 1, stepID: get(step, 'stepID') } });
         row.files.add(target);
       });
     }
