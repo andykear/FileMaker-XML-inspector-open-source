@@ -3,12 +3,13 @@
 // step by step through the toolkit's shared renderer, and the step index across every
 // file reached. A pure renderer: no document, every fm key read through access.js,
 // every string escaped. Nothing here knows how a step is spelled -- stepDisplay does.
-import { badge, count, esc, kv, link, matches, rereadCatalogButton, rereadObjectButton, section, table } from '../dom.js';
+import { badge, count, esc, kv, link, matches, rereadObjectButton, section, table } from '../dom.js';
 import { get, path } from '../access.js';
 import { stepDisplay } from 'fm-adt-toolkit/step-display';
+import { catalogActions, detailOf, listOf, selectionKey, selectionTail, totalsLine } from './common.js';
 
-const listOf = (file) => path(file, 'catalogs.script.list') ?? [];
-const entryOf = (file, id) => get(path(file, 'catalogs.script.detailById'), String(id));
+const scriptsOf = (file) => listOf(file, 'script');
+const entryOf = (file, id) => detailOf(file, 'script', id);
 const entriesOf = (file) => Object.values(path(file, 'catalogs.script.detailById') ?? {});
 const detailsOf = (file) => entriesOf(file).map((e) => get(e, 'result')).filter(Boolean);
 const bodyOf = (detail) => get(detail, 'body') ?? [];
@@ -23,7 +24,7 @@ export function scriptTree(file) {
     if (!groups.has(folder)) groups.set(folder, { folder, scripts: [] });
     return groups.get(folder);
   };
-  for (const item of listOf(file)) {
+  for (const item of scriptsOf(file)) {
     const folder = get(item, 'folder') ?? '';
     const type = get(item, 'type');
     if (type === 'folder') at([folder, get(item, 'name')].filter(Boolean).join('/'));
@@ -121,7 +122,7 @@ export function orphanedEnabled(detail) {
 }
 
 export function scriptStats(file) {
-  const scripts = listOf(file).filter((i) => get(i, 'type') === 'script');
+  const scripts = scriptsOf(file).filter((i) => get(i, 'type') === 'script');
   const lengths = scripts.map((i) => Number(get(i, 'steps')) || 0);
   const details = detailsOf(file);
   return {
@@ -138,9 +139,8 @@ export function scriptStats(file) {
 }
 
 export function selectionOf(view) {
-  const sel = view?.selection;
-  const at = typeof sel === 'string' ? sel.indexOf('|') : -1;
-  return at < 0 ? null : { target: sel.slice(0, at), id: sel.slice(at + 1) };
+  const parsed = selectionTail(view?.selection);
+  return parsed && { target: parsed.target, id: parsed.tail };
 }
 
 function totals(solution) {
@@ -154,7 +154,7 @@ function totals(solution) {
     ['Unbalanced scripts', sum('unbalanced')],
     ['Enabled steps under a disabled opener', sum('orphanedEnabled')],
   ];
-  return `<p class="muted totals">${pairs.map(([k, v]) => `${esc(k)} ${count(v)}`).join(' &middot; ')}</p>`;
+  return totalsLine(pairs);
 }
 
 /** The badges a tree row can carry. `runWithFullAccess` only exists on the describe,
@@ -171,7 +171,7 @@ function rowBadges(file, item) {
 function treeRow(file, item, selection, filter) {
   const name = String(get(item, 'name') ?? '');
   if (!matches(name, filter)) return '';
-  const key = `${file.target}|${get(item, 'id')}`;
+  const key = selectionKey(file.target, get(item, 'id'));
   const cls = key === selection ? ' class="selected"' : '';
   return `<li data-select="${esc(key)}"${cls}>${link(`scripts/${key}`, name)}`
     + ` ${count(get(item, 'steps'))} ${rowBadges(file, item)}</li>`;
@@ -193,10 +193,7 @@ function renderTree(solution, view) {
     const title = view.multiFile ? `<h3>${esc(file.name ?? file.target)}</h3>` : '';
     return title + (groups || '<p class="empty">No scripts</p>');
   }).join('');
-  const actions = Object.values(solution.files)
-    .map((f) => rereadCatalogButton(f.target, 'script', view.multiFile ? `Re-read ${f.name ?? f.target}` : 'Re-read scripts'))
-    .join(' ');
-  return section('Scripts', totals(solution) + body, { actions });
+  return section('Scripts', totals(solution) + body, { actions: catalogActions(solution, 'script', view, 'scripts') });
 }
 
 /** What fm flagged while rendering this script, and the step names it flagged,
@@ -217,7 +214,7 @@ function renderSelected(solution, view) {
   const entry = entryOf(file, sel.id);
   if (!entry) return '';
   const detail = get(entry, 'result');
-  const item = listOf(file).find((i) => String(get(i, 'id')) === sel.id);
+  const item = scriptsOf(file).find((i) => String(get(i, 'id')) === sel.id);
   const name = get(detail ?? item, 'name') ?? sel.id;
   const title = `Script ${name}${view.multiFile ? ` (${file.name ?? file.target})` : ''}`;
   const actions = rereadObjectButton({ kind: 'object', target: file.target, catalog: 'script', key: sel.id }, 'Re-read script');

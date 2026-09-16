@@ -10,9 +10,10 @@ import {
 } from '../dom.js';
 import { get, path } from '../access.js';
 import { stepDisplay } from 'fm-adt-toolkit/step-display';
+import {
+  catalogActions, detailOf, kindSelection, listOf, selectRow, selectionKey, totalsLine, withFile,
+} from './common.js';
 
-const listOf = (file, catalog) => path(file, `catalogs.${catalog}.list`) ?? [];
-const detailOf = (file, catalog, id) => get(path(file, `catalogs.${catalog}.detailById`), String(id));
 const rowsOf = (solution, of) => Object.values(solution.files).flatMap((f) => of(f));
 // -- Rows: the three catalogs fm describes one by one -----------------------
 function describedRow(file, catalog, prefix, item, extra) {
@@ -21,7 +22,7 @@ function describedRow(file, catalog, prefix, item, extra) {
   const result = get(entry, 'result');
   const d = result ?? item;
   return {
-    target: file.target, file: file.name ?? file.target, key: `${file.target}|${prefix}:${id}`, id,
+    target: file.target, file: file.name ?? file.target, key: selectionKey(file.target, prefix, id), id,
     ...extra(d, item), detail: result ?? null, error: get(entry, 'error') ?? null,
   };
 }
@@ -122,19 +123,8 @@ export function valueListSource(row) {
   return row.type ? esc(row.type) : badge('unread', 'warn');
 }
 
-export function selectionOf(view) {
-  const sel = view?.selection;
-  const at = typeof sel === 'string' ? sel.indexOf('|') : -1;
-  if (at < 0) return null;
-  const m = /^(vl|cf|menu):(.+)$/.exec(sel.slice(at + 1));
-  return m ? { target: sel.slice(0, at), kind: m[1], id: m[2] } : null;
-}
+export const selectionOf = (view) => kindSelection(view?.selection, ['vl', 'cf', 'menu']);
 // -- Rendering: shared helpers ------------------------------------------------
-const withFile = (multiFile, columns) => (multiFile ? [{ key: 'file', label: 'File' }, ...columns] : columns);
-const rowAttrs = (selection) => (r) => `data-select="${esc(r.key)}"${r.key === selection ? ' class="selected"' : ''}`;
-const catalogAction = (solution, catalog, multiFile, what) => Object.values(solution.files)
-  .map((f) => rereadCatalogButton(f.target, catalog, multiFile ? `Re-read ${f.name ?? f.target}` : `Re-read ${what}`)).join(' ');
-
 function modesBadges(row) {
   return [row.browseMode && badge('browse', 'good'), row.findMode && badge('find', 'good'), row.previewMode && badge('preview', 'good')]
     .filter(Boolean).join(' ');
@@ -218,10 +208,9 @@ export function catalogsTotals(solution) {
   return out;
 }
 
-function totalsLine(solution) {
+function catalogsTotalsLine(solution) {
   const t = catalogsTotals(solution);
-  const pairs = CATALOGS.map((c) => [c.title, t[c.totalsKey]]);
-  return `<p class="muted totals">${pairs.map(([k, v]) => `${esc(k)} ${count(v)}`).join(' &middot; ')}</p>`;
+  return totalsLine(CATALOGS.map((c) => [c.title, t[c.totalsKey]]));
 }
 
 /** One table section, built from a `CATALOGS` entry. `selectable` wires up
@@ -229,10 +218,10 @@ function totalsLine(solution) {
 function renderCatalog(solution, view, entry) {
   const rows = rowsOf(solution, entry.rows);
   const shown = rows.filter((r) => entry.filterKeys.some((k) => matches(r[k], view.filter)));
-  const body = (entry.note ?? '') + table(withFile(view.multiFile, entry.columns), shown, {
-    empty: `No ${entry.what}`, rowAttrs: entry.selectable ? rowAttrs(view.selection) : undefined,
+  const body = (entry.note ?? '') + table(withFile(entry.columns, view), shown, {
+    empty: `No ${entry.what}`, rowAttrs: entry.selectable ? selectRow(view.selection) : undefined,
   });
-  return section(entry.title, body, { actions: catalogAction(solution, entry.catalog, view.multiFile, entry.what) });
+  return section(entry.title, body, { actions: catalogActions(solution, entry.catalog, view, entry.what) });
 }
 
 function factValue(v) {
@@ -347,6 +336,6 @@ export const tab = {
   render(solution, view = {}) {
     const files = Object.values(solution.files).map((f) => renderFile(f, view.multiFile)).join('');
     const sections = CATALOGS.map((entry) => renderCatalog(solution, view, entry)).join('');
-    return totalsLine(solution) + files + sections + renderSelected(solution, view);
+    return catalogsTotalsLine(solution) + files + sections + renderSelected(solution, view);
   },
 };

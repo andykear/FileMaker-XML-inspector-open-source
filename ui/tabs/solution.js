@@ -2,7 +2,7 @@
 // The Solution tab: one panel per reached file (its facts and its catalog counts, each
 // with its re-read button), then the Unreachable list. A pure renderer -- the shell owns
 // the clicks, so the buttons only carry the slot they want re-read.
-import { esc, kv, section, table } from '../dom.js';
+import { esc, kv, rereadCatalogButton, section, table } from '../dom.js';
 import { catalogCounts } from '../model.js';
 
 function factValue(v) {
@@ -11,17 +11,13 @@ function factValue(v) {
     : `<span class="error">${esc(v.error.code)}: ${esc(v.error.message)}</span>`;
 }
 
-function rereadButton(catalog, target, label) {
-  return `<button data-reread-catalog="${esc(catalog)}" data-target="${esc(target)}">${esc(label)}</button>`;
-}
-
 const COLUMNS = [
   { key: 'catalog', label: 'Catalog', render: (r) => `${esc(r.catalog)}${r.listError ? ` <span class="error">${esc(r.listError.code)}</span>` : ''}` },
   { key: 'listed', label: 'Listed', num: true },
   { key: 'described', label: 'Described', num: true },
   { key: 'errors', label: 'Errors', num: true, render: (r) => `<span class="${r.errors ? 'error' : ''}">${esc(r.errors)}</span>` },
   { key: 'readAt', label: 'Read at', render: (r) => `<span class="muted">${esc(r.readAt ?? '')}</span>` },
-  { key: 'reread', label: '', render: (r) => rereadButton(r.catalog, r.target, 'Re-read') },
+  { key: 'reread', label: '', render: (r) => rereadCatalogButton(r.target, r.catalog) },
 ];
 
 function renderFile(file) {
@@ -38,7 +34,7 @@ function renderFile(file) {
   const body = `<p class="muted target">${esc(file.target)}</p>`
     + kv(Object.entries(file.facts).map(([k, v]) => [k, factValue(v)]))
     + table(COLUMNS, rows, { empty: 'No catalogs read' });
-  return section(title, body, { actions: rereadButton('facts', file.target, 'Re-read facts') });
+  return section(title, body, { actions: rereadCatalogButton(file.target, 'facts', 'Re-read facts') });
 }
 
 function renderUnreachable(list) {

@@ -9,11 +9,12 @@
 // objects, 36 report bounds that fall outside their parent's box, and every container
 // whose own origin is not 0,0 (popover, portal, tabControl, slideControl, buttonBar,
 // group) has children starting near 0,0. So the walk carries an origin and adds it.
-import { badge, count, esc, kv, link, matches, rereadCatalogButton, rereadObjectButton, section, table } from '../dom.js';
+import { badge, count, esc, kv, link, matches, rereadObjectButton, section, table } from '../dom.js';
 import { get, path } from '../access.js';
+import { catalogActions, detailOf, listOf, selectionKey, selectionTail, totalsLine } from './common.js';
 
-const listOf = (file) => path(file, 'catalogs.layout.list') ?? [];
-const entryOf = (file, id) => get(path(file, 'catalogs.layout.detailById'), String(id));
+const layoutsOf = (file) => listOf(file, 'layout');
+const entryOf = (file, id) => detailOf(file, 'layout', id);
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
 const boundsOf = (obj) => {
@@ -64,13 +65,13 @@ export function objectCounts(detail) {
 /** fm's flattened list carries three types: `layout`, `folder` and `separator` (the
  *  divider FileMaker draws). Only a layout gets a row. */
 export function layoutRows(file) {
-  return listOf(file).filter((item) => get(item, 'type') === 'layout').map((item) => {
+  return layoutsOf(file).filter((item) => get(item, 'type') === 'layout').map((item) => {
     const id = get(item, 'id');
     const entry = entryOf(file, id);
     const detail = get(entry, 'result');
     const counts = objectCounts(detail);
     return {
-      id, counts, target: file.target, key: `${file.target}|${id}`, file: file.name ?? file.target,
+      id, counts, target: file.target, key: selectionKey(file.target, id), file: file.name ?? file.target,
       name: String(get(detail, 'name') ?? get(item, 'name') ?? ''),
       folder: String(get(item, 'folder') ?? ''),
       hidden: get(item, 'hidden') === true,
@@ -138,17 +139,17 @@ export function wireframeSvg(detail, opts = {}) {
     + bands + objects + '</svg>';
 }
 
-/** `<target>|<layout id>`, optionally `#<object id>` to highlight one object. */
+/** `<target>|<layout id>`, optionally `#<object id>` to highlight one object.
+ *  The object rides inside the tab's own part, because it is a coordinate within
+ *  the layout rather than a second thing to select. */
 export function selectionOf(view) {
-  const sel = view?.selection;
-  const at = typeof sel === 'string' ? sel.indexOf('|') : -1;
-  if (at < 0) return null;
-  const rest = sel.slice(at + 1);
-  const hash = rest.indexOf('#');
+  const parsed = selectionTail(view?.selection);
+  if (!parsed) return null;
+  const hash = parsed.tail.indexOf('#');
   return {
-    target: sel.slice(0, at),
-    id: hash < 0 ? rest : rest.slice(0, hash),
-    object: hash < 0 ? null : rest.slice(hash + 1),
+    target: parsed.target,
+    id: hash < 0 ? parsed.tail : parsed.tail.slice(0, hash),
+    object: hash < 0 ? null : parsed.tail.slice(hash + 1),
   };
 }
 
@@ -165,7 +166,7 @@ function totals(solution) {
     ['Popovers', sum('popovers')],
     ['Button bars', sum('buttonBars')],
   ];
-  return `<p class="muted totals">${pairs.map(([k, v]) => `${esc(k)} ${count(v)}`).join(' &middot; ')}</p>`;
+  return totalsLine(pairs);
 }
 
 /** A folder's own key is its full path, the same spelling a layout's `folder` carries,
@@ -176,7 +177,7 @@ function folders(file) {
     if (!groups.has(folder)) groups.set(folder, { folder, rows: [] });
     return groups.get(folder);
   };
-  for (const item of listOf(file)) {
+  for (const item of layoutsOf(file)) {
     if (get(item, 'type') !== 'folder') continue;
     at([get(item, 'folder'), get(item, 'name')].filter(Boolean).join('/'));
   }
@@ -212,10 +213,7 @@ function renderList(solution, view) {
     const title = view.multiFile ? `<h3>${esc(file.name ?? file.target)}</h3>` : '';
     return title + (groups || '<p class="empty">No layouts</p>');
   }).join('');
-  const actions = Object.values(solution.files)
-    .map((f) => rereadCatalogButton(f.target, 'layout', view.multiFile ? `Re-read ${f.name ?? f.target}` : 'Re-read layouts'))
-    .join(' ');
-  return section('Layouts', totals(solution) + body, { actions });
+  return section('Layouts', totals(solution) + body, { actions: catalogActions(solution, 'layout', view, 'layouts') });
 }
 
 const PART_COLUMNS = [
@@ -299,7 +297,7 @@ function renderSelected(solution, view) {
   const entry = entryOf(file, sel.id);
   if (!entry) return '';
   const detail = get(entry, 'result');
-  const item = listOf(file).find((i) => String(get(i, 'id')) === sel.id);
+  const item = layoutsOf(file).find((i) => String(get(i, 'id')) === sel.id);
   const name = get(detail, 'name') ?? get(item, 'name') ?? sel.id;
   const title = `Layout ${name}${view.multiFile ? ` (${file.name ?? file.target})` : ''}`;
   const actions = rereadObjectButton({ kind: 'object', target: file.target, catalog: 'layout', key: String(sel.id) }, 'Re-read layout');
@@ -309,7 +307,7 @@ function renderSelected(solution, view) {
       + `${esc(get(error, 'message') ?? 'no describe for this layout')}</p>`, { actions });
   }
   const counts = objectCounts(detail);
-  const key = `${file.target}|${sel.id}`;
+  const key = selectionKey(file.target, sel.id);
   const rows = objectRows(detail, key).filter((r) => matches(r.type, view.filter) || matches(r.what, view.filter)
     || matches(r.control, view.filter) || matches(r.style, view.filter));
   const body = kv(detailPairs(detail, counts))

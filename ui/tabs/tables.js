@@ -3,8 +3,9 @@
 // when a table is selected -- that table's fields, the five sublists the legacy
 // inspector drew, and the button that re-reads just this table's fields. A pure
 // renderer: no document, every fm option read through access.js, every string escaped.
-import { count, esc, link, matches, rereadCatalogButton, rereadObjectButton, section, table } from '../dom.js';
+import { count, esc, link, matches, rereadObjectButton, section, table } from '../dom.js';
 import { get, path } from '../access.js';
+import { catalogActions, listOf, selectRow, selectionKey, selectionTail, totalsLine, withFile } from './common.js';
 
 export function fieldsOf(file, tableName) {
   const detail = get(path(file, 'catalogs.field'), 'detailById');
@@ -83,17 +84,16 @@ export function tableCounts(fields) {
   return counts;
 }
 
+/** A table name may itself carry a colon, so the tab takes the whole tail. */
 export function selectionOf(view) {
-  const sel = view?.selection;
-  const at = typeof sel === 'string' ? sel.indexOf('|') : -1;
-  return at < 0 ? null : { target: sel.slice(0, at), table: sel.slice(at + 1) };
+  const parsed = selectionTail(view?.selection);
+  return parsed && { target: parsed.target, table: parsed.tail };
 }
 
 const num = (key) => ({ key, num: true, render: (r) => count(r[key]) });
 
-function tableColumns(multiFile) {
-  return [
-    ...(multiFile ? [{ key: 'file', label: 'File' }] : []),
+function tableColumns(view) {
+  return withFile([
     { key: 'name', label: 'Table', render: (r) => link(`tables/${r.key}`, r.name) },
     { ...num('fields'), label: 'Fields' },
     { ...num('calc'), label: 'Calc' },
@@ -102,19 +102,19 @@ function tableColumns(multiFile) {
     { ...num('container'), label: 'Container' },
     { ...num('summary'), label: 'Summary' },
     { ...num('autoEntry'), label: 'Auto-entry' },
-  ];
+  ], view);
 }
 
 function tableRows(solution) {
   const rows = [];
   for (const file of Object.values(solution.files)) {
-    for (const t of path(file, 'catalogs.table.list') ?? []) {
+    for (const t of listOf(file, 'table')) {
       rows.push({
         ...tableCounts(fieldsOf(file, t.name)),
         file: file.name ?? file.target,
         target: file.target,
         name: t.name,
-        key: `${file.target}|${t.name}`,
+        key: selectionKey(file.target, t.name),
       });
     }
   }
@@ -130,22 +130,17 @@ function totals(rows) {
     ['Stored calc', sum('storedCalc')],
     ['Unstored calc', sum('unstoredCalc')],
   ];
-  return `<p class="muted totals">${pairs.map(([k, v]) => `${esc(k)} ${count(v)}`).join(' &middot; ')}</p>`;
+  return totalsLine(pairs);
 }
 
 function renderTables(solution, view) {
   // The totals are the scoreboard for the whole model, so they read the unfiltered rows.
   const all = tableRows(solution);
   const rows = all.filter((r) => matches(r.name, view.filter));
-  const actions = Object.values(solution.files)
-    .map((f) => rereadCatalogButton(f.target, 'table', view.multiFile ? `Re-read ${f.name ?? f.target}` : 'Re-read tables'))
-    .join(' ');
-  const selected = view.selection;
-  const body = totals(all) + table(tableColumns(view.multiFile), rows, {
-    empty: 'No tables',
-    rowAttrs: (r) => `data-select="${esc(r.key)}"${r.key === selected ? ' class="selected"' : ''}`,
+  const body = totals(all) + table(tableColumns(view), rows, {
+    empty: 'No tables', rowAttrs: selectRow(view.selection),
   });
-  return section('Base tables', body, { actions });
+  return section('Base tables', body, { actions: catalogActions(solution, 'table', view, 'tables') });
 }
 
 const FIELD_COLUMNS = [

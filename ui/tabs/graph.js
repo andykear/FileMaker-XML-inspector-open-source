@@ -3,7 +3,8 @@
 // graph itself drawn from the geometry fm reports -- no layout algorithm, fm already
 // knows where the boxes sit. A pure renderer: no document, every fm key read through
 // access.js, every string and every colour escaped before it reaches an attribute.
-import { badge, count, esc, kv, link, matches, rereadCatalogButton, rereadObjectButton, section, table } from '../dom.js';
+import { badge, count, esc, kv, link, matches, rereadObjectButton, section, table } from '../dom.js';
+import { catalogActions, detailOf, kindSelection, listOf, selectRow, selectionKey, totalsLine, withFile } from './common.js';
 import { get, path } from '../access.js';
 
 const SOURCE_FLAGS = ['local', 'external', 'foreign', 'odbc'];
@@ -15,14 +16,6 @@ const MARGIN = 20;
  *  never reach a fill attribute, whatever fm (or a fixture) says. */
 function safeColor(value) {
   return /^#[0-9a-f]{3,8}$/i.test(String(value ?? '')) ? String(value) : FALLBACK_COLOR;
-}
-
-function detailOf(file, catalog, id) {
-  return get(path(file, `catalogs.${catalog}.detailById`), String(id));
-}
-
-function listOf(file, catalog) {
-  return path(file, `catalogs.${catalog}.list`) ?? [];
 }
 
 const nameOf = (side) => get(side, 'name') ?? '';
@@ -48,7 +41,7 @@ export function occurrenceRows(file) {
     return {
       target: file.target,
       file: file.name ?? file.target,
-      key: `${file.target}|to:${id}`,
+      key: selectionKey(file.target, 'to', id),
       id,
       name: nameOf(d),
       table: [source, nameOf(base)].filter(Boolean).join('::'),
@@ -89,7 +82,7 @@ export function relationRows(file) {
     return {
       target: file.target,
       file: file.name ?? file.target,
-      key: `${file.target}|rel:${id}`,
+      key: selectionKey(file.target, 'rel', id),
       id,
       left: nameOf(get(d, 'left')),
       right: nameOf(get(d, 'right')),
@@ -170,28 +163,13 @@ export function graphSvg(file, opts = {}) {
     + '</svg>';
 }
 
-export function selectionOf(view) {
-  const sel = view?.selection;
-  const at = typeof sel === 'string' ? sel.indexOf('|') : -1;
-  if (at < 0) return null;
-  const m = /^(to|rel):(.+)$/.exec(sel.slice(at + 1));
-  return m ? { target: sel.slice(0, at), kind: m[1], id: m[2] } : null;
-}
-
-function catalogActions(solution, catalog, multiFile, what) {
-  return Object.values(solution.files)
-    .map((f) => rereadCatalogButton(f.target, catalog, multiFile ? `Re-read ${f.name ?? f.target}` : `Re-read ${what}`))
-    .join(' ');
-}
+export const selectionOf = (view) => kindSelection(view?.selection, ['to', 'rel']);
 
 const rowsOf = (solution, of) => Object.values(solution.files).flatMap((f) => of(f));
 
 const lr = (l, r, tone) => [l && badge('L', tone), r && badge('R', tone)].filter(Boolean).join(' ') || '';
 
 const sourceBadges = (row) => row.source.map((s) => badge(s, SOURCE_TONE[s])).join(' ');
-
-/** The File column only earns its width when more than one file was reached. */
-const withFile = (multiFile, columns) => (multiFile ? [{ key: 'file', label: 'File' }, ...columns] : columns);
 
 const OCCURRENCE_COLUMNS = [
   { key: 'name', label: 'Occurrence', render: (r) => link(`graph/${r.key}`, r.name) },
@@ -220,23 +198,21 @@ function totals(occurrences, relations) {
     ['Unrelated occurrences', occurrences.filter((r) => r.related === 0).length],
     ['Cascading deletes', relations.filter((r) => r.cascadeDeleteL || r.cascadeDeleteR).length],
   ];
-  return `<p class="muted totals">${pairs.map(([k, v]) => `${esc(k)} ${count(v)}`).join(' &middot; ')}</p>`;
+  return totalsLine(pairs);
 }
-
-const rowAttrs = (selection) => (r) => `data-select="${esc(r.key)}"${r.key === selection ? ' class="selected"' : ''}`;
 
 /** The totals are the scoreboard for the whole model, so they read the unfiltered rows. */
 function renderOccurrences(solution, view, occurrences, relations) {
   const shown = occurrences.filter((r) => matches(r.name, view.filter) || matches(r.table, view.filter));
   const body = totals(occurrences, relations)
-    + table(withFile(view.multiFile, OCCURRENCE_COLUMNS), shown, { empty: 'No occurrences', rowAttrs: rowAttrs(view.selection) });
-  return section('Occurrences', body, { actions: catalogActions(solution, 'tableOccurrence', view.multiFile, 'occurrences') });
+    + table(withFile(OCCURRENCE_COLUMNS, view), shown, { empty: 'No occurrences', rowAttrs: selectRow(view.selection) });
+  return section('Occurrences', body, { actions: catalogActions(solution, 'tableOccurrence', view, 'occurrences') });
 }
 
 function renderRelations(solution, view, rows) {
   const shown = rows.filter((r) => matches(r.left, view.filter) || matches(r.right, view.filter) || matches(r.predicates, view.filter));
-  const body = table(withFile(view.multiFile, RELATION_COLUMNS), shown, { empty: 'No relations', rowAttrs: rowAttrs(view.selection) });
-  return section('Relationships', body, { actions: catalogActions(solution, 'relation', view.multiFile, 'relations') });
+  const body = table(withFile(RELATION_COLUMNS, view), shown, { empty: 'No relations', rowAttrs: selectRow(view.selection) });
+  return section('Relationships', body, { actions: catalogActions(solution, 'relation', view, 'relations') });
 }
 
 function sideKv(label, side) {

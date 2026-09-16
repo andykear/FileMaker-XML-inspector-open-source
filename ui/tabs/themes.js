@@ -8,16 +8,17 @@
 import { badge, count, esc, kv, link, matches, rereadCatalogButton, section, table } from '../dom.js';
 import { get, path } from '../access.js';
 import { walkObjects } from './layouts.js';
+import { catalogActions, listOf, selectRow, selectionKey, selectionTail, totalsLine, withFile } from './common.js';
 
-const listOf = (file) => path(file, 'catalogs.theme.list') ?? [];
-const layoutListOf = (file) => path(file, 'catalogs.layout.list') ?? [];
+const themeListOf = (file) => listOf(file, 'theme');
+const layoutListOf = (file) => listOf(file, 'layout');
 
 export function themeRows(file) {
-  return listOf(file).map((theme) => {
+  return themeListOf(file).map((theme) => {
     const id = get(theme, 'id');
     return {
       target: file.target, file: file.name ?? file.target,
-      key: `${file.target}|${id}`, id, theme,
+      key: selectionKey(file.target, id), id, theme,
       name: String(get(theme, 'name') ?? ''),
       displayName: String(get(theme, 'displayName') ?? ''),
       group: String(get(theme, 'group') ?? ''),
@@ -82,15 +83,9 @@ export function themesTotals(solution) {
 }
 
 export function selectionOf(view) {
-  const sel = view?.selection;
-  const at = typeof sel === 'string' ? sel.indexOf('|') : -1;
-  return at < 0 ? null : { target: sel.slice(0, at), id: sel.slice(at + 1) };
+  const parsed = selectionTail(view?.selection);
+  return parsed && { target: parsed.target, id: parsed.tail };
 }
-
-const withFile = (multiFile, columns) => (multiFile ? [{ key: 'file', label: 'File' }, ...columns] : columns);
-const rowAttrs = (selection) => (r) => `data-select="${esc(r.key)}"${r.key === selection ? ' class="selected"' : ''}`;
-const catalogActions = (solution, multiFile) => Object.values(solution.files)
-  .map((f) => rereadCatalogButton(f.target, 'theme', multiFile ? `Re-read ${f.name ?? f.target}` : 'Re-read themes')).join(' ');
 
 function flags(row) {
   return [row.isCustom ? badge('custom', 'info') : '',
@@ -107,18 +102,17 @@ const THEME_COLUMNS = [
   { key: 'namedStyleCount', label: 'Named styles', num: true, render: (r) => count(r.namedStyleCount) },
 ];
 
-function totalsLine(solution) {
+function themesTotalsLine(solution) {
   const t = themesTotals(solution);
-  const pairs = [['Themes', t.themes], ['Custom themes', t.custom], ['Named styles', t.namedStyles]];
-  return `<p class="muted totals">${pairs.map(([k, v]) => `${esc(k)} ${count(v)}`).join(' &middot; ')}</p>`;
+  return totalsLine([['Themes', t.themes], ['Custom themes', t.custom], ['Named styles', t.namedStyles]]);
 }
 
 function renderThemes(solution, view) {
   const rows = Object.values(solution.files).flatMap((f) => themeRows(f));
   const shown = rows.filter((r) => matches(r.displayName, view.filter) || matches(r.name, view.filter) || matches(r.group, view.filter));
-  const body = totalsLine(solution)
-    + table(withFile(view.multiFile, THEME_COLUMNS), shown, { empty: 'No themes', rowAttrs: rowAttrs(view.selection) });
-  return section('Themes', body, { actions: catalogActions(solution, view.multiFile) });
+  const body = themesTotalsLine(solution)
+    + table(withFile(THEME_COLUMNS, view), shown, { empty: 'No themes', rowAttrs: selectRow(view.selection) });
+  return section('Themes', body, { actions: catalogActions(solution, 'theme', view, 'themes') });
 }
 
 const STYLE_COLUMNS = [
@@ -133,7 +127,7 @@ const STYLE_COLUMNS = [
  *  a layout by that name and so render plain. */
 function layoutLink(file, name) {
   const item = layoutListOf(file).find((i) => get(i, 'type') === 'layout' && String(get(i, 'name')) === String(name));
-  return item ? link(`layouts/${file.target}|${get(item, 'id')}`, name) : esc(name);
+  return item ? link(`layouts/${selectionKey(file.target, get(item, 'id'))}`, name) : esc(name);
 }
 
 function themePairs(row) {

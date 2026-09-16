@@ -5,11 +5,11 @@
 // authorizations have no describe, so their row is the list item fm already gave us.
 // A pure renderer: no document, every fm key read through access.js, every string
 // escaped.
-import { badge, count, esc, kv, link, matches, rereadCatalogButton, rereadObjectButton, section, table } from '../dom.js';
-import { get, path } from '../access.js';
-
-const listOf = (file, catalog) => path(file, `catalogs.${catalog}.list`) ?? [];
-const detailOf = (file, catalog, id) => get(path(file, `catalogs.${catalog}.detailById`), String(id));
+import { badge, count, esc, kv, link, matches, rereadObjectButton, section, table } from '../dom.js';
+import { get } from '../access.js';
+import {
+  catalogActions, detailOf, kindSelection, listOf, selectRow, selectionKey, totalsLine, withFile,
+} from './common.js';
 
 /** A string stands for itself; an object reports either a blanket `access`
  *  (allModifiable, allNoAccess, createEditDelete...) or, once fm has per-item
@@ -79,7 +79,7 @@ export function accountRows(file) {
     const d = result ?? item;
     return {
       target: file.target, file: file.name ?? file.target,
-      key: `${file.target}|acc:${id}`, id,
+      key: selectionKey(file.target, 'acc', id), id,
       name: String(get(d, 'name') ?? ''),
       description: String(get(d, 'description') ?? ''),
       userType: String(get(d, 'userType') ?? ''),
@@ -102,7 +102,7 @@ export function privilegeSetRows(file) {
     const d = result ?? item;
     return {
       target: file.target, file: file.name ?? file.target,
-      key: `${file.target}|priv:${id}`, id,
+      key: selectionKey(file.target, 'priv', id), id,
       name: String(get(d, 'name') ?? ''),
       description: String(get(d, 'description') ?? ''),
       builtIn: get(d, 'builtIn') === true,
@@ -160,28 +160,16 @@ export function securityTotals(solution) {
   };
 }
 
-export function selectionOf(view) {
-  const sel = view?.selection;
-  const at = typeof sel === 'string' ? sel.indexOf('|') : -1;
-  if (at < 0) return null;
-  const m = /^(acc|priv):(.+)$/.exec(sel.slice(at + 1));
-  return m ? { target: sel.slice(0, at), kind: m[1], id: m[2] } : null;
-}
+export const selectionOf = (view) => kindSelection(view?.selection, ['acc', 'priv']);
 
-function totalsLine(solution) {
+function securityTotalsLine(solution) {
   const t = securityTotals(solution);
-  const pairs = [
+  return totalsLine([
     ['Accounts', t.accounts], ['Privilege sets', t.privilegeSets],
     ['Extended privileges', t.extendedPrivileges],
     ['No password', t.noPassword], ['Disabled', t.disabled],
-  ];
-  return `<p class="muted totals">${pairs.map(([k, v]) => `${esc(k)} ${count(v)}`).join(' &middot; ')}</p>`;
+  ]);
 }
-
-const withFile = (multiFile, columns) => (multiFile ? [{ key: 'file', label: 'File' }, ...columns] : columns);
-const rowAttrs = (selection) => (r) => `data-select="${esc(r.key)}"${r.key === selection ? ' class="selected"' : ''}`;
-const catalogActions = (solution, catalog, multiFile, what) => Object.values(solution.files)
-  .map((f) => rereadCatalogButton(f.target, catalog, multiFile ? `Re-read ${f.name ?? f.target}` : `Re-read ${what}`)).join(' ');
 
 const ACCOUNT_COLUMNS = [
   { key: 'name', label: 'Name', render: (r) => link(`security/${r.key}`, r.name) },
@@ -194,9 +182,9 @@ const ACCOUNT_COLUMNS = [
 ];
 function renderAccounts(solution, view, rows) {
   const shown = rows.filter((r) => matches(r.name, view.filter) || matches(r.privilegeSet, view.filter));
-  const body = totalsLine(solution)
-    + table(withFile(view.multiFile, ACCOUNT_COLUMNS), shown, { empty: 'No accounts', rowAttrs: rowAttrs(view.selection) });
-  return section('Accounts', body, { actions: catalogActions(solution, 'account', view.multiFile, 'accounts') });
+  const body = securityTotalsLine(solution)
+    + table(withFile(ACCOUNT_COLUMNS, view), shown, { empty: 'No accounts', rowAttrs: selectRow(view.selection) });
+  return section('Accounts', body, { actions: catalogActions(solution, 'account', view, 'accounts') });
 }
 
 const PRIV_COLUMNS = [
@@ -211,8 +199,8 @@ const PRIV_COLUMNS = [
 ];
 function renderPrivilegeSets(solution, view, rows) {
   const shown = rows.filter((r) => matches(r.name, view.filter) || matches(r.description, view.filter));
-  const body = table(withFile(view.multiFile, PRIV_COLUMNS), shown, { empty: 'No privilege sets', rowAttrs: rowAttrs(view.selection) });
-  return section('Privilege sets', body, { actions: catalogActions(solution, 'privilegeSet', view.multiFile, 'privilege sets') });
+  const body = table(withFile(PRIV_COLUMNS, view), shown, { empty: 'No privilege sets', rowAttrs: selectRow(view.selection) });
+  return section('Privilege sets', body, { actions: catalogActions(solution, 'privilegeSet', view, 'privilege sets') });
 }
 
 const EXT_COLUMNS = [
@@ -221,8 +209,8 @@ const EXT_COLUMNS = [
 ];
 function renderExtendedPrivileges(solution, view, rows) {
   const shown = rows.filter((r) => matches(r.name, view.filter));
-  const body = table(withFile(view.multiFile, EXT_COLUMNS), shown, { empty: 'No extended privileges' });
-  return section('Extended privileges', body, { actions: catalogActions(solution, 'extendedPrivilege', view.multiFile, 'extended privileges') });
+  const body = table(withFile(EXT_COLUMNS, view), shown, { empty: 'No extended privileges' });
+  return section('Extended privileges', body, { actions: catalogActions(solution, 'extendedPrivilege', view, 'extended privileges') });
 }
 
 const AUTH_COLUMNS = [
@@ -235,8 +223,8 @@ const AUTH_COLUMNS = [
 ];
 function renderAuthorizations(solution, view, rows) {
   const shown = rows.filter((r) => matches(r.filenamesRaw, view.filter) || matches(r.authorizedBy, view.filter));
-  const body = table(withFile(view.multiFile, AUTH_COLUMNS), shown, { empty: 'No authorizations' });
-  return section('Authorizations', body, { actions: catalogActions(solution, 'authorization', view.multiFile, 'authorizations') });
+  const body = table(withFile(AUTH_COLUMNS, view), shown, { empty: 'No authorizations' });
+  return section('Authorizations', body, { actions: catalogActions(solution, 'authorization', view, 'authorizations') });
 }
 
 function accountPairs(row) {
