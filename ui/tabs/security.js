@@ -45,7 +45,7 @@ const trueFlags = (value) => (value !== null && typeof value === 'object'
  *  reported at all (a privilege set whose describe errored, where only the list
  *  item is left) is not custom, it is unread, so it renders as nothing. */
 export function accessCell(value, area) {
-  if (value === null || value === undefined) return '';
+  if (value === null || value === undefined) return badge('unread', 'muted');
   if (typeof value !== 'object') return esc(String(value));
   const access = get(value, 'access');
   if (access !== undefined) return esc(String(access));
@@ -62,13 +62,22 @@ export function accessCell(value, area) {
 export function passwordState(row) {
   if (row.userType === 'fileMakerUser') return row.hasPassword === false ? 'none' : 'yes';
   if (row.userType) return 'external';
+  // Neither key means the describe never arrived (the list item carries only
+  // name, id, builtIn): fm has said nothing, so neither do we.
+  if (row.hasPassword === undefined) return 'unread';
   return row.hasPassword === false ? 'none' : 'yes';
 }
 
 const passwordCell = (row) => {
   const state = passwordState(row);
   if (state === 'none') return badge('none', 'warn');
-  return state === 'external' ? badge('external', 'muted') : 'yes';
+  if (state === 'external') return badge('external', 'muted');
+  return state === 'unread' ? badge('unread', 'muted') : 'yes';
+};
+
+const enabledCell = (row) => {
+  if (row.enabled === false) return badge('disabled', 'warn');
+  return row.enabled === undefined ? badge('unread', 'muted') : 'yes';
 };
 
 export function accountRows(file) {
@@ -175,7 +184,7 @@ const ACCOUNT_COLUMNS = [
   { key: 'name', label: 'Name', render: (r) => link(`security/${r.key}`, r.name) },
   { key: 'userType', label: 'User type' },
   { key: 'privilegeSet', label: 'Privilege set' },
-  { key: 'enabled', label: 'Enabled', render: (r) => (r.enabled === false ? badge('disabled', 'warn') : 'yes') },
+  { key: 'enabled', label: 'Enabled', render: enabledCell },
   { key: 'hasPassword', label: 'Password', render: passwordCell },
   { key: 'forceExpire', label: 'Force expire', render: (r) => (r.forceExpire === true ? badge('forced', 'info') : 'no') },
   { key: 'builtIn', label: 'Built-in', render: (r) => (r.builtIn ? badge('built-in', 'muted') : '') },
@@ -232,7 +241,7 @@ function accountPairs(row) {
     ['Description', esc(row.description) || '(none)'],
     ['User type', esc(row.userType)],
     ['Privilege set', esc(row.privilegeSet)],
-    ['Enabled', row.enabled === false ? badge('disabled', 'warn') : 'yes'],
+    ['Enabled', enabledCell(row)],
     ['Password', passwordCell(row)],
     ['Force expire', row.forceExpire === true ? 'yes' : 'no'],
     ['Built-in', row.builtIn ? 'yes' : 'no'],

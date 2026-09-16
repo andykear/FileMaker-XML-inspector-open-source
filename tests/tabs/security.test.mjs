@@ -102,7 +102,8 @@ test('accessCell: a blanket access stands for itself, per-item overrides read cu
   // An object with neither a blanket access nor an override is still custom;
   // an area fm never reported is unread, not custom.
   assert.equal(accessCell({}, 'records'), '<span class="badge info">custom</span>');
-  assert.equal(accessCell(undefined, 'records'), '');
+  assert.match(accessCell(undefined, 'records'), /badge muted">unread/);
+  assert.equal(passwordState({}), 'unread');
   assert.equal(accessCell('allViewOnly', 'layouts'), 'allViewOnly');
   assert.equal(accessCell({ '<b>': true, tables: [{}] }, 'records'), '<span class="badge info">custom</span> &middot; &lt;b&gt;');
 });
