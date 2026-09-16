@@ -1,5 +1,11 @@
 // tests/tabs/catalogs.test.mjs
 // Every count here was measured against tests/fixtures/ooe before it was pinned.
+//
+// The rule these pins follow: a tab test never asserts that rows.length equals the
+// raw `catalogs.<c>.list.length`. That assertion is a tautology when a tab shows
+// every list entry, and it is wrong the moment a tab filters one out -- fm's
+// flattened listings carry folders and separators alongside the members, so the
+// honest pin is the number counted by hand off the fixture.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
@@ -22,10 +28,9 @@ const view = { selection: null, filter: '', multiFile: true };
 test('valueListRows: 8 value lists on the root file', () => {
   const rows = valueListRows(root);
   assert.equal(rows.length, 8);
-  assert.equal(rows.length, root.catalogs.valueList.list.length);
 });
 
-test('valueListSource: custom values joined and truncated, field as occurrence::field with related-only badge, external as the source name', () => {
+test('valueListSource: custom values joined and truncated, field as occurrence::field with related-only badge, external as fm\'s own string', () => {
   const rows = valueListRows(root);
 
   const yn = rows.find((r) => r.name === 'YN');
@@ -41,12 +46,23 @@ test('valueListSource: custom values joined and truncated, field as occurrence::
   assert.match(valueListSource(related), /Contacts::ID_TestTable/);
   assert.match(valueListSource(related), /related only/);
 
+  // fm's `valueList` string names the source and the list it points at; both are
+  // the answer, so the column shows it verbatim rather than parsing off the half
+  // before the "::".
   const external = rows.find((r) => r.name === 'from_another_file');
   assert.equal(external.type, 'external');
-  assert.equal(valueListSource(external), 'Self');
+  assert.equal(valueListSource(external), 'Self::MyRelatedValueList');
 
   const externalTwo = rows.find((r) => r.name === 'from_another_file_two');
-  assert.equal(valueListSource(externalTwo), 'BrojDva');
+  assert.equal(valueListSource(externalTwo), 'BrojDva::VL');
+});
+
+test('a value list whose describe errored says so instead of guessing "external"', () => {
+  const errored = { type: '', values: [], externalRef: '', error: { code: 'boom', message: 'no' } };
+  assert.equal(valueListSource(errored), '<span class="badge bad">error</span>');
+  // No describe at all and no error either: fm has not said what kind of list it is.
+  assert.equal(valueListSource({ type: '', values: [], externalRef: '', error: null }),
+    '<span class="badge warn">unread</span>');
 });
 
 test('valueListSource truncates a long custom list to 80 chars with an ellipsis', () => {
@@ -56,24 +72,49 @@ test('valueListSource truncates a long custom list to 80 chars with an ellipsis'
   assert.ok(source.length <= 81);
 });
 
-test('customFunctionRows: 4 entries on the root file (one is a folder)', () => {
+test('customFunctionRows: all 9 custom functions of the root file, folders skipped, nested ones carrying their path', () => {
+  // `flatten:true` on the list op puts every member at every depth in one array,
+  // so the 6 functions FileMaker folds away inside MyCustomFunctionParentFolder
+  // are reachable. 9 functions and 3 folders in the fixture's flat listing;
+  // counted by hand off tests/fixtures/ooe.
   const rows = customFunctionRows(root);
-  assert.equal(rows.length, 4);
-  assert.equal(rows.length, root.catalogs.customFunction.list.length);
+  assert.equal(rows.length, 9);
+  assert.equal(root.catalogs.customFunction.list.filter((i) => i.type === 'folder').length, 3);
+  assert.ok(rows.every((r) => r.type === 'customFunction'));
+
   const fn = rows.find((r) => r.name === 'MyCustomFunction');
-  assert.equal(fn.type, 'customFunction');
   assert.equal(fn.arity, 1);
   assert.equal(fn.prototype, 'MyCustomFunction ( value )');
   assert.equal(fn.availableToUser, true);
   assert.match(fn.body, /value \+ 1/);
-  const folder = rows.find((r) => r.name === 'MyCustomFunctionParentFolder');
-  assert.equal(folder.type, 'folder');
+  assert.equal(fn.folder, '');
+
+  // Two that only a flattened listing reaches: one a folder deep, one two deep.
+  const gfn = rows.find((r) => r.name === 'GFN');
+  assert.equal(gfn.folder, 'MyCustomFunctionParentFolder');
+  assert.ok(gfn.body.length > 0);
+  const major = rows.find((r) => r.name === 'GetFileMakerVersionMajor');
+  assert.equal(major.folder, 'MyCustomFunctionParentFolder/MyCustomFunctionFolder');
+  assert.ok(major.body.length > 0);
+
+  // Every function is described, and no folder is: describeOps skips them.
+  assert.equal(rows.filter((r) => r.detail).length, 9);
+  assert.equal(Object.keys(root.catalogs.customFunction.detailById).length, 9);
+});
+
+test('the custom-function table shows the folder column and the nested functions', () => {
+  const html = tab.render(solution, view);
+  assert.ok(html.includes('<th>Folder</th>'));
+  assert.ok(html.includes('>GetFileMakerVersionMajor</a>'));
+  assert.ok(html.includes('<td>MyCustomFunctionParentFolder/MyCustomFunctionFolder</td>'));
+  assert.ok(html.includes(`Custom functions <span class="num">9</span>`));
+  // A folder is structure, not a custom function: it gets no row of its own.
+  assert.ok(!html.includes('>MyCustomFunctionParentFolder</a>'));
 });
 
 test('customMenuRows: 25 custom menus on the root file, one custom with 5 items', () => {
   const rows = customMenuRows(root);
   assert.equal(rows.length, 25);
-  assert.equal(rows.length, root.catalogs.customMenu.list.length);
   const custom = rows.find((r) => r.name === 'MyCustomMenu');
   assert.equal(custom.items.length, 5);
   assert.equal(custom.inheritedMenu, false);
@@ -86,17 +127,17 @@ test('customMenuRows: 25 custom menus on the root file, one custom with 5 items'
 test('customMenuSetRows: 3 menu sets on the root file', () => {
   const rows = customMenuSetRows(root);
   assert.equal(rows.length, 3);
-  assert.equal(rows.length, root.catalogs.customMenuSet.list.length);
   assert.ok(rows.find((r) => r.name === '[Standard FileMaker Menus]').builtIn);
 });
 
 test('externalDataSourceRows: 7 external sources on the root file, with the odbc dsn', () => {
   const rows = externalDataSourceRows(root);
   assert.equal(rows.length, 7);
-  assert.equal(rows.length, root.catalogs.externalDataSource.list.length);
   const odbc = rows.find((r) => r.name === 'ETS_22_0');
   assert.equal(odbc.sourceType, 'odbc');
   assert.equal(odbc.dsn, 'ets');
+  assert.equal(odbc.hasData, true);
+  assert.ok(tab.render(solution, view).includes('<th>Has data</th>'));
   const fm = rows.find((r) => r.name === 'Self');
   assert.equal(fm.sourceType, 'filemaker');
   assert.equal(fm.dsn, '');
@@ -105,7 +146,6 @@ test('externalDataSourceRows: 7 external sources on the root file, with the odbc
 test('baseDirectoryRows: 5 base directories on the root file', () => {
   const rows = baseDirectoryRows(root);
   assert.equal(rows.length, 5);
-  assert.equal(rows.length, root.catalogs.baseDirectory.list.length);
   const first = rows.find((r) => r.path === 'Ooe/');
   assert.equal(first.relative, true);
   assert.equal(first.absolutePath, '/Ooe/');
@@ -114,7 +154,6 @@ test('baseDirectoryRows: 5 base directories on the root file', () => {
 test('persistentDataRows: 5 persistent entries on the root file, distinct instances kept apart', () => {
   const rows = persistentDataRows(root);
   assert.equal(rows.length, 5);
-  assert.equal(rows.length, root.catalogs.persistentData.list.length);
   const version = rows.find((r) => r.key === 'app.version');
   assert.equal(version.value, '1.0.0');
   assert.equal(version.dataType, 'text');
@@ -126,7 +165,6 @@ test('persistentDataRows: 5 persistent entries on the root file, distinct instan
 test('fontRows: 13 fonts on the root file', () => {
   const rows = fontRows(root);
   assert.equal(rows.length, 13);
-  assert.equal(rows.length, root.catalogs.font.list.length);
   const arial = rows.find((r) => r.postScriptName === 'ArialMT');
   assert.equal(arial.name, 'Arial');
   assert.equal(arial.codeSet, 'roman');
@@ -135,7 +173,6 @@ test('fontRows: 13 fonts on the root file', () => {
 test('graphNoteRows: 2 graph notes on the root file', () => {
   const rows = graphNoteRows(root);
   assert.equal(rows.length, 2);
-  assert.equal(rows.length, root.catalogs.graphNote.list.length);
   assert.equal(rows[0].text, 'Relationship graph notes');
   assert.equal(rows[0].collapsed, false);
 });

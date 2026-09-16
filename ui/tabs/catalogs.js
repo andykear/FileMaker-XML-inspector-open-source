@@ -36,14 +36,19 @@ export function valueListRows(file) {
   })));
 }
 
+/** fm's flattened custom-function listing carries the folders alongside the
+ *  functions, the same way the script and layout listings do. A folder is
+ *  structure, not a custom function: only a `customFunction` entry gets a row,
+ *  and its `folder` is the path fm hands it. */
 export function customFunctionRows(file) {
-  return listOf(file, 'customFunction').map((item) => describedRow(file, 'customFunction', 'cf', item, (d, raw) => ({
+  return listOf(file, 'customFunction').filter((item) => get(item, 'type') === 'customFunction')
+    .map((item) => describedRow(file, 'customFunction', 'cf', item, (d, raw) => ({
     name: String(get(d, 'name') ?? ''), type: String(get(d, 'type') ?? get(raw, 'type') ?? ''),
-    folder: String(get(d, 'folder') ?? ''), position: Number(get(d, 'position')) || 0,
+    folder: String(get(d, 'folder') ?? get(raw, 'folder') ?? ''), position: Number(get(d, 'position')) || 0,
     parameters: get(d, 'parameters') ?? [], body: String(get(d, 'body') ?? ''),
     availableToUser: get(d, 'availableToUser') === true, arity: Number(get(d, 'arity')) || 0,
     prototype: String(get(d, 'prototype') ?? ''), comment: String(get(d, 'comment') ?? ''),
-  })));
+    })));
 }
 
 export function customMenuRows(file) {
@@ -99,9 +104,13 @@ const TRUNCATE_AT = 80;
 const truncate = (s) => (s.length > TRUNCATE_AT ? `${s.slice(0, TRUNCATE_AT)}…` : s);
 
 /** custom -> its values, joined and truncated; field -> occurrence::field, with a
- *  related-only badge; external -> the source name fm's `valueList` string carries
- *  before its "::", or "external" when that string is missing. */
+ *  related-only badge; external -> fm's own `valueList` string verbatim
+ *  (`Self::MyRelatedValueList`), because the source file and the list it names are
+ *  both the answer and neither is ours to parse out. A describe that errored says
+ *  so: without one, fm has not told us what kind of list this is, and calling it
+ *  external would be a guess. */
 export function valueListSource(row) {
+  if (row.error) return badge('error', 'bad');
   if (row.type === 'custom') return esc(truncate(row.values.join(', ')));
   if (row.type === 'field') {
     const occ = String(get(row.field, 'occurrence') ?? '');
@@ -109,8 +118,8 @@ export function valueListSource(row) {
     const related = get(row.options, 'showRelatedOnly') ? ` ${badge('related only', 'info')}` : '';
     return `${esc(`${occ}::${fld}`)}${related}`;
   }
-  const src = row.externalRef.includes('::') ? row.externalRef.split('::')[0] : row.externalRef;
-  return esc(src) || 'external';
+  if (row.type === 'external') return esc(row.externalRef);
+  return row.type ? esc(row.type) : badge('unread', 'warn');
 }
 
 export function selectionOf(view) {
@@ -144,7 +153,6 @@ const VL_COLUMNS = [
 ];
 const CF_COLUMNS = [
   { key: 'name', label: 'Name', render: (r) => link(`catalogs/${r.key}`, r.name) },
-  { key: 'type', label: 'Kind', render: (r) => (r.type === 'folder' ? badge('folder', 'muted') : 'function') },
   { key: 'prototype', label: 'Prototype' },
   { key: 'arity', label: 'Arity', num: true, render: (r) => count(r.arity) },
   { key: 'availableToUser', label: 'Available to user', render: (r) => (r.availableToUser ? 'yes' : 'no') },
@@ -167,6 +175,7 @@ const EXT_COLUMNS = [
   { key: 'sourceType', label: 'Type' },
   { key: 'paths', label: 'Paths', render: (r) => r.paths.map((p) => esc(p)).join(', ') },
   { key: 'dsn', label: 'DSN', render: (r) => esc(r.dsn) },
+  { key: 'hasData', label: 'Has data', render: (r) => (r.hasData ? 'yes' : 'no') },
 ];
 const BASEDIR_COLUMNS = [
   { key: 'path', label: 'Path' },
@@ -261,7 +270,6 @@ function renderValueListDetail(file, sel, view) {
 
 function cfPairs(row) {
   return [
-    ['Kind', row.type === 'folder' ? badge('folder', 'muted') : 'function'],
     ['Folder', esc(row.folder) || '(root)'], ['Position', count(row.position)],
     ['Parameters', row.parameters.map((p) => esc(p)).join(', ') || '(none)'], ['Arity', count(row.arity)],
     ['Available to user', row.availableToUser ? 'yes' : 'no'],
@@ -275,7 +283,7 @@ function renderCustomFunctionDetail(file, sel, view) {
   const title = `Custom function ${row.name}${view.multiFile ? ` (${file.name ?? file.target})` : ''}`;
   const actions = rereadObjectButton({ kind: 'object', target: file.target, catalog: 'customFunction', key: String(row.id) }, 'Re-read custom function');
   if (row.error || !row.detail) return errorSection(title, row, actions, 'custom function');
-  const body = kv(cfPairs(row)) + (row.type === 'folder' ? '' : `<pre>${esc(row.body)}</pre>`);
+  const body = kv(cfPairs(row)) + `<pre>${esc(row.body)}</pre>`;
   return section(title, body, { actions });
 }
 

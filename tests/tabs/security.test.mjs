@@ -21,7 +21,6 @@ const view = { selection: null, filter: '', multiFile: true };
 test('accountRows: 13 accounts on the root file, each with the fields the brief names', () => {
   const rows = accountRows(root);
   assert.equal(rows.length, 13);
-  assert.equal(rows.length, root.catalogs.account.list.length);
   const admin = rows.find((r) => r.name === 'Admin');
   assert.equal(admin.userType, 'fileMakerUser');
   assert.equal(admin.privilegeSet, '[Full Access]');
@@ -64,7 +63,6 @@ test('the Password column reads none only under that rule, external otherwise', 
 test('privilegeSetRows: 7 privilege sets on the root file', () => {
   const rows = privilegeSetRows(root);
   assert.equal(rows.length, 7);
-  assert.equal(rows.length, root.catalogs.privilegeSet.list.length);
 });
 
 test('accessSummary reads the access key when fm reports one, and the fixture\'s "[Full Access]" carries all four blanket-modifiable summaries', () => {
@@ -146,7 +144,6 @@ test('accessSummary on plain values', () => {
 test('extendedPrivilegeRows: 12 extended privileges on the root file, built-in flagged', () => {
   const rows = extendedPrivilegeRows(root);
   assert.equal(rows.length, 12);
-  assert.equal(rows.length, root.catalogs.extendedPrivilege.list.length);
   assert.ok(rows.find((r) => r.name === 'fmwebdirect').builtIn);
   assert.equal(rows.find((r) => r.name === 'MyExtendedPrivilege').builtIn, false);
 });
@@ -154,7 +151,6 @@ test('extendedPrivilegeRows: 12 extended privileges on the root file, built-in f
 test('authorizationRows: 5 authorizations on the root file', () => {
   const rows = authorizationRows(root);
   assert.equal(rows.length, 5);
-  assert.equal(rows.length, root.catalogs.authorization.list.length);
   const inbound = rows.find((r) => r.id === 3);
   assert.equal(inbound.type, 'inbound');
   assert.deepEqual(inbound.filenames, ['TestFile_dev']);

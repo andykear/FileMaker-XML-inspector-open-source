@@ -21,7 +21,6 @@ test('occurrenceRows describes every occurrence of the file', () => {
   const rows = occurrenceRows(root);
   // The recorded ooe carries 24 table occurrences; 23 local, 1 external (BrojDva::Invoice).
   assert.equal(rows.length, 24);
-  assert.equal(rows.length, root.catalogs.tableOccurrence.list.length);
   const tt = rows.find((r) => r.name === 'TestTable');
   assert.equal(tt.id, 1065089);
   assert.equal(tt.table, 'TestTable');
@@ -69,7 +68,6 @@ test('relationRows names both sides, the predicates and the options', () => {
   const rows = relationRows(root);
   // The recorded ooe carries 10 relations; 2 with a cascade delete, 2 with a sort.
   assert.equal(rows.length, 10);
-  assert.equal(rows.length, root.catalogs.relation.list.length);
   // Each side is qualified with its own occurrence, the way FileMaker itself
   // spells a predicate (the brief's `/ID = ID_TestTable/` predates that shape).
   assert.match(rows[0].predicates, /::ID = Contacts::ID_TestTable/);
