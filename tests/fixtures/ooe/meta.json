@@ -1,12 +1,12 @@
 {
-  "recordedOn": "2026-09-15",
+  "recordedOn": "2026-09-16",
   "root": "fmnet://localhost/ooe",
   "username": "admin",
   "fm": {
     "path": "/usr/local/bin/fm",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "contract": null,
-    "banner": "0.6.0 (29816214)"
+    "banner": "0.7.0 (29823677)"
   },
   "files": [
     "fmnet://localhost/ooe",
