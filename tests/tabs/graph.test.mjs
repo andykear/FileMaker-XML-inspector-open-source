@@ -218,3 +218,13 @@ test('every model string is escaped', () => {
   assert.ok(!html.includes('onload="x'));
   assert.match(html, /&lt;b&gt;&amp;&quot;/);
 });
+
+test('a cartesian relation reads as Left × Right, never ::undefined', () => {
+  const rows = relationRows(root);
+  const cartesian = rows.filter((r) => /×/.test(r.predicates));
+  assert.ok(cartesian.length >= 1, 'ooe has cartesian relations (ids 9 and 10)');
+  for (const r of cartesian) {
+    assert.doesNotMatch(r.predicates, /undefined/);
+    assert.match(r.predicates, /^\S+ × \S+$/);
+  }
+});
