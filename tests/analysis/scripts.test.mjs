@@ -146,16 +146,20 @@ test('every credential-shaped key counts, however deep and however spelled', () 
   assert.deepEqual(rows.map((r) => r.detail.where), ['apiKey', 'options.clientSecret', 'options.oauthPrivateKey']);
 });
 
-// ── hardcoded-account ─────────────────────────────────────────────────
+// ── literal-account ───────────────────────────────────────────────────
 
-test('an account name written as a literal is reported; a variable is not', () => {
+test('an account name written as a literal is reported, with the step that wrote it', () => {
   const sol = oneScript([
     step(134, 'Add Account', { account: '"admin"', password: '$pw' }),
     step(134, 'Add Account', { account: '$Kontoname', password: '$pw' }),
+    step(222, 'Configure AI Account', { account: '"my-ai"', apiKey: '$key' }),
   ]);
-  const rows = checksOf(sol, 'hardcoded-account');
-  assert.deepEqual(rows.map((r) => r.step.index), [0]);
-  assert.deepEqual(rows[0].detail, { key: 'account', where: 'account', account: 'admin' });
+  const rows = checksOf(sol, 'literal-account');
+  assert.deepEqual(rows.map((r) => r.step.index), [0, 2]);
+  assert.deepEqual(rows[0].detail, { key: 'account', where: 'account', account: 'admin', step: 'Add Account' });
+  // The step name is the whole point of the rename: the same key on an AI step
+  // is an AI account, not a login, and the row says so without guessing.
+  assert.deepEqual(rows[1].detail, { key: 'account', where: 'account', account: 'my-ai', step: 'Configure AI Account' });
 });
 
 // ── psos-only-step ────────────────────────────────────────────────────
@@ -224,6 +228,28 @@ test('Allow User Abort [On] is not an unguarded abort', () => {
   assert.deepEqual(checksOf(sol, 'unguarded-abort-off'), []);
 });
 
+// ── the state fm does not report ──────────────────────────────────────
+
+test('with no `on` key the state is flags bit 0x20000, and [Off] is the absence of it', () => {
+  // fm writes `on` only when the state was written into the file. Both checks
+  // read the bit, so both see a step fm reported no state for.
+  const off = oneScript([
+    step(ALLOW_USER_ABORT, 'Allow User Abort'),
+    step(ALLOW_USER_ABORT, 'Allow User Abort', { flags: 65536 }),
+  ]);
+  assert.deepEqual(checksOf(off, 'unguarded-abort-off').map((r) => r.step.index), [0, 1]);
+  const on = oneScript([step(ALLOW_USER_ABORT, 'Allow User Abort', { flags: 196608 })]);
+  assert.deepEqual(checksOf(on, 'unguarded-abort-off'), []);
+
+  const captured = oneScript([step(SET_ERROR_CAPTURE, 'Set Error Capture', { flags: 131072 })]);
+  assert.deepEqual(checksOf(captured, 'swallowed-error').map((r) => r.step.index), [0]);
+  const notCaptured = oneScript([step(SET_ERROR_CAPTURE, 'Set Error Capture', { flags: 65536 })]);
+  assert.deepEqual(checksOf(notCaptured, 'swallowed-error'), []);
+  // An `on` fm DID report wins over the bit, whatever the bit says.
+  const explicit = oneScript([step(SET_ERROR_CAPTURE, 'Set Error Capture', { on: false, flags: 131072 })]);
+  assert.deepEqual(checksOf(explicit, 'swallowed-error'), []);
+});
+
 // ── expensive-in-loop ─────────────────────────────────────────────────
 
 const loopOf = (inner) => [
@@ -279,7 +305,7 @@ test('callGraph is memoised, frozen, and its nodes are every script', () => {
   assert.ok(Object.isFrozen(graph.nodes));
   assert.ok(Object.isFrozen(graph.edges));
   const sol = oneScript([]);
-  assert.deepEqual(callGraph(sol).nodes, [{ key: 'file:///x.fmp12|7', target: 'file:///x.fmp12', id: 7, name: 'S' }]);
+  assert.deepEqual(callGraph(sol).nodes, [{ key: 'script:file:///x.fmp12|7', target: 'file:///x.fmp12', id: 7, name: 'S' }]);
 });
 
 test('a step call, a trigger, a button and a menu item are four vias', () => {
@@ -305,10 +331,13 @@ test('a step call, a trigger, a button and a menu item are four vias', () => {
     },
   });
   const graph = callGraph(sol);
-  const to = 'file:///x.fmp12|1';
+  const to = 'script:file:///x.fmp12|1';
   assert.deepEqual(graph.edges.map((e) => e.via).sort(), ['button', 'menu', 'step', 'trigger']);
   assert.ok(graph.edges.every((e) => e.to === to && e.resolved === true));
-  assert.equal(graph.edges.find((e) => e.via === 'step').from, 'file:///x.fmp12|2');
+  assert.equal(graph.edges.find((e) => e.via === 'step').from, 'script:file:///x.fmp12|2');
+  assert.equal(graph.edges.find((e) => e.via === 'trigger').from, 'layout:file:///x.fmp12|5');
+  assert.equal(graph.edges.find((e) => e.via === 'button').from, 'layoutObject:file:///x.fmp12|5.3');
+  assert.equal(graph.edges.find((e) => e.via === 'menu').from, 'customMenu:file:///x.fmp12|9');
   assert.equal(graph.edges.find((e) => e.via === 'trigger').origin.kind, 'layout');
   assert.equal(graph.edges.find((e) => e.via === 'button').origin.kind, 'layoutObject');
   assert.equal(graph.edges.find((e) => e.via === 'menu').origin.name, 'M');
@@ -347,7 +376,7 @@ test('a call names the script of the calling file when both files have that name
     }),
   };
   const edges = callGraph({ files, unreachable: [] }).edges;
-  assert.deepEqual(edges.map((e) => e.to), ['file:///a.fmp12|1']);
+  assert.deepEqual(edges.map((e) => e.to), ['script:file:///a.fmp12|1']);
 });
 
 // ── callTreeOf ────────────────────────────────────────────────────────
@@ -373,7 +402,30 @@ test('callTreeOf walks the callers-to-called direction to a depth and stops at a
   assert.equal(shallow.children[0].name, 'b');
   assert.deepEqual(shallow.children[0].children, []);
   assert.equal(shallow.children[0].truncated, true);
-  assert.equal(callTreeOf(graph, 'file:///x.fmp12|99', 2), null);
+  assert.equal(callTreeOf(graph, scriptKey('file:///x.fmp12', 99), 2), null);
+});
+
+test('a layout whose id equals a script\'s does not put its trigger in that script\'s tree', () => {
+  // fm ids are unique per catalog, not across them. Keyed by `target|id` alone,
+  // layout 7's trigger read as a call FROM script 7, and the tree walk followed
+  // it -- on ooe that gave "Hello world" twelve children it does not call.
+  const sol = handMade({
+    script: {
+      list: [{ id: 7, name: 'fired', type: 'script' }],
+      detailById: detail(7, { id: 7, name: 'fired', body: [] }),
+    },
+    layout: {
+      list: [{ id: 7, name: 'L', type: 'layout' }],
+      detailById: detail(7, { id: 7, name: 'L', scriptTriggers: [{ event: 'OnLayoutEnter', script: { id: 7, name: 'fired' } }] }),
+    },
+  });
+  const graph = callGraph(sol);
+  const [edge] = graph.edges;
+  assert.deepEqual([edge.via, edge.from, edge.to], ['trigger', 'layout:file:///x.fmp12|7', 'script:file:///x.fmp12|7']);
+  assert.notEqual(edge.from, edge.to);
+  // The edge is in the graph -- a trigger IS how that script is reached -- and
+  // not in the tree, because a layout calls nothing.
+  assert.deepEqual(callTreeOf(graph, scriptKey('file:///x.fmp12', 7), 3).children, []);
 });
 
 // ── The fixture: measured first, then pinned ──────────────────────────
@@ -386,22 +438,33 @@ test('the ooe fixture: how many of each check, and one named example of each', (
   assert.deepEqual(counts, {
     'dead-set-variable': 12,
     'embedded-credential': 65,
-    'hardcoded-account': 4,
+    'literal-account': 4,
     'psos-only-step': 715,
     'swallowed-error': 4,
   });
   // `expensive-in-loop` and `unguarded-abort-off` find nothing on ooe, and the
   // file says why: its six Loops hold one step each (an Exit Loop If), and all
-  // three `Allow User Abort [Off]` steps sit in scripts that do set error
-  // capture. Both are covered by the hand-made bodies above.
+  // seven `Allow User Abort [Off]` steps -- four of them [Off] only by the flags
+  // bit, fm reporting no `on` -- sit in scripts that do set error capture. Both
+  // are covered by the hand-made bodies above.
   assert.equal(scriptIssues(solution).length, 800);
 
   const dead = ooe('dead-set-variable')[0];
   assert.deepEqual([dead.script.name, dead.step.index, dead.detail.variable], ['Control', 7, '$some_var_with_repetitions']);
   const credential = ooe('embedded-credential')[0];
   assert.deepEqual([credential.script.name, credential.step.step, credential.detail], ['Capture_AICaptions', 'Configure AI Account', { key: 'apiKey', where: 'apiKey', characters: 3 }]);
-  const account = ooe('hardcoded-account').at(-1);
-  assert.deepEqual([account.script.name, account.step.step, account.detail.account], ['Capture_OtherEnhanced', 'Perform RAG Action', 'test-rag']);
+  const byStep = {};
+  for (const row of ooe('embedded-credential')) byStep[row.step.step] = (byStep[row.step.step] ?? 0) + 1;
+  assert.deepEqual(byStep, { 'Create PDF': 56, 'Open PDF': 4, 'Append PDF': 3, 'Configure AI Account': 1, 'Print PDF': 1 });
+  // All four are AI account references, which is why the check is named for the
+  // literal it found and the detail carries the step that carried it.
+  const accounts = ooe('literal-account');
+  assert.deepEqual(accounts.map((r) => [r.detail.step, r.detail.account]), [
+    ['Insert Image Caption', 'account'],
+    ['Insert Image Caption', 'account'],
+    ['Insert Image Captions in Found Set', 'account'],
+    ['Perform RAG Action', 'test-rag'],
+  ]);
   const swallowed = ooe('swallowed-error')[0];
   assert.deepEqual([swallowed.script.name, swallowed.step.index], ['Constrain without indexes', 1]);
   assert.equal(swallowed.target, ROOT);
@@ -441,7 +504,7 @@ test('the two script references ooe does not resolve are AppleScript source, and
   assert.equal(callGraph(solution).edges.length, named.length - 2);
 });
 
-test('noop is what ooe calls: 47 edges in, from all four kinds of site but one', () => {
+test('noop is what ooe calls: 47 edges in, three kinds of site, nothing out', () => {
   const graph = callGraph(solution);
   const noop = graph.nodes.find((n) => n.name === 'noop');
   assert.equal(noop.key, scriptKey(ROOT, 2));
@@ -450,9 +513,48 @@ test('noop is what ooe calls: 47 edges in, from all four kinds of site but one',
   for (const edge of into) via[edge.via] = (via[edge.via] ?? 0) + 1;
   assert.deepEqual(via, { step: 21, trigger: 25, menu: 1 });
   assert.equal(into.length, 47);
-  // The one edge out of noop is noop: the fixture's own one-step script calls
-  // itself, which is the cycle the tree walk has to stop at.
-  const tree = callTreeOf(graph, noop.key, 3);
-  assert.equal(tree.children.length, 1);
-  assert.deepEqual([tree.children[0].name, tree.children[0].cycle, tree.children[0].children], ['noop', true, []]);
+  // noop calls nothing: its one step is a comment. The layout named `Contacts`
+  // carries id 2 as well and has one trigger edge -- that edge is the graph's,
+  // not noop's, and keeping the two apart is what the namespaced key is for.
+  assert.equal(graph.edges.filter((e) => e.from === noop.key).length, 0);
+  assert.equal(graph.edges.filter((e) => e.from === `layout:${ROOT}|2`).length, 1);
+  assert.deepEqual(callTreeOf(graph, noop.key, 3).children, []);
+});
+
+test('ooe has no script that calls itself, directly or round a ring', () => {
+  const graph = callGraph(solution);
+  const out = new Map();
+  for (const edge of graph.edges) {
+    if (edge.via !== 'step' || !edge.resolved) continue;
+    if (!out.has(edge.from)) out.set(edge.from, new Set());
+    out.get(edge.from).add(edge.to);
+  }
+  // Three scripts call another script at all, six distinct pairs between them.
+  assert.equal(out.size, 3);
+  assert.equal([...out.values()].reduce((n, set) => n + set.size, 0), 6);
+  const colour = new Map();
+  const cycles = [];
+  const walk = (key) => {
+    colour.set(key, 'open');
+    for (const next of out.get(key) ?? []) {
+      if (colour.get(next) === 'open') cycles.push(`${key} -> ${next}`);
+      else if (!colour.has(next)) walk(next);
+    }
+    colour.set(key, 'done');
+  };
+  for (const node of graph.nodes) if (!colour.has(node.key)) walk(node.key);
+  // So the cycle the tree walk stops at is covered by a hand-made graph only:
+  // the fixture's `Circular Reference` script calls nothing.
+  assert.deepEqual(cycles, []);
+});
+
+test('the ooe ids that collide across catalogs, which is why a key carries its kind', () => {
+  const file = solution.files[ROOT];
+  const scripts = new Set(file.catalogs.script.list.filter((i) => i.type === 'script').map((i) => String(i.id)));
+  const layouts = file.catalogs.layout.list.filter((i) => i.type !== 'folder').map((i) => String(i.id));
+  const menus = file.catalogs.customMenu.list.map((i) => String(i.id));
+  assert.equal(layouts.filter((id) => scripts.has(id)).length, 14);
+  assert.equal(menus.filter((id) => scripts.has(id)).length, 11);
+  assert.deepEqual([...new Set(callGraph(solution).edges.map((e) => e.from.split(':')[0]))].sort(),
+    ['customMenu', 'layout', 'layoutObject', 'script']);
 });

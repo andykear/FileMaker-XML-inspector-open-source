@@ -14,18 +14,29 @@
 //                        the RAW string, not the tokeniser's reading of it:
 //                        `Evaluate ( "$x" )` is a real read, so a quoted
 //                        mention counts. Variable names are case-insensitive in
-//                        FileMaker, so the match is.
+//                        FileMaker, so the match is. Two things it gets wrong,
+//                        both from reading body ORDER and not flow: a loop
+//                        counter whose only read is EARLIER in the body (`Set
+//                        Variable [$i ; $i + 1]` at the foot of a loop read at
+//                        its head) is live and reads as dead; and a later WRITE
+//                        is a mention, so a local set twice and never read is
+//                        reported once, not twice. A name with a space in it
+//                        (`$my var`) tokenises as its first word, so it reads
+//                        as never mentioned again; see GLOBALS_NOTE.
 //   embedded-credential  any key whose folded name contains `password`,
 //                        `apikey`, `secret`, `privatekey` or `clientsecret`
 //                        holding a quoted literal instead of a variable or a
 //                        field. The literal's TEXT is never reported -- a
 //                        secret does not belong in a report about secrets --
 //                        only how many characters it is.
-//   hardcoded-account    an `account` key holding a quoted literal. The account
+//   literal-account      an `account` key holding a quoted literal. The account
 //                        name IS reported: it is not a secret, and it is what a
-//                        reader needs to find the account. The cost: `Configure
-//                        AI Account` spells its AI account name `account` too,
-//                        so a literal one reads as a hardcoded login.
+//                        reader needs to find the account. `detail.step` is the
+//                        step's own name, because that is what tells a login
+//                        from an AI account: `Configure AI Account` and the AI
+//                        steps spell their account key `account` too, which is
+//                        why this check is named for what it SAW (a literal in
+//                        an account key) and not for what it might mean.
 //   psos-only-step       a step FileMaker does not run on a server (the list
 //                        below). Reported wherever it is, not only under a
 //                        `Perform Script on Server`: which scripts are ever
@@ -51,7 +62,9 @@
 //
 // The call graph is Task 1's script references, one edge per naming site:
 // `step` (a script's own body), `trigger` (a layout), `button` (a layout
-// object), `menu` (a custom menu item). A name resolves to the script of the
+// object), `menu` (a custom menu item). Every key is namespaced by the kind of
+// object it names, because fm's ids are unique per catalog and not across them.
+// A name resolves to the script of the
 // CALLING file first -- script names are file-local -- then, when only one file
 // in the read has a script of that name, to that one. Two inherited costs:
 // `Perform AppleScript` reports its source under the same `script` key `Perform
@@ -124,6 +137,19 @@ const VAR_RE = /\$\$?[\p{L}\p{N}_][\p{L}\p{N}_.]*/gu;
 const LAST_ERROR_RE = /Get\s*\(\s*LastError\s*\)/i;
 const LITERAL_RE = /"((?:[^"\\]|\\.)*)"/g;
 const CREDENTIAL_WORDS = ['password', 'apikey', 'secret', 'privatekey', 'clientsecret'];
+
+// fm reports `on` only when the state was written into the file; a step left at
+// its default carries no `on` key at all and the state rides in `flags` bit
+// `0x20000`. Measured two ways: against ooe's SaXML golden master, where four of
+// the solution's seven `Allow User Abort [Off]` steps report no `on`; and in
+// fm-adt-toolkit's own docs/fm-step-flags-reference.md, which measures `0x20000`
+// as `set -> On, clear -> Off` on the step types where the CLI reports no key
+// (`Allow Formatting Bar`, `Set Layout Object Animation`) and lists the same bit
+// under `on` for the three where it does. The toolkit exposes no reader for it,
+// so this is the bit read by hand -- one place, both step types. For the
+// register intake: fm reports `on` only when set; the default rides in flags.
+const ON_BIT = 0x20000;
+const onState = (step) => get(step, 'on') ?? ((Number(get(step, 'flags')) || 0) & ON_BIT) !== 0;
 const EXPENSIVE_CALLS = new Set(['executesql', 'evaluate']);
 
 const filesOf = (solution) => Object.values(get(solution, 'files') ?? {});
@@ -214,17 +240,17 @@ function issuesOfScript(target, detail, rows) {
         add(i, 'dead-set-variable', { variable: name }, ['stepID', 'name']);
       }
     }
-    if (id === SET_ERROR_CAPTURE && get(step, 'on') === true && lastErrorRead <= i) {
-      add(i, 'swallowed-error', { missing: 'Get ( LastError )' }, ['stepID', 'on']);
+    if (id === SET_ERROR_CAPTURE && onState(step) === true && lastErrorRead <= i) {
+      add(i, 'swallowed-error', { missing: 'Get ( LastError )' }, ['stepID', 'on', 'flags']);
     }
-    if (id === ALLOW_USER_ABORT && get(step, 'on') === false && !hasErrorCapture) {
-      add(i, 'unguarded-abort-off', { missing: 'Set Error Capture' }, ['stepID', 'on']);
+    if (id === ALLOW_USER_ABORT && onState(step) === false && !hasErrorCapture) {
+      add(i, 'unguarded-abort-off', { missing: 'Set Error Capture' }, ['stepID', 'on', 'flags']);
     }
     strings(step, (value, at, key) => {
       const text = literalOf(value);
       if (text === null) return;
       if (isCredentialKey(key)) add(i, 'embedded-credential', { key, where: at, characters: text.length }, [key]);
-      else if (foldKey(key) === 'account') add(i, 'hardcoded-account', { key, where: at, account: text }, [key]);
+      else if (foldKey(key) === 'account') add(i, 'literal-account', { key, where: at, account: text, step: get(step, 'step') }, [key]);
     });
     const loop = innermostLoop(loops, i);
     if (loop) {
@@ -256,9 +282,15 @@ export function scriptIssues(solution) {
 // The naming site of a script reference, as the graph calls it.
 const VIA = { script: 'step', layout: 'trigger', layoutObject: 'button', customMenu: 'menu' };
 
-/** The key a node is found by: the Scripts tab's own selection spelling
- *  (`target|id`), so a UI can link straight to the script. */
-export const scriptKey = (target, id) => `${target}|${id}`;
+/** The key a graph end is found by. fm ids are unique per catalog and NOT
+ *  across catalogs -- ooe's layout 2 and script 2 are different objects -- so
+ *  the KIND is half of every key. Keying both `target|2` made every trigger on
+ *  that layout read as a call from that script: 14 layout ids and 12 custom
+ *  menu ids collide with script ids on ooe alone. The prefix is the reference's
+ *  own `from.kind`, so `edge.from` and `edge.origin.kind` cannot drift apart.
+ *  A UI builds its own Scripts-tab selection from a node's `target` and `id`. */
+export const graphKey = (kind, target, id) => `${kind}:${target}|${id}`;
+export const scriptKey = (target, id) => graphKey('script', target, id);
 
 // A real script name carries neither a quote nor a line break; a value that
 // does is `Perform AppleScript`'s source under fm's `script` key (see
@@ -285,7 +317,7 @@ export function callGraph(solution) {
     const candidates = scripts.get(ref.name) ?? [];
     const to = candidates.find((e) => e.target === ref.from.target) ?? (candidates.length === 1 ? candidates[0] : undefined);
     edges.push({
-      from: scriptKey(ref.from.target, ref.from.id),
+      from: graphKey(ref.from.kind, ref.from.target, ref.from.id),
       to: to ? scriptKey(to.target, to.id) : null,
       name: ref.name,
       via,
@@ -332,7 +364,10 @@ function walk(key, depth, seen, index, via) {
   return tree;
 }
 
-/** What one script calls, and what that calls, `depth` levels down. A node
+/** What one script calls, and what that calls, `depth` levels down. Only a
+ *  script CALLS anything: the walk follows edges out of a `script:` key, so a
+ *  layout's trigger or a menu item's action -- an entry point, not a call -- is
+ *  in the graph and not in the tree. A node
  *  already on the path back to the root is `cycle` and is not walked again; a
  *  node at the depth limit that still calls something is `truncated`; a name no
  *  script answers is a child with no key. `null` when the key is not a script

@@ -36,7 +36,10 @@ import { references } from './refs.js';
 export const GLOBALS_NOTE = 'Mentions are counted by tokenising calculation text: fm reports a formula as'
   + ' text and names none of the references it makes (gap register `calculation-tokens`), so this is what the'
   + ' text says, not what FileMaker resolves. A name built at run time -- Evaluate, a constructed'
-  + ' ExecuteSQL, Get ( ScriptParameter ) -- is mentioned nowhere and counted nowhere.';
+  + ' ExecuteSQL, Get ( ScriptParameter ) -- is mentioned nowhere and counted nowhere. And a $$ name'
+  + ' containing a space (FileMaker allows `$$SMTP Server`) tokenises as its first word, so such a global is'
+  + ' listed twice: once under the full name the Set Variable target gives it, with no mentions, and once'
+  + ' under the first word, with them.';
 
 // fm's own step id for Set Variable, the same numbering ui/analysis/scripts.js
 // documents (its PSOS_ONLY_STEPS carries the provenance of the id list).

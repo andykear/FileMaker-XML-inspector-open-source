@@ -37,8 +37,13 @@ test('globals is memoised, frozen and recomputes for another solution', () => {
   assert.throws(() => globals(a).push({}), TypeError);
 });
 
-test('the note names the register entry that says why a formula read is approximate', () => {
+test('the note names the register entry, and the names the tokeniser cannot read whole', () => {
   assert.match(GLOBALS_NOTE, /calculation-tokens/);
+  // A `$$` name with a space in it -- FileMaker allows `$$SMTP Server`, and the
+  // register's own probe for `calculation-tokens` uses exactly that -- tokenises
+  // as its first word, so such a global is listed twice. The note says so.
+  assert.match(GLOBALS_NOTE, /space/);
+  assert.match(GLOBALS_NOTE, /\$\$SMTP Server/);
 });
 
 test('a global set by a Set Variable carries the set site; a local is not a global', () => {
