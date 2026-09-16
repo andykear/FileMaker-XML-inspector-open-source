@@ -346,6 +346,11 @@ svg.wireframe .part.leadingGrandSummary, svg.wireframe .part.trailingGrandSummar
 svg.wireframe .part.leadingSubSummary, svg.wireframe .part.trailingSubSummary { fill: var(--warn-tint); }
 svg.wireframe .part-label { font: 600 11px -apple-system, ui-sans-serif, system-ui, sans-serif; fill: var(--ink-3); }
 
+/* These `.obj.<type>` rules only define custom properties -- one outline colour,
+   one fill and one fill-opacity per fm object type. Nothing paints here: the
+   rules that read them are the `svg.wireframe .obj` ones below and the legend
+   swatch, so an fm type with no rule of its own still draws, in the `.obj`
+   defaults. */
 .obj { --o: var(--ink-4); }
 .obj.field { --o: var(--ink-2); --f: var(--surface); --fo: 1; }
 .obj.label { --o: var(--ink-3); --f: none; }

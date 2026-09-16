@@ -2,6 +2,7 @@
 // Boot: the api, the shell, discovery. Everything the page draws comes from a tab
 // module; this file owns only the header, the busy guard and window.inspector.
 import { createApi } from './api.js';
+import { esc } from './dom.js';
 import { discover, reread } from './discovery.js';
 import { createShell } from './shell.js';
 import { tab as solutionTab } from './tabs/solution.js';
@@ -19,6 +20,7 @@ const api = createApi('');
 const $ = (id) => document.getElementById(id);
 let solution = null;
 let ctx = null;
+let failure = null;
 let busy = false;
 let lastProgress = '';
 let guardShown = false;
@@ -49,6 +51,7 @@ async function run(label, fn) {
     await fn();
   } catch (e) {
     ok = false;
+    failure = e.message;
     progress(`Failed: ${e.message}`);
   } finally {
     busy = false;
@@ -66,13 +69,22 @@ async function run(label, fn) {
  *  for the initial load and to retry from scratch when solution is still null
  *  (the initial context fetch or discovery failed). */
 async function discoverSolution() {
+  failure = null;
   ctx = await api.context();
   $('context').textContent = `${ctx.root} as ${ctx.username}, fm ${ctx.cli.version}`;
   solution = await discover(api, ctx.root, { onProgress: progress });
 }
 
 function render() {
-  if (!solution) return;
+  if (!solution) {
+    // The first read never landed: say so where the page is, not only in the
+    // header's progress line, and leave the nav drawn so the page looks alive.
+    if (failure) {
+      shell.showMessage('<section class="panel"><header><h2>Nothing read</h2></header>'
+        + `<p class="error">Read failed: ${esc(failure)}. Press Re-read solution.</p></section>`);
+    }
+    return;
+  }
   $('context').textContent = `${solution.root} as ${ctx?.username ?? '?'}, fm ${solution.cli?.version ?? '?'}, read ${solution.readAt ?? '...'}`;
   shell.setSolution(solution);
 }
@@ -91,7 +103,7 @@ function rereadSlot(slot) {
 
 const shell = createShell({
   tabs: TABS,
-  mount: { nav: $('nav'), main: $('main'), filter: $('filter'), context: $('context') },
+  mount: { nav: $('nav'), main: $('main'), filter: $('filter') },
   onReread: rereadSlot,
 });
 

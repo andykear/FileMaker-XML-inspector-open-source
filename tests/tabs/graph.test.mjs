@@ -85,6 +85,17 @@ test('relationRows names both sides, the predicates and the options', () => {
   assert.equal(relationRows(solution.files['fmnet://localhost/BrojDva']).length, 0);
 });
 
+test('the second file is read too: BrojDva carries 3 occurrences and no relations', () => {
+  // Measured from the fixture: blank, Invoice and SaXMLDelivery, none of them
+  // joined to anything -- the occurrence count of a file the walk reached is a
+  // pin on the walk as much as on the tab.
+  const brojDva = solution.files['fmnet://localhost/BrojDva'];
+  const rows = occurrenceRows(brojDva);
+  assert.equal(rows.length, 3);
+  assert.deepEqual(rows.map((r) => r.name), ['blank', 'Invoice', 'SaXMLDelivery']);
+  assert.equal(rows.filter((r) => r.related === 0).length, 3);
+});
+
 test('graphSvg draws a rect per occurrence, a line per relation and the notes', () => {
   const svg = graphSvg(root);
   assert.match(svg, /^<svg [^>]*viewBox="-?\d+ -?\d+ \d+ \d+"/);
