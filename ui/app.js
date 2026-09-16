@@ -6,8 +6,9 @@ import { discover, reread } from './discovery.js';
 import { createShell } from './shell.js';
 import { tab as solutionTab } from './tabs/solution.js';
 import { tab as tablesTab } from './tabs/tables.js';
+import { tab as graphTab } from './tabs/graph.js';
 
-const TABS = [solutionTab, tablesTab];
+const TABS = [solutionTab, tablesTab, graphTab];
 
 const api = createApi('');
 const $ = (id) => document.getElementById(id);

@@ -242,6 +242,39 @@ tr[data-select].selected { background: var(--navy-tint); }
 ul.unreachable { margin: 0; padding-left: 18px; }
 ul.unreachable > li + li { margin-top: 8px; }
 
+ul.notes { margin: 8px 0 0; padding-left: 18px; color: var(--ink-2); }
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  vertical-align: baseline;
+}
+
+/* ── Relationship graph ───────────────────────────────────────────────── */
+/* The geometry is fm's own, in FileMaker points; the viewBox scales it to the panel. */
+
+.panel h3 { margin: 10px 0 4px; font-size: 12px; color: var(--ink-3); font-weight: 600; }
+
+.graph-wrap {
+  overflow-x: auto;
+  background: var(--surface-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 6px;
+}
+
+svg.graph { display: block; width: 100%; height: auto; max-height: 72vh; }
+
+svg.graph .to { stroke-width: 1; }
+svg.graph .to.highlight { stroke: var(--brand); stroke-width: 3; fill: var(--brand); fill-opacity: .18; }
+svg.graph .to-name { font: 600 11px -apple-system, ui-sans-serif, system-ui, sans-serif; fill: var(--ink); }
+svg.graph .rel { stroke: var(--ink-4); stroke-width: 1.5; }
+svg.graph .note { stroke-width: 1; }
+svg.graph .note-text { font: 11px -apple-system, ui-sans-serif, system-ui, sans-serif; fill: var(--ink-2); }
+
 @media (max-width: 720px) {
   #layout { grid-template-columns: minmax(0, 1fr); }
   #nav { position: static; min-height: 0; flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); }
