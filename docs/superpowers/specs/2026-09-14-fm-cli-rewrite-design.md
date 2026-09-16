@@ -123,6 +123,8 @@ Script bodies render through the shared `stepDisplay(step)`, wrapped in HTML wit
 
 **Amended during Plan 3 (2026-09-15).** What was built differs from the sketch above in these respects, and the code is the authority:
 
+Amended 2026-09-16 (fm 0.7.0): fm respells option keys between builds (0.7.0 moved every multi-word key to camelCase). The model stays verbatim, but every analysis in `ui/` that reads a specific key off an fm object does so through one accessor that tries the exact key first and then its case-and-separator fold (`foldKey` from `fm-adt-toolkit/step-display`), never by hand-written alternatives. Word-level renames are the intake's job, not the accessor's.
+
 - `field` is stored as `detailById`, keyed `table:<name>`, not as `byTable`. One `read:field {table, detail:true}` op per table, one entry per op, like every other described object.
 - `cli` is `{ path, version, contract }`. There is no `engine` on it: the engine shows up as `Get ( HostApplicationVersion )` in the file's facts, which is where it belongs, since it is a property of the host and not of the CLI.
 - Re-read grains are solution, catalog and object. `table` and `field` are one catalog grain, not two: re-reading either sends the table list and then a field describe for every table in the new list. `facts` is a catalog grain as well, sending the eight `evaluate:calculation` ops, although facts is not a catalog in the model.
