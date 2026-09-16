@@ -11,7 +11,7 @@
     "inspector": "bin/inspector.mjs"
   },
   "scripts": {
-    "test": "node --test 'tests/*.test.mjs'",
+    "test": "node --test 'tests/*.test.mjs' 'tests/tabs/*.test.mjs'",
     "start": "node bin/inspector.mjs",
     "inventory": "node scripts/saxml-inventory.mjs",
     "record": "node scripts/record-fixture.mjs"

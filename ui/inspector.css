@@ -1,0 +1,370 @@
+/* ui/inspector.css
+   The palette is carried over verbatim from legacy/clockwork-inspector.html so the
+   rewrite looks like the tool it replaces; everything after :root is the shell only
+   (header, sidebar, panel, table, kv, badge). Tabs add nothing of their own. */
+
+:root {
+  /* Foundation */
+  --bg:            #fafbfc;
+  --surface:       #ffffff;
+  --surface-soft:  #f7f9fc;
+  --surface-mute:  #eef1f5;
+  --surface-hover: #f3f6fa;
+
+  /* Ink */
+  --ink:    #101828;
+  --ink-2:  #344054;
+  --ink-3:  #667085;
+  --ink-4:  #98a2b3;
+  --ink-5:  #d0d5dd;
+
+  /* Lines */
+  --line:        #e4e7ec;
+  --line-soft:   #eaecf0;
+  --line-strong: #d0d5dd;
+
+  /* Brand — Clockwork green (true brand value #49AF5E) */
+  --brand:       #49af5e;
+  --brand-deep:  #3d9850;
+  --brand-bright:#5cc270;
+  --brand-tint:  #eaf7ee;
+  --brand-soft:  #cfeed8;
+  --brand-glow:  rgba(73,175,94,0.18);
+
+  /* Brand — Clockwork navy (true brand value #394999) */
+  --navy:        #394999;
+  --navy-deep:   #2e3b7d;
+  --navy-bright: #5060b8;
+  --navy-tint:   #eef0f8;
+  --navy-soft:   #d4d9ee;
+  --heading:     var(--navy);
+
+  /* RAG */
+  --good:      #16a05f;  --good-tint: #e7f6ee;  --good-bd: #b8e2c8;
+  --warn:      #b76e00;  --warn-tint: #fdf3e2;  --warn-bd: #f4dba1;
+  --bad:       #c4271b;  --bad-tint:  #fdecea;  --bad-bd:  #f4b9b3;
+  --info:      #1570ef;  --info-tint: #eff8ff;  --info-bd: #b2ddff;
+
+  /* Category accents (used sparingly on cards) */
+  --cat-sky:    #0086c9;
+  --cat-violet: #7a5af8;
+  --cat-rose:   #e31b54;
+  --cat-amber:  #ee9b3a;
+  --cat-teal:   #099298;
+  --cat-indigo: #444ce7;
+
+  /* Shadows — layered, refined */
+  --shadow-xs: 0 1px 2px rgba(16,24,40,0.05);
+  --shadow-sm: 0 1px 3px rgba(16,24,40,0.06), 0 1px 2px rgba(16,24,40,0.04);
+  --shadow-md: 0 4px 8px -2px rgba(16,24,40,0.08), 0 2px 4px -2px rgba(16,24,40,0.04);
+  --shadow-lg: 0 12px 20px -4px rgba(16,24,40,0.10), 0 4px 8px -2px rgba(16,24,40,0.05);
+  --shadow-xl: 0 24px 40px -8px rgba(16,24,40,0.14), 0 8px 16px -4px rgba(16,24,40,0.06);
+}
+
+/* ── Page ─────────────────────────────────────────────────────────────── */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif;
+}
+
+a { color: var(--navy); }
+
+code { font-family: ui-monospace, monospace; font-size: 12px; }
+
+.muted { color: var(--ink-3); }
+.error { color: var(--bad); }
+
+/* ── Header ───────────────────────────────────────────────────────────── */
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  box-shadow: var(--shadow-xs);
+}
+
+header h1 { margin: 0; font-size: 15px; color: var(--heading); }
+header .meta { color: var(--ink-3); }
+#progress { color: var(--ink-3); flex: 1 1 auto; }
+
+input, button {
+  font: inherit;
+  color: inherit;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 3px 10px;
+}
+input:focus-visible, button:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+button { cursor: pointer; background: var(--surface-soft); }
+button:hover:not(:disabled) { background: var(--surface-hover); }
+button:disabled { opacity: .5; cursor: default; }
+#filter { min-width: 220px; }
+
+/* ── Layout: sidebar + main ───────────────────────────────────────────── */
+
+#layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: start;
+}
+
+#nav {
+  position: sticky;
+  top: 49px;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 8px;
+  border-right: 1px solid var(--line);
+  min-height: calc(100vh - 49px);
+}
+
+.nav-item {
+  display: block;
+  padding: 5px 10px;
+  border-radius: 6px;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--surface-hover); }
+.nav-item.active { background: var(--navy-tint); color: var(--navy-deep); font-weight: 600; }
+
+#main {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  padding: 18px;
+  min-width: 0;
+}
+
+/* ── Panel ────────────────────────────────────────────────────────────── */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.panel > header {
+  position: static;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 0 0 8px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.panel h2 { margin: 0; font-size: 14px; color: var(--heading); }
+.panel .target { margin: 0 0 8px; font-size: 12px; }
+
+/* ── Tables ───────────────────────────────────────────────────────────── */
+
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+th, td {
+  text-align: left;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--line-soft);
+  white-space: nowrap;
+}
+
+th {
+  color: var(--ink-3);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:last-child td { border-bottom: 0; }
+
+tr[data-select] { cursor: pointer; }
+tr[data-select]:hover { background: var(--surface-hover); }
+tr[data-select].selected { background: var(--navy-tint); }
+
+.num { font-variant-numeric: tabular-nums; }
+
+/* ── Key/value ────────────────────────────────────────────────────────── */
+
+.kv {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 2px 14px;
+  margin: 0 0 10px;
+}
+.kv dt { color: var(--ink-3); }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+
+/* ── Badges, empties, lists ───────────────────────────────────────────── */
+
+.badge {
+  display: inline-block;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-mute);
+  color: var(--ink-2);
+  font-size: 11px;
+  line-height: 17px;
+}
+.badge.good { background: var(--good-tint); border-color: var(--good-bd); color: var(--good); }
+.badge.warn { background: var(--warn-tint); border-color: var(--warn-bd); color: var(--warn); }
+.badge.bad  { background: var(--bad-tint);  border-color: var(--bad-bd);  color: var(--bad); }
+.badge.info { background: var(--info-tint); border-color: var(--info-bd); color: var(--info); }
+
+.empty { margin: 4px 0; color: var(--ink-3); font-style: italic; }
+
+ul.unreachable { margin: 0; padding-left: 18px; }
+ul.unreachable > li + li { margin-top: 8px; }
+
+ul.notes { margin: 8px 0 0; padding-left: 18px; color: var(--ink-2); }
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  vertical-align: baseline;
+}
+
+/* A theme's own palette swatches are larger, in a row of their own. */
+.swatches { display: flex; gap: 6px; margin: 4px 0; }
+.swatches .swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 8px;
+  overflow: hidden;
+}
+
+/* ── Relationship graph ───────────────────────────────────────────────── */
+/* The geometry is fm's own, in FileMaker points; the viewBox scales it to the panel. */
+
+.panel h3 { margin: 10px 0 4px; font-size: 12px; color: var(--ink-3); font-weight: 600; }
+
+.graph-wrap {
+  overflow-x: auto;
+  background: var(--surface-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 6px;
+}
+
+svg.graph { display: block; width: 100%; height: auto; max-height: 72vh; }
+
+svg.graph .to { stroke-width: 1; }
+svg.graph .to.highlight { stroke: var(--brand); stroke-width: 3; fill: var(--brand); fill-opacity: .18; }
+svg.graph .to-name { font: 600 11px -apple-system, ui-sans-serif, system-ui, sans-serif; fill: var(--ink); }
+svg.graph .rel { stroke: var(--ink-4); stroke-width: 1.5; }
+svg.graph .note { stroke-width: 1; }
+svg.graph .note-text { font: 11px -apple-system, ui-sans-serif, system-ui, sans-serif; fill: var(--ink-2); }
+
+@media (max-width: 720px) {
+  #layout { grid-template-columns: minmax(0, 1fr); }
+  #nav { position: static; min-height: 0; flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); }
+}
+
+/* ── Script tree and script body ──────────────────────────────────────── */
+
+ul.tree { margin: 2px 0 6px; padding-left: 18px; list-style: none; }
+ul.tree > li { padding: 1px 4px; border-radius: 4px; cursor: pointer; }
+ul.tree > li:hover { background: var(--surface-mute); }
+ul.tree > li.selected { background: var(--navy-tint); font-weight: 600; }
+
+.panel details > summary { cursor: pointer; padding: 2px 0; color: var(--ink-2); font-weight: 600; }
+
+/* One li per script step. The indent is fm's own block nesting, carried on --depth so
+   any nesting depth indents; the depth-n class is what a stylesheet or a test matches. */
+ol.script {
+  margin: 8px 0 0;
+  padding: 6px 0;
+  list-style: none;
+  font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--surface-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+ol.script > li {
+  padding: 0 10px 0 calc(10px + var(--depth, 0) * 1.25em);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+ol.script > li:hover { background: var(--surface-mute); }
+ol.script .ln {
+  display: inline-block;
+  min-width: 4ch;
+  margin-right: 8px;
+  text-align: right;
+  color: var(--ink-4);
+  user-select: none;
+}
+ol.script > li > b { font-weight: 600; color: var(--ink); }
+ol.script .detail { color: var(--ink-2); }
+ol.script > li.disabled { color: var(--ink-4); text-decoration: line-through; }
+ol.script > li.disabled > b, ol.script > li.disabled .detail { color: var(--ink-4); }
+
+/* ── Layout wireframe ─────────────────────────────────────────────────── */
+/* The geometry is fm's own, in FileMaker points; the viewBox scales it to the panel.
+   Each object type carries --o (its ink) and optionally --f/--fo (its fill), so the
+   svg rect and the legend chip below it stay the same colour. */
+
+.wireframe-wrap { overflow-x: auto; background: var(--surface-soft); border: 1px solid var(--line-soft); border-radius: 8px; padding: 6px; }
+svg.wireframe { display: block; max-width: 100%; height: auto; max-height: 72vh; border: 1px solid var(--line-strong); background: var(--surface); }
+
+svg.wireframe .part { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1; }
+svg.wireframe .part.header, svg.wireframe .part.titleHeader { fill: var(--navy-tint); }
+svg.wireframe .part.footer, svg.wireframe .part.titleFooter { fill: var(--surface-mute); }
+svg.wireframe .part.topNavigation, svg.wireframe .part.bottomNavigation { fill: var(--navy-soft); }
+svg.wireframe .part.leadingGrandSummary, svg.wireframe .part.trailingGrandSummary { fill: var(--brand-tint); }
+svg.wireframe .part.leadingSubSummary, svg.wireframe .part.trailingSubSummary { fill: var(--warn-tint); }
+svg.wireframe .part-label { font: 600 11px -apple-system, ui-sans-serif, system-ui, sans-serif; fill: var(--ink-3); }
+
+/* These `.obj.<type>` rules only define custom properties -- one outline colour,
+   one fill and one fill-opacity per fm object type. Nothing paints here: the
+   rules that read them are the `svg.wireframe .obj` ones below and the legend
+   swatch, so an fm type with no rule of its own still draws, in the `.obj`
+   defaults. */
+.obj { --o: var(--ink-4); }
+.obj.field { --o: var(--ink-2); --f: var(--surface); --fo: 1; }
+.obj.label { --o: var(--ink-3); --f: none; }
+.obj.button, .obj.buttonBar, .obj.popoverButton { --o: var(--brand-deep); --f: var(--brand-tint); --fo: .85; }
+.obj.portal, .obj.tabControl, .obj.slideControl, .obj.popover { --o: var(--navy); --fo: .12; }
+.obj.tabPanel, .obj.slidePanel { --o: var(--navy-bright); --fo: .06; }
+.obj.webViewer, .obj.chart { --o: var(--info); --fo: .14; }
+.obj.line, .obj.graphic, .obj.rectangle, .obj.roundedRectangle, .obj.oval, .obj.group { --o: var(--ink-4); --fo: .08; }
+
+svg.wireframe .obj { fill: var(--f, var(--o)); fill-opacity: var(--fo, .14); stroke: var(--o); stroke-width: 1; }
+svg.wireframe .obj.label { stroke-dasharray: 3 2; }
+svg.wireframe .obj.group { stroke-dasharray: 5 3; fill: none; }
+svg.wireframe .obj.highlight { stroke: var(--brand); stroke-width: 3; fill: var(--brand); fill-opacity: .22; }
+
+ul.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 0 0; padding: 0; list-style: none; font-size: 11px; color: var(--ink-3); }
+ul.legend > li { display: flex; align-items: center; gap: 4px; }
+ul.legend .obj { width: 10px; height: 10px; border: 1px solid var(--o); background: var(--o); opacity: .55; border-radius: 2px; }

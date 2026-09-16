@@ -27,6 +27,7 @@ function isList(op) {
  *  fm's result lines carry only the op name. */
 export function applyBatch(file, ops, response, readAt) {
   const results = response.results ?? [];
+  const fresh = new Map();
   ops.forEach((op, i) => {
     const line = results[i];
     const catalog = catalogOf(op);
@@ -49,10 +50,17 @@ export function applyBatch(file, ops, response, readAt) {
       }
       return;
     }
-    slot.detailById[describeKey(op)] = line?.status === 'ok'
+    // `detailById` is replaced, never mutated in place. A re-read at catalog
+    // grain swaps the whole slot, but a re-read at object grain lands here, and
+    // a derived view that caches off the model has to be able to tell that its
+    // input changed -- object identity is how it tells. One fresh object per
+    // slot per batch, so a batch of n describes is not n copies of the map.
+    if (!fresh.has(slot)) fresh.set(slot, { ...slot.detailById });
+    fresh.get(slot)[describeKey(op)] = line?.status === 'ok'
       ? { op, readAt, result: line.result }
       : { op, readAt, error: line?.error ?? NO_RESULT };
   });
+  for (const [slot, detailById] of fresh) slot.detailById = detailById;
 }
 
 export function catalogCounts(file) {

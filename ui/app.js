@@ -1,19 +1,29 @@
 // ui/app.js
+// Boot: the api, the shell, discovery. Everything the page draws comes from a tab
+// module; this file owns only the header, the busy guard and window.inspector.
 import { createApi } from './api.js';
+import { esc } from './dom.js';
 import { discover, reread } from './discovery.js';
-import { catalogCounts } from './model.js';
+import { createShell } from './shell.js';
+import { tab as solutionTab } from './tabs/solution.js';
+import { tab as tablesTab } from './tabs/tables.js';
+import { tab as graphTab } from './tabs/graph.js';
+import { tab as scriptsTab } from './tabs/scripts.js';
+import { tab as layoutsTab } from './tabs/layouts.js';
+import { tab as securityTab } from './tabs/security.js';
+import { tab as themesTab } from './tabs/themes.js';
+import { tab as catalogsTab } from './tabs/catalogs.js';
+
+const TABS = [solutionTab, tablesTab, graphTab, scriptsTab, layoutsTab, securityTab, themesTab, catalogsTab];
 
 const api = createApi('');
 const $ = (id) => document.getElementById(id);
 let solution = null;
 let ctx = null;
+let failure = null;
 let busy = false;
 let lastProgress = '';
 let guardShown = false;
-
-function esc(s) {
-  return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-}
 
 function progress(message) {
   lastProgress = message;
@@ -34,13 +44,14 @@ async function run(label, fn) {
   }
   busy = true;
   $('reread-solution').disabled = true;
-  for (const b of document.querySelectorAll('button[data-reread-catalog]')) b.disabled = true;
+  for (const b of document.querySelectorAll('button[data-reread-catalog], button[data-reread-object]')) b.disabled = true;
   progress(label);
   let ok = true;
   try {
     await fn();
   } catch (e) {
     ok = false;
+    failure = e.message;
     progress(`Failed: ${e.message}`);
   } finally {
     busy = false;
@@ -58,47 +69,42 @@ async function run(label, fn) {
  *  for the initial load and to retry from scratch when solution is still null
  *  (the initial context fetch or discovery failed). */
 async function discoverSolution() {
+  failure = null;
   ctx = await api.context();
   $('context').textContent = `${ctx.root} as ${ctx.username}, fm ${ctx.cli.version}`;
   solution = await discover(api, ctx.root, { onProgress: progress });
 }
 
-function renderFile(file) {
-  const counts = catalogCounts(file);
-  const facts = Object.entries(file.facts).map(([k, v]) =>
-    `<dt>${esc(k)}</dt><dd>${'value' in v ? esc(v.value) : `<span class="error">${esc(v.error.code)}: ${esc(v.error.message)}</span>`}</dd>`).join('');
-  const rows = Object.entries(counts).map(([catalog, c]) => {
-    const slot = file.catalogs[catalog];
-    const listErr = slot.listError ? `<span class="error">${esc(slot.listError.code)}</span>` : '';
-    return `<tr><td>${esc(catalog)} ${listErr}</td><td class="num">${c.listed}</td><td class="num">${c.described}</td><td class="num ${c.errors ? 'error' : ''}">${c.errors}</td><td class="muted">${esc(slot.readAt ?? '')}</td><td><button data-reread-catalog="${esc(catalog)}" data-target="${esc(file.target)}">Re-read</button></td></tr>`;
-  }).join('');
-  return `<section>
-    <h2>${esc(file.name ?? file.target)} <span class="muted">${esc(file.target)}</span>
-      <button data-reread-catalog="facts" data-target="${esc(file.target)}">Re-read facts</button></h2>
-    <dl>${facts}</dl>
-    <table><thead><tr><th>Catalog</th><th>Listed</th><th>Described</th><th>Errors</th><th>Read at</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-  </section>`;
-}
-
-function renderUnreachable(list) {
-  if (!list.length) return '';
-  const items = list.map((u) => `<li><code>${esc(u.target)}</code> <span class="muted">from ${esc(u.from ?? '')} via ${esc(u.via ?? '')}</span><br>
-    <span class="error">${esc(u.error.code)}${u.error.dbError ? ` (DBError ${esc(u.error.dbError)})` : ''}</span>: ${esc(u.error.message)}
-    ${u.error.suggestions?.length ? `<ul>${u.error.suggestions.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}</li>`).join('');
-  return `<section><h2>Unreachable</h2><ul>${items}</ul></section>`;
-}
-
 function render() {
-  if (!solution) return;
+  if (!solution) {
+    // The first read never landed: say so where the page is, not only in the
+    // header's progress line, and leave the nav drawn so the page looks alive.
+    if (failure) {
+      shell.showMessage('<section class="panel"><header><h2>Nothing read</h2></header>'
+        + `<p class="error">Read failed: ${esc(failure)}. Press Re-read solution.</p></section>`);
+    }
+    return;
+  }
   $('context').textContent = `${solution.root} as ${ctx?.username ?? '?'}, fm ${solution.cli?.version ?? '?'}, read ${solution.readAt ?? '...'}`;
-  $('solution').innerHTML = Object.values(solution.files).map(renderFile).join('') + renderUnreachable(solution.unreachable);
+  shell.setSolution(solution);
 }
 
-$('solution').addEventListener('click', (ev) => {
-  const b = ev.target.closest('button[data-reread-catalog]');
-  if (!b) return;
-  const slot = { kind: 'catalog', target: b.dataset.target, catalog: b.dataset.rereadCatalog };
-  run(`Re-reading ${slot.catalog} of ${slot.target}`, async () => { solution = await reread(api, solution, slot); });
+function rereadLabel(slot) {
+  if (slot.kind === 'catalog') return `Re-reading ${slot.catalog} of ${slot.target}`;
+  if (slot.kind === 'solution') return 'Re-reading the solution';
+  return `Re-reading ${slot.kind}`;
+}
+
+function rereadSlot(slot) {
+  return run(rereadLabel(slot), async () => {
+    solution = await reread(api, solution, slot, { onProgress: progress });
+  });
+}
+
+const shell = createShell({
+  tabs: TABS,
+  mount: { nav: $('nav'), main: $('main'), filter: $('filter') },
+  onReread: rereadSlot,
 });
 
 $('reread-solution').addEventListener('click', () => {
@@ -106,12 +112,13 @@ $('reread-solution').addEventListener('click', () => {
     run('Discovering the solution', discoverSolution);
     return;
   }
-  run('Re-reading the solution', async () => { solution = await reread(api, solution, { kind: 'solution' }); });
+  rereadSlot({ kind: 'solution' });
 });
 
 window.inspector = {
   get solution() { return solution; },
-  reread: (slot) => run(`Re-reading ${slot.kind}`, async () => { solution = await reread(api, solution, slot); }),
+  reread: rereadSlot,
+  shell,
 };
 
 run('Discovering the solution', discoverSolution);

@@ -238,3 +238,16 @@ test('a .json file under the ui directory is served as its own bytes', async () 
     assert.deepEqual(JSON.parse(text), { note: 'served by the static handler as bytes, not re-encoded', n: 3, list: [1, 2, 3] });
   });
 });
+
+test('the toolkit step-display module is served under /vendor', async () => {
+  await withServer({ cli, root: 'x', username: 'admin', noPrompt: true, runOps: fakeRunOps([]) }, async (base) => {
+    const res = await fetch(base + '/vendor/fm-adt-toolkit/step-display/index.js');
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type'), /javascript/);
+    assert.match(await res.text(), /stepDisplay/);
+    const cat = await fetch(base + '/vendor/fm-adt-toolkit/catalogs/fm-step-display.js');
+    assert.equal(cat.status, 200);
+    const escape = await fetch(base + '/vendor/fm-adt-toolkit/../../package.json');
+    assert.equal(escape.status, 404);
+  });
+});

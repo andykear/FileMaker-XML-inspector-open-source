@@ -514,8 +514,8 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | render | s.scripts.orphaned_enabled_steps | derived | derived from script.body[].disabled + script.body[].block | fm reports no block role on a disabled block step, which is exactly the wrapper-disabled case this check looks for. |
 | render | s.scripts.script_count | derived | derived from read:script {flatten:true} items with type = script |  |
 | render | s.scripts.step_count | derived | derived from the sum of script.steps on the read:script listing |  |
-| render | s.scripts.unbalanced_if_scripts | derived | derived from script.body[].block | An unclosed If reports start with no end, so fm answers this directly instead of by counting openers and closers. |
-| render | s.scripts.unbalanced_loop_scripts | derived | derived from script.body[].block | Same. |
+| render | s.scripts.unbalanced_if_scripts | derived | derived from script.body[].block | An unclosed If reports start with no end, so fm answers this directly instead of by counting openers and closers. The new inspector reports one merged `unbalanced` count over every block role rather than one per opener type, by design: the finding is that fm could not close a block, and which keyword opened it is on the step. |
+| render | s.scripts.unbalanced_loop_scripts | derived | derived from script.body[].block | Same, and merged into that same `unbalanced` count. |
 | render | s.scripts.unknown_step_id_count | derived | derived from script.body[].step + script.problems[] | fm names every step it returns, so the unknown-id bucket collapses to zero; problems[] is the replacement drift signal. |
 | render | s.tables.calc_fields | derived | derived from field.options.fieldType = calculation |  |
 | render | s.tables.detail.fields_auto_entry | covered | field.options.autoEnter.type |  |

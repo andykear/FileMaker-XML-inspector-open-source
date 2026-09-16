@@ -4,7 +4,7 @@ export const LIST_CATALOGS = [
   'externalDataSource', 'table', 'tableOccurrence', 'relation', 'layout', 'script',
   'valueList', 'customFunction', 'account', 'privilegeSet', 'extendedPrivilege',
   'customMenu', 'customMenuSet', 'baseDirectory', 'persistentData', 'font',
-  'graphNote', 'authorization',
+  'graphNote', 'authorization', 'theme',
 ];
 
 /** File-level facts: fm has no file catalog, so these come from Get(). */
@@ -23,7 +23,12 @@ export const DESCRIBED_BY_ID = [
 function listOp(catalog) {
   const op = { op: `read:${catalog}` };
   if (catalog === 'externalDataSource') op.detail = true;
-  if (catalog === 'layout' || catalog === 'script') op.flatten = true;
+  // The three catalogs FileMaker folds into folders. `flatten:true` is what fm
+  // calls the shape where every member at every depth arrives in one array,
+  // each carrying the `folder` path it sits in -- without it a listing is a
+  // tree and everything inside a folder is out of reach of a flat reader.
+  if (catalog === 'layout' || catalog === 'script' || catalog === 'customFunction') op.flatten = true;
+  if (catalog === 'theme') op.detail = true;
   return op;
 }
 
@@ -37,10 +42,13 @@ export function listOps() {
   return [...LIST_CATALOGS.map(listOp), ...factOps()];
 }
 
+/** A flattened listing carries the folders (and, for scripts and layouts, the
+ *  separator FileMaker draws) alongside the members. Only a member is described. */
+const MEMBER_TYPE = { layout: 'layout', script: 'script', customFunction: 'customFunction' };
+
 function isMember(catalog, item) {
-  if (catalog === 'layout') return item.type === 'layout';
-  if (catalog === 'script') return item.type === 'script';
-  return true;
+  const type = MEMBER_TYPE[catalog];
+  return type === undefined || item.type === type;
 }
 
 export function describeOps(lists) {

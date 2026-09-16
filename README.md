@@ -22,7 +22,7 @@
 
 A modern alternative to the commercial FileMaker analysis tools that now exceeds most of them on usability, without licensing anything or sending your work to a server.
 
-**Version 3 (in progress)**: reads live FileMaker files through the Claris ADT `fm` CLI, instead of a Save as XML export. `npm install`, then `npm start -- --file=<target> --username=<account>` — fm asks for the password in its own window and offers to save it in the keychain. Reads only. The Save as XML version is kept in `legacy/`.
+**Version 3 (in progress)**: reads live FileMaker files through the Claris ADT `fm` CLI, instead of a Save as XML export. `npm install`, then `npm start -- --file=<target> --username=<account>` — fm asks for the password in its own window and offers to save it in the keychain. Reads only. The Save as XML version is kept in `legacy/`. Tabs available now: Solution, Tables, Relationships, Scripts, Layouts, Security, Themes and More (value lists, custom functions, custom menus and menu sets, external data sources, base directories, persistent data, fonts, graph notes, and file facts). The derived analyses (unreferenced, broken references, the reference explorer, the call graph), exports and the Gaps tab come in the next plan.
 
 It analyses around a million lines of XML per second on a reasonably capable computer, so even a large enterprise solution is parsed and reported about as fast as you can open the file. It reads Save as XML, FileMaker's native object export (the version kept in `legacy/`).
 

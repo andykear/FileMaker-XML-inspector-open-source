@@ -2,20 +2,23 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LIST_CATALOGS, FILE_FACTS, listOps, factOps, describeOps, describeKey, catalogOf } from '../ui/read-plan.js';
 
-test('listOps is the 18 list ops with their flags, then the file facts', () => {
+test('listOps is the 19 list ops with their flags, then the file facts', () => {
   const ops = listOps();
-  assert.equal(ops.length, 18 + 8);
+  assert.equal(ops.length, 19 + 8);
   assert.deepEqual(ops[0], { op: 'read:externalDataSource', detail: true });
   assert.deepEqual(ops.find((o) => o.op === 'read:layout'), { op: 'read:layout', flatten: true });
   assert.deepEqual(ops.find((o) => o.op === 'read:script'), { op: 'read:script', flatten: true });
+  assert.deepEqual(ops.find((o) => o.op === 'read:customFunction'), { op: 'read:customFunction', flatten: true });
   assert.deepEqual(ops.find((o) => o.op === 'read:table'), { op: 'read:table' });
-  assert.equal(LIST_CATALOGS.length, 18);
-  assert.deepEqual(ops.slice(18), FILE_FACTS.map((calculation) => ({ op: 'evaluate:calculation', calculation })));
-  assert.deepEqual(ops.slice(18), factOps(), 'a facts re-read sends exactly what the list batch sent');
+  assert.deepEqual(ops.find((o) => o.op === 'read:theme'), { op: 'read:theme', detail: true });
+  assert.equal(LIST_CATALOGS.length, 19);
+  assert.equal(LIST_CATALOGS.at(-1), 'theme');
+  assert.deepEqual(ops.slice(19), FILE_FACTS.map((calculation) => ({ op: 'evaluate:calculation', calculation })));
+  assert.deepEqual(ops.slice(19), factOps(), 'a facts re-read sends exactly what the list batch sent');
   assert.ok(FILE_FACTS.includes('Get ( EncryptionState )'));
 });
 
-test('describeOps derives one describe per table, layout, script and id-described member', () => {
+test('describeOps derives one describe per table, layout, script and id-described member, skipping the folders of a flattened listing', () => {
   const lists = {
     table: [{ name: 'A', id: 1 }, { name: 'B', id: 2 }],
     layout: [{ id: 10, type: 'folder', name: 'F' }, { id: 11, type: 'layout', name: 'L' }],
@@ -23,7 +26,7 @@ test('describeOps derives one describe per table, layout, script and id-describe
     tableOccurrence: [{ id: 30, name: 'A' }],
     relation: [{ id: 40 }],
     valueList: [{ id: 50, name: 'V' }],
-    customFunction: [{ id: 60, name: 'cf' }],
+    customFunction: [{ id: 59, type: 'folder', name: 'F' }, { id: 60, type: 'customFunction', name: 'cf' }],
     privilegeSet: [{ id: 70, name: '[Full Access]' }],
     customMenu: [{ id: 80, name: 'M' }],
     account: [{ id: 90, name: 'admin' }],
