@@ -4,7 +4,7 @@ export const LIST_CATALOGS = [
   'externalDataSource', 'table', 'tableOccurrence', 'relation', 'layout', 'script',
   'valueList', 'customFunction', 'account', 'privilegeSet', 'extendedPrivilege',
   'customMenu', 'customMenuSet', 'baseDirectory', 'persistentData', 'font',
-  'graphNote', 'authorization',
+  'graphNote', 'authorization', 'theme',
 ];
 
 /** File-level facts: fm has no file catalog, so these come from Get(). */
@@ -24,6 +24,7 @@ function listOp(catalog) {
   const op = { op: `read:${catalog}` };
   if (catalog === 'externalDataSource') op.detail = true;
   if (catalog === 'layout' || catalog === 'script') op.flatten = true;
+  if (catalog === 'theme') op.detail = true;
   return op;
 }
 

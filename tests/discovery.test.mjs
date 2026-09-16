@@ -258,6 +258,9 @@ test('discovery of the recorded ooe solution', async () => {
   assert.equal(byVia.by_variable, 'unresolvable');
   assert.ok(['open_failed', 'authentication_failed'].includes(byVia.Ooe_dev) || s.files['fmnet://localhost/Ooe_dev'], 'Ooe_dev read or unreachable with fm\'s code');
   assert.ok(!Object.keys(s.files).some((t) => t !== api.meta.root && t.toLowerCase() === api.meta.root.toLowerCase()), 'Self source did not re-read the root');
+  assert.equal(root.catalogs.theme.list.length, 3);
+  assert.ok(root.catalogs.theme.list[0].css.length > 1000);
+  assert.ok(root.catalogs.theme.list.some((t) => t.isDefault));
 });
 
 test('object and catalog re-read replay against the recorded ooe', async () => {
