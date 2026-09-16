@@ -41,3 +41,19 @@ export function table(columns, rows, opts = {}) {
   }).join('');
   return `<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
+
+/** A re-read slot rides in an attribute the shell parses back with JSON.parse, so it is
+ *  serialised as JSON and escaped for a single-quoted attribute (the `"` of JSON must
+ *  survive, `'` must not). */
+export function slotAttr(slot) {
+  return JSON.stringify(slot).replace(/[&<>']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;' }[c]));
+}
+
+export function rereadCatalogButton(target, catalog, label = 'Re-read') {
+  return `<button data-reread-catalog="${esc(catalog)}" data-target="${esc(target)}">${esc(label)}</button>`;
+}
+
+/** `slot` is `{ kind: 'object', target, catalog, key }` — the shape ui/discovery.js reread() takes. */
+export function rereadObjectButton(slot, label = 'Re-read') {
+  return `<button data-reread-object='${slotAttr(slot)}'>${esc(label)}</button>`;
+}

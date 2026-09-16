@@ -3,7 +3,7 @@
 // when a table is selected -- that table's fields, the five sublists the legacy
 // inspector drew, and the button that re-reads just this table's fields. A pure
 // renderer: no document, every fm option read through access.js, every string escaped.
-import { count, esc, link, matches, section, table } from '../dom.js';
+import { count, esc, link, matches, rereadCatalogButton, rereadObjectButton, section, table } from '../dom.js';
 import { get, path } from '../access.js';
 
 export function fieldsOf(file, tableName) {
@@ -89,19 +89,6 @@ export function selectionOf(view) {
   return at < 0 ? null : { target: sel.slice(0, at), table: sel.slice(at + 1) };
 }
 
-function slotAttr(slot) {
-  return JSON.stringify(slot).replace(/[&<>']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;' }[c]));
-}
-
-function rereadCatalog(target, label) {
-  return `<button data-reread-catalog="table" data-target="${esc(target)}">${esc(label)}</button>`;
-}
-
-function rereadObject(target, tableName) {
-  const slot = { kind: 'object', target, catalog: 'field', key: `table:${tableName}` };
-  return `<button data-reread-object='${slotAttr(slot)}'>Re-read fields</button>`;
-}
-
 const num = (key) => ({ key, num: true, render: (r) => count(r[key]) });
 
 function tableColumns(multiFile) {
@@ -151,7 +138,7 @@ function renderTables(solution, view) {
   const all = tableRows(solution);
   const rows = all.filter((r) => matches(r.name, view.filter));
   const actions = Object.values(solution.files)
-    .map((f) => rereadCatalog(f.target, view.multiFile ? `Re-read ${f.name ?? f.target}` : 'Re-read tables'))
+    .map((f) => rereadCatalogButton(f.target, 'table', view.multiFile ? `Re-read ${f.name ?? f.target}` : 'Re-read tables'))
     .join(' ');
   const selected = view.selection;
   const body = totals(all) + table(tableColumns(view.multiFile), rows, {
@@ -213,7 +200,8 @@ function renderFields(solution, view) {
     ? `<p class="error">${esc(get(error, 'code'))}: ${esc(get(error, 'message'))}</p>`
     : table(FIELD_COLUMNS, rows, { empty: 'No fields' }) + `<div class="sublists">${sublists(rows)}</div>`;
   const title = `Fields of ${sel.table}${view.multiFile ? ` (${file.name ?? file.target})` : ''}`;
-  return section(title, body, { actions: rereadObject(file.target, sel.table) });
+  const slot = { kind: 'object', target: file.target, catalog: 'field', key: `table:${sel.table}` };
+  return section(title, body, { actions: rereadObjectButton(slot, 'Re-read fields') });
 }
 
 export const tab = {

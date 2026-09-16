@@ -3,7 +3,7 @@
 // graph itself drawn from the geometry fm reports -- no layout algorithm, fm already
 // knows where the boxes sit. A pure renderer: no document, every fm key read through
 // access.js, every string and every colour escaped before it reaches an attribute.
-import { badge, count, esc, kv, link, matches, section, table } from '../dom.js';
+import { badge, count, esc, kv, link, matches, rereadCatalogButton, rereadObjectButton, section, table } from '../dom.js';
 import { get, path } from '../access.js';
 
 const SOURCE_FLAGS = ['local', 'external', 'foreign', 'odbc'];
@@ -178,21 +178,9 @@ export function selectionOf(view) {
   return m ? { target: sel.slice(0, at), kind: m[1], id: m[2] } : null;
 }
 
-function slotAttr(slot) {
-  return JSON.stringify(slot).replace(/[&<>']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;' }[c]));
-}
-
-function rereadCatalog(catalog, target, label) {
-  return `<button data-reread-catalog="${esc(catalog)}" data-target="${esc(target)}">${esc(label)}</button>`;
-}
-
-function rereadObject(target, catalog, key, label) {
-  return `<button data-reread-object='${slotAttr({ kind: 'object', target, catalog, key: String(key) })}'>${esc(label)}</button>`;
-}
-
 function catalogActions(solution, catalog, multiFile, what) {
   return Object.values(solution.files)
-    .map((f) => rereadCatalog(catalog, f.target, multiFile ? `Re-read ${f.name ?? f.target}` : `Re-read ${what}`))
+    .map((f) => rereadCatalogButton(f.target, catalog, multiFile ? `Re-read ${f.name ?? f.target}` : `Re-read ${what}`))
     .join(' ');
 }
 
@@ -264,7 +252,8 @@ function renderDetail(solution, view, occurrences, relations) {
   const row = rows.find((r) => r.target === sel.target && String(r.id) === sel.id);
   if (!row) return '';
   const catalog = sel.kind === 'to' ? 'tableOccurrence' : 'relation';
-  const actions = rereadObject(row.target, catalog, row.id, sel.kind === 'to' ? 'Re-read occurrence' : 'Re-read relation');
+  const actions = rereadObjectButton({ kind: 'object', target: row.target, catalog, key: String(row.id) },
+    sel.kind === 'to' ? 'Re-read occurrence' : 'Re-read relation');
   if (row.error) {
     return section(`${row.name ?? row.left} (${row.target})`, `<p class="error">${esc(get(row.error, 'code'))}: ${esc(get(row.error, 'message'))}</p>`, { actions });
   }

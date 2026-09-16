@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { esc, table, kv, section, link, badge, matches } from '../ui/dom.js';
+import { esc, table, kv, section, link, badge, matches, rereadCatalogButton, rereadObjectButton, slotAttr } from '../ui/dom.js';
 
 test('esc escapes the four characters', () => {
   assert.equal(esc('<a href="x">&'), '&lt;a href=&quot;x&quot;&gt;&amp;');
@@ -33,4 +33,21 @@ test('matches is a case-insensitive substring test with an empty filter matching
   assert.equal(matches('Hello World', 'world'), true);
   assert.equal(matches('Hello', 'x'), false);
   assert.equal(matches('Hello', ''), true);
+});
+
+test('the re-read buttons carry the shell\'s data attributes, the slot as JSON', () => {
+  assert.equal(
+    rereadCatalogButton('fmnet://h/f', 'table', 'Re-read tables'),
+    '<button data-reread-catalog="table" data-target="fmnet://h/f">Re-read tables</button>',
+  );
+  assert.equal(rereadCatalogButton('t', 'script'), '<button data-reread-catalog="script" data-target="t">Re-read</button>');
+  // The slot rides in a single-quoted attribute: JSON's own " must survive, ' must not.
+  assert.equal(
+    rereadObjectButton({ kind: 'object', target: "a'b", catalog: 'script', key: '39' }, 'Re-read script'),
+    `<button data-reread-object='{"kind":"object","target":"a&#39;b","catalog":"script","key":"39"}'>Re-read script</button>`,
+  );
+  assert.deepEqual(
+    JSON.parse(slotAttr({ kind: 'object', target: 't', catalog: 'script', key: '1' })),
+    { kind: 'object', target: 't', catalog: 'script', key: '1' },
+  );
 });
