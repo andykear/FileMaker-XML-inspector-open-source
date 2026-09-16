@@ -13,7 +13,7 @@ export { buildHash, parseHash };
  *  enough that a burst renders once, short enough that a pause feels immediate. */
 export const FILTER_DEBOUNCE_MS = 120;
 
-export function createShell({ tabs, mount, onReread }) {
+export function createShell({ tabs, mount, onReread, onExport }) {
   let solution = null;
   let filter = '';
   let filterTimer = null;
@@ -47,6 +47,14 @@ export function createShell({ tabs, mount, onReread }) {
   mount.filter.addEventListener('input', () => {
     clearTimeout(filterTimer);
     filterTimer = setTimeout(() => { filter = mount.filter.value.trim().toLowerCase(); route(); }, FILTER_DEBOUNCE_MS);
+  });
+  // The Export menu is a menu, not a setting: it fires and returns to its own
+  // label, so the same export can be picked twice in a row. What an export IS
+  // belongs to app.js, which owns the one Blob and the one temporary <a>.
+  mount.export?.addEventListener('change', () => {
+    const kind = mount.export.value;
+    mount.export.value = '';
+    if (kind) onExport?.(kind);
   });
   window.addEventListener('hashchange', route);
   mount.main.addEventListener('click', async (ev) => {

@@ -5,6 +5,9 @@ import { createApi } from './api.js';
 import { esc } from './dom.js';
 import { discover, reread } from './discovery.js';
 import { createShell } from './shell.js';
+import { markdownReport } from './export/markdown.js';
+import { mermaidCallGraph, mermaidRelationships } from './export/mermaid.js';
+import { exportFilename, jsonExport } from './export/json.js';
 import { tab as solutionTab } from './tabs/solution.js';
 import { tab as tablesTab } from './tabs/tables.js';
 import { tab as graphTab } from './tabs/graph.js';
@@ -17,6 +20,16 @@ import { tab as explorerTab } from './tabs/explorer.js';
 import { tab as catalogsTab } from './tabs/catalogs.js';
 
 const TABS = [solutionTab, tablesTab, graphTab, scriptsTab, layoutsTab, securityTab, themesTab, analysisTab, explorerTab, catalogsTab];
+
+/** What the Export menu's four entries are. The exporters are pure functions to
+ *  a string (ui/export/); this file is the only one that knows about Blob, an
+ *  object URL and a click. */
+const EXPORTS = {
+  markdown: { ext: 'md', type: 'text/markdown', of: markdownReport },
+  relationships: { ext: 'relationships.mmd', type: 'text/vnd.mermaid', of: mermaidRelationships },
+  calls: { ext: 'calls.mmd', type: 'text/vnd.mermaid', of: mermaidCallGraph },
+  json: { ext: 'json', type: 'application/json', of: jsonExport },
+};
 
 const api = createApi('');
 const $ = (id) => document.getElementById(id);
@@ -88,7 +101,39 @@ function render() {
     return;
   }
   $('context').textContent = `${solution.root} as ${ctx?.username ?? '?'}, fm ${solution.cli?.version ?? '?'}, read ${solution.readAt ?? '...'}`;
+  $('export').disabled = false;
   shell.setSolution(solution);
+}
+
+/** Build the file and hand it to the browser. The object URL is revoked well
+ *  after the click rather than immediately: a synchronous revoke races the
+ *  download the click just started, and a 4MB JSON export of the reference
+ *  solution is exactly the size that loses that race. */
+function exportAs(kind) {
+  const spec = EXPORTS[kind];
+  if (!spec) return;
+  if (!solution) {
+    guard('Nothing read yet, so there is nothing to export');
+    return;
+  }
+  // The solution this export is OF, held so a re-read finishing meanwhile
+  // cannot put another read's data behind this one's filename.
+  const from = solution;
+  const name = exportFilename(from, spec.ext);
+  progress(`Writing ${name}`);
+  // The exporters are synchronous and the JSON one is a few megabytes: yield
+  // once, so the message above is on screen before the page stops to build it.
+  setTimeout(() => {
+    const url = URL.createObjectURL(new Blob([spec.of(from)], { type: `${spec.type};charset=utf-8` }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    progress(`Exported ${name}`);
+  }, 0);
 }
 
 function rereadLabel(slot) {
@@ -105,8 +150,9 @@ function rereadSlot(slot) {
 
 const shell = createShell({
   tabs: TABS,
-  mount: { nav: $('nav'), main: $('main'), filter: $('filter') },
+  mount: { nav: $('nav'), main: $('main'), filter: $('filter'), export: $('export') },
   onReread: rereadSlot,
+  onExport: exportAs,
 });
 
 $('reread-solution').addEventListener('click', () => {
@@ -120,6 +166,7 @@ $('reread-solution').addEventListener('click', () => {
 window.inspector = {
   get solution() { return solution; },
   reread: rereadSlot,
+  exportAs,
   shell,
 };
 
