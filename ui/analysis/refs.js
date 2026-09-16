@@ -3,8 +3,10 @@
 //
 // Two ways a name is found, and the list says which:
 //   `named` -- fm itself reports the reference under a key it documents
-//              (`script`, `layout`, `field`, `valueList`, `tableOccurrence`,
-//              `context`, `table`, `style`, `occurrence` + `field` pairs).
+//              (`script`, `scriptReference`, `callback`, `layout`, `field`,
+//              `vectorsField`, `labelsField`, `valueList`, `tableOccurrence`,
+//              `context`, `startTable`, `table`, `style`, `from`, `breakField`,
+//              `occurrence` + `field` pairs).
 //   `text`  -- the name appears inside FileMaker calculation syntax, found by
 //              tokenising the string. No key list decides where a formula may
 //              live: EVERY string value of every described object goes through
@@ -12,19 +14,38 @@
 //              literal name is tokenised.
 //
 // A Reference is { kind, name, resolved, how, from: { target, kind, id, name,
-// where } }. Three conventions the rest of the analyses rely on:
+// where, stepID? } }. Conventions the rest of the analyses rely on:
 //   * a `field` reference's `name` is `Occurrence::Field` -- that is what a
 //     calculation writes and what the index is keyed on;
-//   * `from.id` for a field SOURCE is `BaseTable::Field`, because a field
-//     belongs to a table, not to an occurrence: the two look alike and are not
-//     the same namespace;
 //   * a `variable` reference is always `resolved: false`. There is no catalog of
 //     variables to resolve against, so the index cannot say; whether a `$$`
-//     global is ever set is globals.js's question, not this one's.
+//     global is ever set is globals.js's question, not this one's;
+//   * `from.stepID` is present exactly when the naming object is a script step,
+//     which is the anchor the Scripts tab links to (`#<stepID>`).
+//
+// `from.id` has four shapes, one per kind of owner:
+//   * `field`                -> `BaseTable::Field`. A field belongs to a table,
+//                               NOT to an occurrence: this string and a field
+//                               reference's `name` look alike and are different
+//                               namespaces.
+//   * `layoutObject`         -> `<layoutId>.<objectId>`, fm's two numbers.
+//   * `layout`, `script`, `valueList`, `customFunction`, `customMenu`,
+//     `tableOccurrence`      -> fm's own numeric id for that object.
+//   * `relation`             -> fm's numeric relation id; its `from.name` is
+//                               `Left <-> Right`, because a relation has no name.
+//
+// The one thing the field-token rule can get wrong: an occurrence or field name
+// containing a space or an operator character cannot be written in the token
+// class, so `My TO::Field` in calculation text tokenises as `TO::Field` -- an
+// invented name that then resolves to nothing. Measured on ooe: no occurrence,
+// table or field name carries such a character, so it costs nothing there. On a
+// solution that does, Task 3 would see a dangling name that is not one.
 //
 // Pure: no document, no node:, no server/. Every fm key read through access.js.
 // Memoised per solution in a WeakMap, so a tab may ask as often as it likes and
-// a re-read (which replaces the object) recomputes.
+// a re-read (which replaces the object) recomputes. The memoised list and each
+// index entry array are frozen: they are shared by every caller.
+import { foldKey } from 'fm-adt-toolkit/step-display';
 import { get, path } from '../access.js';
 import { walkObjects } from '../tabs/layouts.js';
 import { fieldsOf } from '../tabs/tables.js';
@@ -170,6 +191,9 @@ export function nameIndex(solution) {
       }
     }
   }
+  // Shared by every caller and memoised: frozen, so one tab cannot edit another
+  // tab's answer. The maps stay mutable only to this function, which is done.
+  for (const map of Object.values(idx)) for (const list of map.values()) Object.freeze(list);
   if (solution !== null && typeof solution === 'object') indexCache.set(solution, idx);
   return idx;
 }
@@ -185,14 +209,25 @@ export function nameIndex(solution) {
 const NAMED_STRING = {
   script: 'script', layout: 'layout', valueList: 'valueList', style: 'style',
   context: 'occurrence', startTable: 'occurrence', occurrence: 'occurrence',
+  // Measured the other way round too -- every value these keys carry on ooe is
+  // a literal name, never calculation text: `scriptReference` (Configure Region
+  // Monitor Script, Configure Local Notification, Configure NFC Reading),
+  // `callback` (Perform Script on Server with Callback), `table` (Save Records
+  // as JSONL, Fine-Tune Model; the only string `table` key in the whole model).
+  scriptReference: 'script', callback: 'script', table: 'table',
 };
 
+// Keys whose value is a field name, bare or `TO::Field`: fm's `field` plus the
+// two the regression steps use.
+const FIELD_KEYS = new Set(['field', 'vectorsField', 'labelsField']);
+
 // A `{ name, id, … }` object under one of these keys names an object of that
-// kind: `field.tableOccurrence`, an occurrence's `table`, a trigger's `script`,
-// a relation's `left`/`right`, a layout object's `valueList`, a sub-summary
-// part's `breakField`.
+// kind: `field.tableOccurrence`, a trigger's `script`, a relation's
+// `left`/`right`, a layout object's `valueList`, a sub-summary part's
+// `breakField`. `table` is NOT here: see the scan, where only the occurrence
+// that declares a base table counts as naming it.
 const NAMED_OBJECT = {
-  tableOccurrence: 'occurrence', table: 'table', script: 'script', field: 'field',
+  tableOccurrence: 'occurrence', script: 'script', field: 'field',
   layout: 'layout', valueList: 'valueList', left: 'occurrence', right: 'occurrence',
   breakField: 'field',
 };
@@ -211,8 +246,9 @@ const INDEX_OF = {
 function resolver(idx) {
   return (kind, name, themeId) => {
     // A style is worn by display name, but only one theme's styles are the
-    // layout's to wear, so the theme is half the match.
-    if (kind === 'style') return (idx.themesStyles.get(name) ?? []).some((s) => themeId === undefined || s.themeId === themeId);
+    // layout's to wear, so the theme is half the match. A layout with no theme
+    // wears none of them: `themeId` is null there, and null matches nothing.
+    if (kind === 'style') return themeId != null && (idx.themesStyles.get(name) ?? []).some((st) => st.themeId === themeId);
     const map = idx[INDEX_OF[kind]];
     return map ? map.has(name) : false; // a variable has no catalog to be in.
   };
@@ -224,17 +260,34 @@ function scanRecord(record, src, out, resolve, idx) {
   const emit = (kind, name, at, how) => {
     if (typeof name !== 'string' || name.trim() === '') return;
     const where = src.prefix ? `${src.prefix}${at ? `.${at}` : ''}` : at;
-    out.push({ kind, name, resolved: kind === 'variable' ? false : resolve(kind, name, src.themeId), how, from: { target: src.target, kind: src.kind, id: src.id, name: src.name, where } });
+    const from = { target: src.target, kind: src.kind, id: src.id, name: src.name, where };
+    if (src.stepID !== undefined) from.stepID = src.stepID;
+    out.push({ kind, name, resolved: kind === 'variable' ? false : resolve(kind, name, src.themeId), how, from });
   };
   strings(record, (value, at, key, parent) => {
+    // A record's own name is not a reference to anything. Only a record that
+    // HAS a name of its own is skipped here: a script step's root `name` is the
+    // variable a Set Variable writes -- an operand, and the set site globals.js
+    // reads -- not the step's name, so it goes on to be tokenised.
+    if (at === 'name' && src.hasOwnName) return;
+
     // 1. fm named it outright.
     if (key === 'name') {
+      // A base table is named by the one record that declares it, an
+      // occurrence's own `table.name`. fm echoes that same object inside every
+      // layout, layout object and relation that reaches it; counting the echoes
+      // would make "who uses this table" unanswerable, so they stop here.
+      if (owner(at) === 'table') {
+        if (src.kind === 'tableOccurrence' && at === 'table.name') emit('table', value, at, 'named');
+        return;
+      }
       const kind = NAMED_OBJECT[owner(at)];
       if (kind) { emit(kind, value, at, 'named'); return; }
     }
-    if (key === 'field') {
+    if (FIELD_KEYS.has(key)) {
       // `{ occurrence, field }` (value lists, lookups, summaries), a bare
-      // `TO::Field` (Set Field, sort specs), or a table-local field name.
+      // `TO::Field` (Set Field, sort specs, the regression steps), or a
+      // table-local field name.
       const oc = get(parent, 'occurrence');
       if (value.includes('::')) emit('field', value, at, 'named');
       else if (typeof oc === 'string') emit('field', `${oc}::${value}`, at, 'named');
@@ -246,6 +299,17 @@ function scanRecord(record, src, out, resolve, idx) {
       // (`currentLayout`, `byName`): only the first two name anything.
       if (value.includes('::')) emit('field', value, at, 'named');
       else if (value.startsWith('$')) emit('variable', value, at, 'named');
+      return;
+    }
+    if (key === 'from') {
+      // Go to Related Record's `from` is an occurrence; Insert from Device's,
+      // Open PDF's and Append PDF's is one of fm's own source words (`camera`,
+      // `file`, `target`). One key, two meanings and nothing in the value's
+      // shape to tell them apart, so the index decides: a `from` that names an
+      // occurrence is a reference, anything else is a word. The cost is that a
+      // Go to Related Record pointing at a DELETED occurrence reads as a word
+      // and is never reported dangling -- Task 3 cannot see it here.
+      if (idx.occurrences.has(value)) emit('occurrence', value, at, 'named');
       return;
     }
     const named = NAMED_STRING[key];
@@ -269,9 +333,13 @@ function scanRecord(record, src, out, resolve, idx) {
   });
 }
 
+/** A shallow copy minus some keys, matched the way `get` matches: exact
+ *  spelling first, then fm's case-and-separator fold, so a build that respells
+ *  `objects` does not smuggle a second visit of every child back in. */
 const without = (obj, ...keys) => {
-  const copy = { ...obj };
-  for (const k of keys) delete copy[k];
+  const drop = new Set(keys.map(foldKey));
+  const copy = {};
+  for (const [k, v] of Object.entries(obj ?? {})) if (!drop.has(foldKey(k))) copy[k] = v;
   return copy;
 };
 
@@ -294,13 +362,20 @@ function* sources(solution) {
     for (const detail of detailsOf(file, 'script')) {
       const src = { target, kind: 'script', id: get(detail, 'id'), name: get(detail, 'name') };
       const body = get(detail, 'body') ?? [];
-      for (let i = 0; i < body.length; i += 1) yield { ...src, record: body[i], prefix: `body[${i}]` };
+      // A step has no name of its own -- `name` on a step is an operand -- so
+      // `hasOwnName` stays false here. `stepID` is what the Scripts tab anchors.
+      for (let i = 0; i < body.length; i += 1) yield { ...src, record: body[i], prefix: `body[${i}]`, stepID: get(body[i], 'stepID') };
       // `problems` is fm's own list of what it could not resolve: Task 3's
       // input, not a reference, so it is not scanned here.
     }
 
     for (const detail of detailsOf(file, 'layout')) {
-      const src = { target, kind: 'layout', id: get(detail, 'id'), name: get(detail, 'name'), themeId: String(path(detail, 'theme.id')) };
+      const themeId = path(detail, 'theme.id');
+      const src = {
+        target, kind: 'layout', id: get(detail, 'id'), name: get(detail, 'name'),
+        themeId: themeId === undefined || themeId === null ? null : String(themeId),
+        hasOwnName: true,
+      };
       yield { ...src, record: without(detail, 'contents'), prefix: '' };
       // walkObjects is a callback walk, so its objects are collected, then
       // yielded. Its child keys are dropped from each record: walkObjects
@@ -308,13 +383,15 @@ function* sources(solution) {
       const objects = [];
       walkObjects(path(detail, 'contents.objects'), (obj) => objects.push(obj));
       for (const obj of objects) {
-        yield { ...src, kind: 'layoutObject', id: `${get(detail, 'id')}.${get(obj, 'id')}`, record: without(obj, 'objects', 'panels', 'segments'), prefix: `object[${get(obj, 'id')}]` };
+        // A layout object's `name` IS its own name; its `from.name` is the
+        // layout's, which is what a reader needs to find it again.
+        yield { ...src, kind: 'layoutObject', id: `${get(detail, 'id')}.${get(obj, 'id')}`, record: without(obj, 'objects', 'panels', 'segments'), prefix: `object[${get(obj, 'id')}]`, hasOwnName: get(obj, 'name') !== undefined };
       }
     }
 
     for (const catalog of ['customFunction', 'customMenu', 'valueList', 'tableOccurrence', 'relation']) {
       for (const detail of detailsOf(file, catalog)) {
-        yield { record: detail, target, kind: catalog, id: get(detail, 'id'), name: relationName(detail) ?? get(detail, 'name') ?? String(get(detail, 'id')), prefix: '' };
+        yield { record: detail, target, kind: catalog, id: get(detail, 'id'), name: relationName(detail) ?? get(detail, 'name') ?? String(get(detail, 'id')), prefix: '', hasOwnName: get(detail, 'name') !== undefined };
       }
     }
   }
@@ -360,6 +437,7 @@ export function references(solution) {
   const out = [];
   for (const src of sources(solution)) scanRecord(src.record, src, out, resolve, idx);
   predicateRefs(solution, out, resolve);
+  Object.freeze(out);
   if (solution !== null && typeof solution === 'object') refsCache.set(solution, out);
   return out;
 }

@@ -88,19 +88,19 @@ test('the reference counts by kind on the fixture', () => {
   const byKind = {};
   for (const r of rows) byKind[r.kind] = (byKind[r.kind] ?? 0) + 1;
   assert.deepEqual(byKind, {
-    variable: 1220, field: 919, occurrence: 293, table: 273,
-    script: 52, layout: 16, valueList: 14, style: 7, customFunction: 3,
+    variable: 1220, field: 919, occurrence: 314, script: 64, table: 35,
+    layout: 16, valueList: 14, style: 7, customFunction: 3,
   });
-  assert.equal(rows.length, 2797);
+  assert.equal(rows.length, 2592);
 });
 
 test('the reference counts by how, and by the kind of object doing the naming', () => {
   const rows = references(solution);
   const tally = (f) => rows.reduce((o, r) => ({ ...o, [f(r)]: (o[f(r)] ?? 0) + 1 }), {});
-  assert.deepEqual(tally((r) => r.how), { text: 1612, named: 1185 });
+  assert.deepEqual(tally((r) => r.how), { text: 1601, named: 991 });
   assert.deepEqual(tally((r) => r.from.kind), {
-    script: 1884, layoutObject: 585, field: 119, layout: 73, relation: 62,
-    tableOccurrence: 47, valueList: 17, customMenu: 8, customFunction: 2,
+    script: 1925, layoutObject: 401, field: 119, layout: 51, relation: 42,
+    tableOccurrence: 27, valueList: 17, customMenu: 8, customFunction: 2,
   });
 });
 
@@ -144,7 +144,7 @@ test('script references come from steps, layout triggers, button actions and men
   const rows = references(solution).filter((r) => r.kind === 'script');
   const byFrom = {};
   for (const r of rows) byFrom[r.from.kind] = (byFrom[r.from.kind] ?? 0) + 1;
-  assert.deepEqual(byFrom, { layout: 25, script: 20, layoutObject: 5, customMenu: 2 });
+  assert.deepEqual(byFrom, { script: 32, layout: 25, layoutObject: 5, customMenu: 2 });
   assert.ok(rows.some((r) => r.from.kind === 'layout' && r.from.where.startsWith('scriptTriggers.')));
   assert.ok(rows.some((r) => r.from.kind === 'customMenu' && r.from.where.includes('.action.script')));
   assert.ok(rows.some((r) => r.from.kind === 'layoutObject' && r.from.where.includes('.action.script')));
@@ -268,4 +268,122 @@ test('references recomputes for a different solution object', () => {
   const b = handMade({});
   assert.notEqual(references(a), references(b));
   assert.deepEqual(references(a), []);
+});
+
+// ── Fix round 1 ───────────────────────────────────────────────────────
+
+test('the step keys that hold a literal script name are read as names', () => {
+  // Measured the other way round on ooe: every value of these keys is a name.
+  const rows = references(solution).filter((r) => /\.(scriptReference|callback)$/.test(r.from.where));
+  assert.equal(rows.length, 12);
+  assert.deepEqual([...new Set(rows.map((r) => `${r.kind}:${r.name}:${r.resolved}`))].sort(),
+    ['script:Hello world:true', 'script:noop:true', 'script:saxmlDelivery_createXml:true']);
+});
+
+test('the regression steps name their fields outright, not in calculation text', () => {
+  const rows = references(solution).filter((r) => /\.(vectorsField|labelsField)$/.test(r.from.where));
+  assert.equal(rows.length, 11);
+  assert.ok(rows.every((r) => r.kind === 'field' && r.how === 'named' && r.resolved));
+  assert.deepEqual([...new Set(rows.map((r) => r.name))].sort(), ['Contacts::ID', 'Contacts::Name']);
+});
+
+test('a table is named by the occurrence that declares it and by a step, never by an echo', () => {
+  const rows = references(solution).filter((r) => r.kind === 'table');
+  const byFrom = {};
+  for (const r of rows) byFrom[r.from.kind] = (byFrom[r.from.kind] ?? 0) + 1;
+  // 27 occurrences across the two files, one `table.name` each; 8 step `table` keys.
+  assert.deepEqual(byFrom, { tableOccurrence: 27, script: 8 });
+  assert.ok(rows.filter((r) => r.from.kind === 'tableOccurrence').every((r) => r.from.where === 'table.name'));
+  assert.deepEqual([...new Set(rows.filter((r) => r.from.kind === 'script').map((r) => r.name))].sort(), ['Contacts', 'blank']);
+  // fm echoes the whole occurrence object into every layout object that shows a
+  // field of it; none of those echoes is a use of the table.
+  assert.ok(!rows.some((r) => r.from.kind === 'layoutObject' || r.from.kind === 'relation' || r.from.kind === 'layout'));
+});
+
+test('a step `from` is an occurrence only when the index has that name', () => {
+  const rows = references(solution).filter((r) => /^body\[\d+\]\.from$/.test(r.from.where));
+  // 21 Go to Related Record steps; the 40 `camera`/`file`/`target` words on
+  // Insert from Device, Open PDF and Append PDF name nothing.
+  assert.equal(rows.length, 21);
+  assert.deepEqual([...new Set(rows.map((r) => r.name))].sort(), ['Contacts', 'Invoice', 'blank']);
+  assert.ok(rows.every((r) => r.kind === 'occurrence' && r.how === 'named' && r.resolved));
+});
+
+test('every reference whose owner is a script step carries the stepID the Scripts tab anchors', () => {
+  const rows = references(solution);
+  const fromSteps = rows.filter((r) => r.from.kind === 'script');
+  assert.ok(fromSteps.length > 0);
+  assert.ok(fromSteps.every((r) => Number.isInteger(r.from.stepID)));
+  assert.ok(rows.filter((r) => r.from.kind !== 'script').every((r) => r.from.stepID === undefined));
+});
+
+test('the memoised list and the index entry arrays are frozen', () => {
+  const rows = references(solution);
+  assert.ok(Object.isFrozen(rows));
+  assert.throws(() => rows.push({}), TypeError);
+  const noop = nameIndex(solution).scripts.get('noop');
+  assert.ok(Object.isFrozen(noop));
+  assert.throws(() => noop.push({}), TypeError);
+});
+
+test('a Go to Related Record naming an occurrence that is gone is silent, not dangling', () => {
+  // The cost of the resolve gate: one key, two meanings, and nothing in the
+  // value to tell a deleted occurrence from one of fm's own source words.
+  const sol = handMade({
+    script: {
+      list: [{ id: 1, name: 's', type: 'script' }],
+      detailById: detail(1, { id: 1, name: 's', body: [{ stepID: 99, step: 'Go to Related Record', from: 'DeletedTO' }] }),
+    },
+  });
+  assert.deepEqual(references(sol), []);
+});
+
+test('a layout with no theme wears none of the named styles', () => {
+  const sol = handMade({
+    theme: { list: [{ id: 1, name: 'one', namedStyleNames: { k1: 'Mine' } }] },
+    layout: {
+      list: [{ id: 5, name: 'L', type: 'layout' }],
+      detailById: detail(5, { id: 5, name: 'L', contents: { objects: [{ id: 3, type: 'text', style: 'Mine' }] } }),
+    },
+  });
+  const hit = references(sol).find((r) => r.kind === 'style');
+  assert.equal(hit.name, 'Mine');
+  assert.equal(hit.resolved, false, 'no theme means no style of any theme');
+});
+
+test('a record\'s own name is not a reference, but a step\'s `name` operand still is', () => {
+  const sol = handMade({
+    customFunction: {
+      list: [{ id: 1, name: 'Length', type: 'customFunction' }],
+      detailById: detail(1, { id: 1, name: 'Length', prototype: 'Length ( x )', body: '1' }),
+    },
+    script: {
+      list: [{ id: 2, name: 's', type: 'script' }],
+      detailById: detail(2, { id: 2, name: 's', body: [{ stepID: 141, step: 'Set Variable', name: '$$total', value: '1' }] }),
+    },
+  });
+  const rows = references(sol);
+  // The custom function's own `name` and `prototype` say nothing about anything.
+  assert.ok(!rows.some((r) => r.from.kind === 'customFunction'));
+  // The Set Variable's `name` is the set site globals.js reads.
+  assert.deepEqual(rows.map((r) => `${r.kind}:${r.name}`), ['variable:$$total']);
+});
+
+test('a child key fm respells is still dropped, so a nested object is scanned once', () => {
+  // walkObjects reads `objects` through access.js's fold; `without` has to drop
+  // it the same way or every child is scanned again for each ancestor.
+  const sol = handMade({
+    layout: {
+      list: [{ id: 5, name: 'L', type: 'layout' }],
+      detailById: detail(5, {
+        id: 5,
+        name: 'L',
+        theme: { id: 1 },
+        contents: { objects: [{ id: 1, type: 'group', Objects: [{ id: 2, type: 'text', hideCondition: 'Contacts::Name' }] }] },
+      }),
+    },
+  });
+  const rows = references(sol).filter((r) => r.kind === 'field');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].from.id, '5.2', 'the child is credited to itself, once');
 });
