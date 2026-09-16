@@ -106,10 +106,15 @@ test('the reference counts by how, and by the kind of object doing the naming', 
 
 test('the name index sizes on the fixture', () => {
   const idx = nameIndex(solution);
-  assert.deepEqual(Object.fromEntries(Object.entries(idx).map(([k, m]) => [k, m.size])), {
+  assert.deepEqual(Object.fromEntries(Object.entries(idx).filter(([, m]) => m instanceof Map).map(([k, m]) => [k, m.size])), {
     tables: 15, occurrences: 24, fields: 268, scripts: 41,
     layouts: 19, valueLists: 9, customFunctions: 9, themesStyles: 60,
   });
+  // Every external data source an occurrence uses on ooe can be followed: the
+  // one external occurrence (`Invoice`) opens BrojDva, which is in the solution.
+  assert.deepEqual(idx.unresolvedSources, []);
+  assert.equal(idx.fields.get('Invoice::InvoiceNumber').length, 2, 'BrojDva\'s own TO and ooe\'s external one both reach the field');
+  assert.deepEqual([...new Set(idx.fields.get('Invoice::InvoiceNumber').map((e) => e.target))], ['fmnet://localhost/BrojDva'], 'the field lives in BrojDva whichever occurrence names it');
   // 41 scripts, not the 54 the two listings carry: the rest are folders.
   const scripts = Object.values(solution.files).reduce((n, f) => n + f.catalogs.script.list.length, 0);
   assert.ok(idx.scripts.size < scripts);

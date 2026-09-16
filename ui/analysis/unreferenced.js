@@ -23,12 +23,19 @@
 //                only relations do -- it is in the graph, but nothing reads or
 //                writes through it.
 //
+// A third rule: an occurrence's fields are the SOURCE file's. `Inv_Remote::X`
+// on an occurrence whose `table.dataSource` is external is a field of the file
+// that source opens, whatever the occurrence is called here -- and when no file
+// in the read answers that source, a field of that name is not judged at all.
+//
 // `confidence` qualifies the WHOLE list: `high` when every reference path this
 // tool knows was readable and nothing in the file names an object at run time;
 // `medium` when something does (Evaluate, GetField, a constructed ExecuteSQL, a
-// script or layout named by calculation), so a listed object may still be used
-// by code no static reader can follow; `low` when the model itself is
-// incomplete, because then the list is a claim about the read, not the file.
+// script or layout named by calculation, an external source only the running
+// file can resolve), so a listed object may still be used by code no static
+// reader can follow; `low` when a read FAILED -- an unread listing or describe,
+// a file that could not be opened -- because then the list is a claim about the
+// read, not about the file, and another run could answer differently.
 //
 // Pure: no document, no node:, no server/. Every fm key read through access.js.
 // Memoised per solution in a WeakMap, like every other analysis.
@@ -97,7 +104,9 @@ function usageByKey(solution) {
       // A field reference is written `Occurrence::Field`: naming the field
       // names the occurrence it is read through.
       if (ref.kind === 'field') {
-        const occ = { target: entry.target, name: entry.occurrence };
+        // `target` is where the field lives; for an external occurrence the
+        // occurrence itself lives in the file that named it.
+        const occ = { target: entry.occurrenceTarget ?? entry.target, name: entry.occurrence };
         if (!isSelf('occurrence', ref.from, occ)) mark(keyOf('occurrence', occ), ref);
       }
     }
@@ -114,8 +123,25 @@ function tierOf(uses) {
   return uses.every((r) => r.how === 'text') ? 'text-only' : undefined;
 }
 
+/** Field names reached through an occurrence whose external data source could
+ *  not be followed. The occurrence's fields are in a file this read never saw,
+ *  so a field of that name anywhere may be the one it means: it cannot be
+ *  judged, and a list that cannot judge a row must not print it as unused. */
+function unjudgeable(solution) {
+  const names = new Set();
+  const unresolved = new Set((nameIndex(solution).unresolvedSources ?? []).map((u) => `${u.target}\u0000${u.occurrence}`));
+  if (unresolved.size === 0) return names;
+  for (const ref of references(solution)) {
+    if (ref.kind !== 'field' || ref.resolved) continue;
+    const at = ref.name.indexOf('::');
+    if (at > 0 && unresolved.has(`${ref.from.target}\u0000${ref.name.slice(0, at)}`)) names.add(ref.name.slice(at + 2));
+  }
+  return names;
+}
+
 function unreferencedFields(solution, used) {
   const rows = [];
+  const cannotJudge = unjudgeable(solution);
   for (const file of filesOf(solution)) {
     const target = get(file, 'target');
     for (const t of listOf(file, 'table')) {
@@ -123,7 +149,7 @@ function unreferencedFields(solution, used) {
       for (const f of fieldsOf(file, table)) {
         const field = get(f, 'name');
         const tier = tierOf(used.get(keyOf('field', { target, table, field })));
-        if (tier) rows.push({ target, table, field, name: `${table}::${field}`, id: get(f, 'id'), tier });
+        if (tier && !cannotJudge.has(field)) rows.push({ target, table, field, name: `${table}::${field}`, id: get(f, 'id'), tier });
       }
     }
   }
@@ -242,10 +268,30 @@ function unread(solution) {
       detailErrors += Object.values(get(slot, 'detailById') ?? {}).filter((d) => get(d, 'error') !== undefined).length;
     }
   }
-  const unreachable = (get(solution, 'unreachable') ?? []).length;
+  // An unreachable file is two different facts. A read that FAILED (the host has
+  // no such file, the account cannot open it) is a hole in this read, and
+  // another run could fill it. A path only the running file can resolve (a
+  // `$$variable`) is a permanent property of the solution: no read ever gets it,
+  // so it lowers the answer but does not make it provisional.
+  const failed = (get(solution, 'unreachable') ?? []).filter((u) => path(u, 'error.code') !== 'unresolvable').length;
   if (listErrors) out.push(`${count(listErrors, 'catalog listing', 'catalog listings')} could not be read, so part of the solution was never scanned.`);
   if (detailErrors) out.push(`${count(detailErrors, 'described object', 'described objects')} could not be read, so the names carried there are unknown.`);
-  if (unreachable) out.push(`${count(unreachable, 'file', 'files')} could not be reached, so a reference from another file cannot be seen.`);
+  if (failed) out.push(`${count(failed, 'file', 'files')} could not be read, so a reference from another file cannot be seen.`);
+  return out;
+}
+
+/** The limits this solution carries whatever is read: a file named by a path
+ *  only the running file resolves, and an occurrence whose external source
+ *  cannot be followed to a file in this read. */
+function runtimePaths(solution) {
+  const out = [];
+  const byVariable = (get(solution, 'unreachable') ?? []).filter((u) => path(u, 'error.code') === 'unresolvable');
+  if (byVariable.length) {
+    out.push(`${count(byVariable.length, 'external data source names', 'external data sources name')} a file by a path the running file resolves (${byVariable.map((u) => `${get(u, 'via')} -> ${get(u, 'target')}`).join(', ')}): what that file references cannot be seen.`);
+  }
+  for (const u of nameIndex(solution).unresolvedSources ?? []) {
+    out.push(`The occurrence ${get(u, 'occurrence')} reads table ${get(u, 'table')} through the external data source ${get(u, 'dataSource')}, which no file in this read answers: a field named through it cannot be judged and is not listed.`);
+  }
   return out;
 }
 
@@ -256,18 +302,19 @@ const NOTES = [
   'Plug-in function call sites cannot be told from built-in ones (toolkit gap plugin-call-sites), so a field or script name passed to a plug-in is not counted as a reference.',
   'fm has no file-options read (toolkit gap file-options), so the file\'s startup layout and its opening and closing scripts are invisible: an object used only there is listed here.',
   'A privilege set\'s custom access lists can name individual layouts, scripts and value lists; the reference scan does not read them, so an object reachable only through one is listed here.',
+  'fm 0.7.0 reports no style on a layout part (the register\'s part: entries name every key a part carries, and a style is not among them), so a named style worn only by a part is listed here as unused.',
 ];
 
 function confidenceOf(solution) {
   const incomplete = unread(solution);
   const s = signals(solution);
-  const reasons = [...incomplete];
+  const reasons = [...incomplete, ...runtimePaths(solution)];
   if (s.evaluate) reasons.push(`Evaluate ( ) in ${places(s.evaluate)}: it runs a calculation built at run time, which can name anything.`);
   if (s.getField) reasons.push(`GetField ( ) / GetFieldName ( ) in ${places(s.getField)} (${s.getFieldDynamic} with a non-literal argument): the field is named by text the reference scan does not follow.`);
   if (s.sql) reasons.push(`ExecuteSQL ( ) with a constructed query in ${places(s.sql)}: an identifier built from variables cannot be read.`);
   if (s.calculatedName) reasons.push(`A script, layout or object named by calculation in ${places(s.calculatedName)} (${[...s.keys].sort().join(', ')}): fm reports these keys as calculation text, so the name is not a name the scan can match.`);
   const tier = incomplete.length ? 'low' : reasons.length ? 'medium' : 'high';
-  return { tier, reasons, notes: NOTES };
+  return Object.freeze({ tier, reasons: Object.freeze(reasons), notes: Object.freeze([...NOTES]) });
 }
 
 // ── The analysis ──────────────────────────────────────────────────────
@@ -291,6 +338,10 @@ export function unreferenced(solution) {
     styles: unusedStyles(solution),
     confidence: confidenceOf(solution),
   };
+  // One answer, shared by every caller and memoised: frozen, so a tab that
+  // filters cannot leave the next one a shorter list.
+  for (const rows of Object.values(out)) if (Array.isArray(rows)) Object.freeze(rows);
+  Object.freeze(out);
   if (solution !== null && typeof solution === 'object') cache.set(solution, out);
   return out;
 }

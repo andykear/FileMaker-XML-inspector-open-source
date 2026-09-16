@@ -21,7 +21,12 @@
 //     variables to resolve against, so the index cannot say; whether a `$$`
 //     global is ever set is globals.js's question, not this one's;
 //   * `from.stepID` is present exactly when the naming object is a script step,
-//     which is the anchor the Scripts tab links to (`#<stepID>`).
+//     which is the anchor the Scripts tab links to (`#<stepID>`);
+//   * an occurrence's fields are the SOURCE file's: `nameIndex` follows
+//     `table.dataSource` to the file that source opens, so a field entry's
+//     `target` is where the field lives and `occurrenceTarget` where the name
+//     that reaches it was written. `nameIndex(solution).unresolvedSources` lists
+//     the occurrences whose source no file in the read answers.
 //
 // `from.id` has four shapes, one per kind of owner:
 //   * `field`                -> `BaseTable::Field`. A field belongs to a table,
@@ -147,9 +152,43 @@ const listOf = (file, catalog) => path(file, `catalogs.${catalog}.list`) ?? [];
 const detailsOf = (file, catalog) => Object.values(path(file, `catalogs.${catalog}.detailById`) ?? {})
   .map((d) => get(d, 'result')).filter((r) => r !== undefined && r !== null);
 
+// ── Where an occurrence's fields live ─────────────────────────────────
+
+/** The file a `file:` path names, by the file's own `Get ( FileName )`. fm
+ *  writes the path as the user typed it (`file:BrojDva`, `file:../x.fmp12`), so
+ *  the last segment without the extension is the name, matched case-insensitively
+ *  the way FileMaker matches file names. */
+function fileNamed(path_, filesByName) {
+  const tail = String(path_).slice(5).split(/[\\/]/).pop() ?? '';
+  return filesByName.get(tail.replace(/\.fmp12$/i, '').trim().toLowerCase());
+}
+
+/** The file whose tables an occurrence's fields come from. A local occurrence
+ *  reads its own file. One whose `table.dataSource` names an external source
+ *  reads the file that source opens -- the fields of `Inv_Remote::…` are the
+ *  OTHER file's, whatever the occurrence is called here. `undefined` when the
+ *  source cannot be followed (the file is not in the solution, the path is an
+ *  ODBC dsn or a `$$variable`): then nothing can be said about those fields,
+ *  which is not the same as saying there are none. */
+function sourceFile(file, to, sources, filesByName) {
+  const dataSource = path(to, 'table.dataSource');
+  if (typeof dataSource !== 'string' || dataSource === '') return file;
+  const eds = sources.get(dataSource.toLowerCase());
+  for (const p of get(eds, 'paths') ?? []) {
+    if (!String(p).toLowerCase().startsWith('file:')) continue;
+    const hit = fileNamed(p, filesByName);
+    if (hit) return hit;
+  }
+  return undefined;
+}
+
 /** Every named object of every reached file, by name. A name is not unique
  *  across files (and `TO::Field` is not unique across occurrences of one
- *  table), so a lookup answers with every match. */
+ *  table), so a lookup answers with every match.
+ *
+ *  `unresolvedSources` is the other half of the answer: every occurrence whose
+ *  external data source could not be followed, so a caller can tell "no field of
+ *  that name" from "nothing was read about that name". */
 export function nameIndex(solution) {
   const hit = indexCache.get(solution);
   if (hit) return hit;
@@ -157,17 +196,34 @@ export function nameIndex(solution) {
     tables: new Map(), occurrences: new Map(), fields: new Map(), scripts: new Map(),
     layouts: new Map(), valueLists: new Map(), customFunctions: new Map(), themesStyles: new Map(),
   };
-  for (const file of Object.values(get(solution, 'files') ?? {})) {
+  const unresolvedSources = [];
+  const files = Object.values(get(solution, 'files') ?? {});
+  // A file is found by the name it calls itself, `Get ( FileName )`, which is
+  // what an external data source's `file:` path names.
+  const filesByName = new Map();
+  for (const f of files) {
+    const n = get(f, 'name');
+    if (typeof n === 'string' && n !== '' && !filesByName.has(n.toLowerCase())) filesByName.set(n.toLowerCase(), f);
+  }
+  for (const file of files) {
     const target = get(file, 'target');
+    const sources = new Map(listOf(file, 'externalDataSource').map((eds) => [String(get(eds, 'name')).toLowerCase(), eds]));
     for (const t of listOf(file, 'table')) push(idx.tables, get(t, 'name'), { target, id: get(t, 'id'), name: get(t, 'name') });
     for (const to of listOf(file, 'tableOccurrence')) {
       const name = get(to, 'name');
       const table = path(to, 'table.name');
-      push(idx.occurrences, name, { target, id: get(to, 'id'), name, table, resolved: path(to, 'table.resolved') !== false });
+      const dataSource = path(to, 'table.dataSource');
+      push(idx.occurrences, name, { target, id: get(to, 'id'), name, table, dataSource, resolved: path(to, 'table.resolved') !== false });
       // `TO::Field` exists when the occurrence's base table has the field: the
-      // index is that cross product, so a field token is one lookup.
-      for (const f of fieldsOf(file, table)) {
-        push(idx.fields, `${name}::${get(f, 'name')}`, { target, id: get(f, 'id'), name: `${name}::${get(f, 'name')}`, occurrence: name, table, field: get(f, 'name') });
+      // index is that cross product, so a field token is one lookup. The fields
+      // are the SOURCE file's, which for an external occurrence is another file:
+      // `target` says where the field lives, `occurrenceTarget` where the name
+      // that reaches it was written.
+      const owner = sourceFile(file, to, sources, filesByName);
+      if (!owner) { unresolvedSources.push({ target, occurrence: name, table, dataSource }); continue; }
+      const ownerTarget = get(owner, 'target');
+      for (const f of fieldsOf(owner, table)) {
+        push(idx.fields, `${name}::${get(f, 'name')}`, { target: ownerTarget, occurrenceTarget: target, id: get(f, 'id'), name: `${name}::${get(f, 'name')}`, occurrence: name, table, field: get(f, 'name') });
       }
     }
     for (const [catalog, map] of [['script', idx.scripts], ['layout', idx.layouts], ['valueList', idx.valueLists], ['customFunction', idx.customFunctions]]) {
@@ -191,9 +247,10 @@ export function nameIndex(solution) {
       }
     }
   }
+  idx.unresolvedSources = Object.freeze(unresolvedSources);
   // Shared by every caller and memoised: frozen, so one tab cannot edit another
   // tab's answer. The maps stay mutable only to this function, which is done.
-  for (const map of Object.values(idx)) for (const list of map.values()) Object.freeze(list);
+  for (const map of Object.values(idx)) if (map instanceof Map) for (const list of map.values()) Object.freeze(list);
   if (solution !== null && typeof solution === 'object') indexCache.set(solution, idx);
   return idx;
 }
@@ -354,7 +411,11 @@ function* sources(solution) {
         const name = `${table}::${get(f, 'name')}`;
         // A summary or a lookup may name a field of its own table with no
         // occurrence: the occurrences of that table are what such a name can mean.
-        const occurrences = listOf(file, 'tableOccurrence').filter((o) => path(o, 'table.name') === table).map((o) => get(o, 'name'));
+        // An occurrence with a `dataSource` points at another file's table of
+        // that name, so it is not what a bare local field name can mean.
+        const occurrences = listOf(file, 'tableOccurrence')
+          .filter((o) => path(o, 'table.name') === table && path(o, 'table.dataSource') === undefined)
+          .map((o) => get(o, 'name'));
         yield { record: get(f, 'options'), target, kind: 'field', id: name, name, prefix: 'options', occurrences };
       }
     }

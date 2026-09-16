@@ -13,13 +13,24 @@ const solution = await discover(api, api.meta.root);
 // ── Hand-made solutions: one rule per test ────────────────────────────
 
 /** The smallest thing the analyses accept: one file and the catalogs it read. */
-function handMade(catalogs, extra = {}) {
+function oneFile(target, name, catalogs) {
   const empty = { list: [], listError: null, detailById: {}, ops: [], readAt: null };
   const slots = {};
-  for (const c of ['table', 'tableOccurrence', 'relation', 'layout', 'script', 'valueList', 'customFunction', 'customMenu', 'theme', 'field']) {
+  for (const c of ['externalDataSource', 'table', 'tableOccurrence', 'relation', 'layout', 'script', 'valueList', 'customFunction', 'customMenu', 'theme', 'field']) {
     slots[c] = { ...empty, ...(catalogs[c] ?? {}) };
   }
-  return { files: { 'file:///x.fmp12': { target: 'file:///x.fmp12', name: 'x', facts: {}, catalogs: slots } }, unreachable: [], ...extra };
+  return { target, name, facts: {}, catalogs: slots };
+}
+
+function handMade(catalogs, extra = {}) {
+  return { files: { 'file:///x.fmp12': oneFile('file:///x.fmp12', 'x', catalogs) }, unreachable: [], ...extra };
+}
+
+/** Two files, the way a solution with an external data source is read. */
+function handMadeFiles(files, extra = {}) {
+  const out = {};
+  for (const f of files) out[f.target] = oneFile(f.target, f.name, f.catalogs ?? {});
+  return { files: out, unreachable: [], ...extra };
 }
 
 const detail = (id, result) => ({ [String(id)]: { op: {}, readAt: null, result } });
@@ -157,6 +168,70 @@ test('a layout named only by a script trigger on another layout is not unreferen
   assert.deepEqual(unreferenced(sol).layouts.map((r) => r.name), ['Home']);
 });
 
+test('a field named in a relation predicate is referenced', () => {
+  const sol = handMade({
+    ...table('T', [{ id: 1, name: 'ID', options: {} }, { id: 2, name: 'Spare', options: {} }]),
+    tableOccurrence: { list: [{ id: 9, name: 'Left', table: { name: 'T', id: 1, resolved: true } }, { id: 10, name: 'Right', table: { name: 'T', id: 1, resolved: true } }] },
+    relation: { list: [{ id: 2 }], detailById: detail(2, { id: 2, left: { name: 'Left', id: 9 }, right: { name: 'Right', id: 10 }, predicates: [{ leftField: 'ID', rightField: 'ID', operator: 'equal' }] }) },
+  });
+  // The match field is used by the graph; the field beside it is not.
+  assert.deepEqual(unreferenced(sol).fields.map((r) => `${r.field} ${r.tier}`), ['Spare none']);
+});
+
+// ── An occurrence whose fields live in another file ───────────────────
+
+const remote = (dataSourcePath) => ({
+  externalDataSource: { list: [{ name: 'Elsewhere', id: 1, paths: [dataSourcePath], sourceType: 'filemaker' }] },
+  tableOccurrence: { list: [{ id: 9, name: 'Inv_Remote', table: { name: 'Invoice', id: 130, resolved: true, dataSource: 'Elsewhere' } }] },
+  layout: {
+    list: [{ id: 5, name: 'L', type: 'layout' }],
+    detailById: detail(5, { id: 5, name: 'L', contents: { objects: [{ id: 3, type: 'field', field: { name: 'Inv_Remote::InvoiceNumber' } }] } }),
+  },
+});
+
+const fileB = {
+  target: 'file:///b.fmp12',
+  name: 'B',
+  catalogs: {
+    table: { list: [{ id: 1, name: 'Invoice' }] },
+    field: { detailById: { 'table:Invoice': { op: {}, readAt: null, result: { items: [{ id: 1, name: 'InvoiceNumber', options: {} }, { id: 2, name: 'Spare', options: {} }] } } } },
+  },
+};
+
+test('a field used only through an external occurrence in another file is referenced, not unreferenced', () => {
+  // File A calls the occurrence `Inv_Remote`; the field it shows belongs to
+  // file B's `Invoice` table, under whatever name A gave the occurrence.
+  const sol = handMadeFiles([{ target: 'file:///a.fmp12', name: 'A', catalogs: remote('file:B') }, fileB]);
+  const out = unreferenced(sol);
+  assert.deepEqual(out.fields.map((r) => `${r.target} ${r.name} ${r.tier}`), ['file:///b.fmp12 Invoice::Spare none']);
+  assert.equal(out.confidence.tier, 'high');
+  // Naming the field names the occurrence it is read through, in the file that
+  // wrote the name.
+  assert.deepEqual(out.occurrences, []);
+});
+
+test('an external data source no file in the read answers is a reason, and its fields are not judged', () => {
+  const sol = handMadeFiles([{ target: 'file:///a.fmp12', name: 'A', catalogs: remote('file:B') }]);
+  const out = unreferenced(sol);
+  assert.deepEqual(out.fields, []);
+  assert.equal(out.confidence.tier, 'medium');
+  assert.deepEqual(out.confidence.reasons, [
+    'The occurrence Inv_Remote reads table Invoice through the external data source Elsewhere, which no file in this read answers: a field named through it cannot be judged and is not listed.',
+  ]);
+  // The occurrence itself is still a named object, and nothing names it back.
+  assert.deepEqual(out.occurrences.map((r) => `${r.name} ${r.removability}`), ['Inv_Remote completely-unused']);
+});
+
+test('a field of that name in a file that WAS read is not listed while a source is unresolved', () => {
+  // B is in the read but the source points at a file that is not: the tool
+  // cannot tell whether `Inv_Remote::InvoiceNumber` means B's field or another
+  // file's, so it says nothing about a field of that name.
+  const sol = handMadeFiles([{ target: 'file:///a.fmp12', name: 'A', catalogs: remote('file:C') }, fileB]);
+  const out = unreferenced(sol);
+  assert.deepEqual(out.fields.map((r) => r.name), ['Invoice::Spare']);
+  assert.equal(out.confidence.tier, 'medium');
+});
+
 // ── Confidence ────────────────────────────────────────────────────────
 
 test('confidence is high when nothing in the file names anything at run time', () => {
@@ -213,6 +288,20 @@ test('confidence is low when the model itself is incomplete', () => {
 
   const failed = handMade({ script: { list: [{ id: 7, name: 's', type: 'script' }], detailById: { 7: { op: {}, readAt: null, error: { code: 'x', message: 'no' } } } } });
   assert.equal(unreferenced(failed).confidence.tier, 'low');
+});
+
+test('the answer is frozen: one caller cannot edit the next one\'s list', () => {
+  const out = unreferenced(solution);
+  for (const key of ['fields', 'tables', 'occurrences', 'scripts', 'layouts', 'valueLists', 'customFunctions', 'styles']) {
+    assert.throws(() => out[key].push({ name: 'x' }), TypeError, `${key} is frozen`);
+  }
+  assert.throws(() => out.confidence.reasons.push('x'), TypeError);
+  assert.throws(() => out.confidence.notes.push('x'), TypeError);
+  assert.throws(() => { out.fields = []; }, TypeError);
+  // Each solution gets its own notes array, so freezing one says nothing about
+  // another -- and neither can be edited.
+  assert.notEqual(unreferenced(handMade({})).confidence.notes, out.confidence.notes);
+  assert.deepEqual(unreferenced(handMade({})).confidence.notes, out.confidence.notes);
 });
 
 test('unreferenced is memoised on the solution object and recomputes for another', () => {
@@ -285,19 +374,23 @@ test('one named example of each remaining kind on the fixture', () => {
   assert.ok(!named(out.scripts, 'noop') && !named(out.layouts, 'Contacts'));
 });
 
-test('confidence on the fixture is low, because two files could not be reached', () => {
+test('confidence on the fixture is low, because one file could not be read', () => {
   const c = unreferenced(solution).confidence;
   assert.equal(c.tier, 'low');
   assert.deepEqual(c.reasons, [
-    '2 files could not be reached, so a reference from another file cannot be seen.',
+    '1 file could not be read, so a reference from another file cannot be seen.',
+    '1 external data source names a file by a path the running file resolves (by_variable -> $$referenced_file): what that file references cannot be seen.',
     'GetField ( ) / GetFieldName ( ) in 10 places (10 with a non-literal argument): the field is named by text the reference scan does not follow.',
     'ExecuteSQL ( ) with a constructed query in 1 place: an identifier built from variables cannot be read.',
     'A script, layout or object named by calculation in 63 places (fileName, layoutByCalculation, layoutName, objectName, scriptName): fm reports these keys as calculation text, so the name is not a name the scan can match.',
   ]);
   // The 63 calculated names are the same 63 keys Task 1 measured and chose not
   // to read as names: the two modules agree about what fm does not say.
+  // Two unreachable entries, and they are different facts: Ooe_dev is a read
+  // that failed (DBError 802) and makes the answer provisional; the $$variable
+  // path is a permanent property of the file and is only a reason.
   assert.equal(solution.unreachable.length, 2);
-  assert.equal(c.notes.length, 3);
+  assert.equal(c.notes.length, 4);
 });
 
 test('every row says which file it came from', () => {
