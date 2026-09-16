@@ -7,8 +7,9 @@ import { createShell } from './shell.js';
 import { tab as solutionTab } from './tabs/solution.js';
 import { tab as tablesTab } from './tabs/tables.js';
 import { tab as graphTab } from './tabs/graph.js';
+import { tab as scriptsTab } from './tabs/scripts.js';
 
-const TABS = [solutionTab, tablesTab, graphTab];
+const TABS = [solutionTab, tablesTab, graphTab, scriptsTab];
 
 const api = createApi('');
 const $ = (id) => document.getElementById(id);

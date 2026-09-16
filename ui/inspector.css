@@ -279,3 +279,43 @@ svg.graph .note-text { font: 11px -apple-system, ui-sans-serif, system-ui, sans-
   #layout { grid-template-columns: minmax(0, 1fr); }
   #nav { position: static; min-height: 0; flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); }
 }
+
+/* ── Script tree and script body ──────────────────────────────────────── */
+
+ul.tree { margin: 2px 0 6px; padding-left: 18px; list-style: none; }
+ul.tree > li { padding: 1px 4px; border-radius: 4px; cursor: pointer; }
+ul.tree > li:hover { background: var(--surface-mute); }
+ul.tree > li.selected { background: var(--navy-tint); font-weight: 600; }
+
+.panel details > summary { cursor: pointer; padding: 2px 0; color: var(--ink-2); font-weight: 600; }
+
+/* One li per script step. The indent is fm's own block nesting, carried on --depth so
+   any nesting depth indents; the depth-n class is what a stylesheet or a test matches. */
+ol.script {
+  margin: 8px 0 0;
+  padding: 6px 0;
+  list-style: none;
+  font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--surface-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+ol.script > li {
+  padding: 0 10px 0 calc(10px + var(--depth, 0) * 1.25em);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+ol.script > li:hover { background: var(--surface-mute); }
+ol.script .ln {
+  display: inline-block;
+  min-width: 4ch;
+  margin-right: 8px;
+  text-align: right;
+  color: var(--ink-4);
+  user-select: none;
+}
+ol.script > li > b { font-weight: 600; color: var(--ink); }
+ol.script .detail { color: var(--ink-2); }
+ol.script > li.disabled { color: var(--ink-4); text-decoration: line-through; }
+ol.script > li.disabled > b, ol.script > li.disabled .detail { color: var(--ink-4); }
