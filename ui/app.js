@@ -9,8 +9,9 @@ import { tab as tablesTab } from './tabs/tables.js';
 import { tab as graphTab } from './tabs/graph.js';
 import { tab as scriptsTab } from './tabs/scripts.js';
 import { tab as layoutsTab } from './tabs/layouts.js';
+import { tab as securityTab } from './tabs/security.js';
 
-const TABS = [solutionTab, tablesTab, graphTab, scriptsTab, layoutsTab];
+const TABS = [solutionTab, tablesTab, graphTab, scriptsTab, layoutsTab, securityTab];
 
 const api = createApi('');
 const $ = (id) => document.getElementById(id);
