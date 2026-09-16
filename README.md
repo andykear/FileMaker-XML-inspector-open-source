@@ -109,7 +109,7 @@ Field, table and value list definition XML — auto-enter, validation, storage, 
 
 **Analysis — read, audit and clean existing XML**
 
-**[XML Inspector](https://github.com/andykear/FileMaker-XML-inspector-open-source)** (SaXML) — this repo, before version 3.0
+**[XML Inspector](https://github.com/andykear/FileMaker-XML-inspector-open-source)** (SaXML) — the tool this repository replaced with version 3.0
 Did full-catalog dependency analysis of a Save as XML export, entirely in the browser: unreferenced fields, silent-failure risks, broken references, and a diff of two versions of a solution against each other. Retired on 2026-09-16; it remains in this repository's git history, and what replaced it is the fm CLI inspector this README describes.
 
 **[XML Scrubber](https://github.com/andykear/FileMaker-XML-scrubber)** (SaXML + others)

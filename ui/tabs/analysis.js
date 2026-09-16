@@ -196,7 +196,7 @@ function renderBroken(solution, view) {
       + table(withFile(BROKEN_COLUMNS, view), shown, { empty: emptyNote(mine.length, 'None') })
       + '</details>';
   });
-  return section('Broken references', blocks.join('') || '<p class="empty">Nothing in this read is broken</p>');
+  return section('Broken references and fm problem steps', blocks.join('') || '<p class="empty">Nothing in this read is broken</p>');
 }
 
 // ── Script issues ─────────────────────────────────────────────────────

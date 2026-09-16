@@ -117,7 +117,7 @@ test('Unreferenced styles are grouped by theme, not listed flat', () => {
 
 test('Broken references: grouped by kind, the occurrence/dangling pair adjacent, links round-trip', () => {
   const html = tab.render(solution, view);
-  const section = html.slice(html.indexOf('<h2>Broken references</h2>'), html.indexOf('<h2>Script issues'));
+  const section = html.slice(html.indexOf('<h2>Broken references and fm problem steps</h2>'), html.indexOf('<h2>Script issues'));
   assert.ok(section.includes('problem'));
   assert.ok(section.includes('missingMarker'));
   // fm's own marker word and its context ride through to the page.
@@ -256,7 +256,7 @@ test('every model string goes through esc', () => {
 
 test("the Broken table's Where header says fm's /N paths are fm's own JSON pointers", () => {
   const html = tab.render(solution, view);
-  const section = html.slice(html.indexOf('<h2>Broken references</h2>'), html.indexOf('<h2>Script issues'));
+  const section = html.slice(html.indexOf('<h2>Broken references and fm problem steps</h2>'), html.indexOf('<h2>Script issues'));
   const th = /<th title="([^"]*)">Where<\/th>/.exec(section);
   assert.ok(th, 'no title on the Where header');
   assert.match(th[1], /JSON pointer/);

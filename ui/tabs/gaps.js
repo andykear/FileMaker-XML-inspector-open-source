@@ -190,8 +190,16 @@ function liveSection(solution) {
   const body = `<p class="muted">Ran ${esc(outcome.ranAt)} against fm ${esc(outcome.fmVersion)} (${esc(outcome.build)}).</p>`
     + totalsLine([['Entries', outcome.entries], ...GAP_LISTS.map((l) => [l.title, (outcome[l.key] ?? []).length])])
     + foreign
-    + GAP_LISTS.map((l) => `<h3>${esc(l.title)}</h3><p class="muted">${esc(l.note)}</p>`
-      + table(l.columns, outcome[l.key] ?? [], { empty: 'None' })).join('');
+    + GAP_LISTS.map((l) => {
+      const rows = outcome[l.key] ?? [];
+      const note = `<p class="muted">${esc(l.note)}</p>`;
+      const body = table(l.columns, rows, { empty: 'None' });
+      // A long list (the register's ~1.6k still-missing attributes on the
+      // reference solution) folds shut; the count in the summary line stays.
+      return rows.length > 50
+        ? `<details><summary>${esc(l.title)} (${rows.length})</summary>${note}${body}</details>`
+        : `<h3>${esc(l.title)}</h3>${note}${body}`;
+    }).join('');
   return section('Live check', body, { actions: CHECK_BUTTON });
 }
 
