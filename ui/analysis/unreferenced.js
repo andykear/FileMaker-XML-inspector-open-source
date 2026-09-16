@@ -290,7 +290,11 @@ function runtimePaths(solution) {
     out.push(`${count(byVariable.length, 'external data source names', 'external data sources name')} a file by a path the running file resolves (${byVariable.map((u) => `${get(u, 'via')} -> ${get(u, 'target')}`).join(', ')}): what that file references cannot be seen.`);
   }
   for (const u of nameIndex(solution).unresolvedSources ?? []) {
-    out.push(`The occurrence ${get(u, 'occurrence')} reads table ${get(u, 'table')} through the external data source ${get(u, 'dataSource')}, which no file in this read answers: a field named through it cannot be judged and is not listed.`);
+    const through = `The occurrence ${get(u, 'occurrence')} reads table ${get(u, 'table')} through the external data source ${get(u, 'dataSource')}`;
+    const why = get(u, 'reason') === 'ambiguous'
+      ? `, and more than one file in this read answers to that name (${(get(u, 'candidates') ?? []).join(', ')})`
+      : ', which no file in this read answers';
+    out.push(`${through}${why}: a field named through it cannot be judged and is not listed.`);
   }
   return out;
 }

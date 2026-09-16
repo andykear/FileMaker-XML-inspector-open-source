@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
+import { nameIndex, references } from '../../ui/analysis/refs.js';
 import { unreferenced } from '../../ui/analysis/unreferenced.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
@@ -220,6 +221,64 @@ test('an external data source no file in the read answers is a reason, and its f
   ]);
   // The occurrence itself is still a named object, and nothing names it back.
   assert.deepEqual(out.occurrences.map((r) => `${r.name} ${r.removability}`), ['Inv_Remote completely-unused']);
+});
+
+test('two files calling themselves the same name resolve nothing: a guess is not a fact', () => {
+  const twin = { ...fileB, target: 'file:///b2.fmp12' };
+  const sol = handMadeFiles([{ target: 'file:///a.fmp12', name: 'A', catalogs: remote('file:B') }, fileB, twin]);
+  const out = unreferenced(sol);
+  assert.deepEqual(nameIndex(sol).unresolvedSources, [{
+    target: 'file:///a.fmp12', occurrence: 'Inv_Remote', table: 'Invoice',
+    dataSource: 'Elsewhere', reason: 'ambiguous', candidates: ['file:///b.fmp12', 'file:///b2.fmp12'],
+  }]);
+  assert.equal(out.confidence.tier, 'medium');
+  assert.deepEqual(out.confidence.reasons, [
+    'The occurrence Inv_Remote reads table Invoice through the external data source Elsewhere, and more than one file in this read answers to that name (file:///b.fmp12, file:///b2.fmp12): a field named through it cannot be judged and is not listed.',
+  ]);
+  // Neither copy of `InvoiceNumber` is judged; `Spare` is named by nothing in
+  // either file and is still listed twice, once per file.
+  assert.deepEqual(out.fields.map((r) => `${r.target} ${r.name}`), ['file:///b.fmp12 Invoice::Spare', 'file:///b2.fmp12 Invoice::Spare']);
+});
+
+test('a bare field name is read against the file\'s OWN occurrences, never an external one', () => {
+  // Both occurrences name a base table `T`, but `T_remote`'s is the other
+  // file's. A summary naming `A` with no occurrence means the local one.
+  const sol = handMadeFiles([
+    {
+      target: 'file:///a.fmp12',
+      name: 'A',
+      catalogs: {
+        externalDataSource: { list: [{ name: 'Elsewhere', id: 1, paths: ['file:B'], sourceType: 'filemaker' }] },
+        table: { list: [{ id: 1, name: 'T' }] },
+        field: { detailById: { 'table:T': { op: {}, readAt: null, result: { items: [{ id: 1, name: 'A', options: {} }, { id: 2, name: 'S', options: { fieldType: 'summary', summary: { type: 'total', field: { field: 'A' } } } }] } } } },
+        tableOccurrence: {
+          list: [{ id: 9, name: 'T_local', table: { name: 'T', id: 1, resolved: true } },
+            { id: 10, name: 'T_remote', table: { name: 'T', id: 77, resolved: true, dataSource: 'Elsewhere' } }],
+        },
+      },
+    },
+    {
+      target: 'file:///b.fmp12',
+      name: 'B',
+      catalogs: {
+        table: { list: [{ id: 1, name: 'T' }] },
+        field: { detailById: { 'table:T': { op: {}, readAt: null, result: { items: [{ id: 1, name: 'A', options: {} }] } } } },
+      },
+    },
+  ]);
+  const bare = references(sol).filter((r) => r.kind === 'field' && r.from.id === 'T::S');
+  assert.deepEqual(bare.map((r) => r.name), ['T_local::A'], 'the external occurrence is not what a local bare name can mean');
+  assert.ok(bare[0].resolved);
+  // The two occurrences reach two different files' fields, and the index says so.
+  const entries = Object.fromEntries(['T_local::A', 'T_remote::A'].map((k) => [k, nameIndex(sol).fields.get(k).map((e) => `${e.target} ${e.occurrenceTarget}`)]));
+  assert.deepEqual(entries, {
+    'T_local::A': ['file:///a.fmp12 file:///a.fmp12'],
+    'T_remote::A': ['file:///b.fmp12 file:///a.fmp12'],
+  });
+  // The proof it matters: A's own `A` is used by the summary, while B's `A` --
+  // which only the external occurrence reaches, and nothing reads through it --
+  // stays unreferenced. Before the fix the bare name would have marked it used.
+  assert.deepEqual(unreferenced(sol).fields.map((r) => `${r.target} ${r.name}`), ['file:///a.fmp12 T::S', 'file:///b.fmp12 T::A']);
 });
 
 test('a field of that name in a file that WAS read is not listed while a source is unresolved', () => {

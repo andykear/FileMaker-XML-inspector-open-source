@@ -26,7 +26,9 @@
 //     `table.dataSource` to the file that source opens, so a field entry's
 //     `target` is where the field lives and `occurrenceTarget` where the name
 //     that reaches it was written. `nameIndex(solution).unresolvedSources` lists
-//     the occurrences whose source no file in the read answers.
+//     the occurrences whose source cannot be followed, each with a `reason`:
+//     `unanswered` (no file in the read is named by it) or `ambiguous` (more
+//     than one is, and the entry carries their `candidates`).
 //
 // `from.id` has four shapes, one per kind of owner:
 //   * `field`                -> `BaseTable::Field`. A field belongs to a table,
@@ -158,28 +160,34 @@ const detailsOf = (file, catalog) => Object.values(path(file, `catalogs.${catalo
  *  writes the path as the user typed it (`file:BrojDva`, `file:../x.fmp12`), so
  *  the last segment without the extension is the name, matched case-insensitively
  *  the way FileMaker matches file names. */
-function fileNamed(path_, filesByName) {
+function filesNamed(path_, filesByName) {
   const tail = String(path_).slice(5).split(/[\\/]/).pop() ?? '';
-  return filesByName.get(tail.replace(/\.fmp12$/i, '').trim().toLowerCase());
+  return filesByName.get(tail.replace(/\.fmp12$/i, '').trim().toLowerCase()) ?? [];
 }
 
-/** The file whose tables an occurrence's fields come from. A local occurrence
- *  reads its own file. One whose `table.dataSource` names an external source
- *  reads the file that source opens -- the fields of `Inv_Remote::…` are the
- *  OTHER file's, whatever the occurrence is called here. `undefined` when the
- *  source cannot be followed (the file is not in the solution, the path is an
- *  ODBC dsn or a `$$variable`): then nothing can be said about those fields,
- *  which is not the same as saying there are none. */
+/** The file whose tables an occurrence's fields come from, as `{ file }`, or why
+ *  it cannot be said, as `{ reason, candidates? }`. A local occurrence reads its
+ *  own file. One whose `table.dataSource` names an external source reads the
+ *  file that source opens -- the fields of `Inv_Remote::…` are the OTHER file's,
+ *  whatever the occurrence is called here.
+ *
+ *  The first `file:` path that names anything decides, and it has to name ONE
+ *  thing: two files in the read calling themselves the same `Get ( FileName )`
+ *  is `ambiguous`, and picking either would be a guess printed as a fact. A path
+ *  nothing answers (the file is not in the read, an `odbc:` dsn, a `$$variable`)
+ *  is `unanswered`. Both mean the same to a caller: nothing can be said about
+ *  those fields, which is not the same as saying there are none. */
 function sourceFile(file, to, sources, filesByName) {
   const dataSource = path(to, 'table.dataSource');
-  if (typeof dataSource !== 'string' || dataSource === '') return file;
+  if (typeof dataSource !== 'string' || dataSource === '') return { file };
   const eds = sources.get(dataSource.toLowerCase());
   for (const p of get(eds, 'paths') ?? []) {
     if (!String(p).toLowerCase().startsWith('file:')) continue;
-    const hit = fileNamed(p, filesByName);
-    if (hit) return hit;
+    const hits = filesNamed(p, filesByName);
+    if (hits.length === 1) return { file: hits[0] };
+    if (hits.length > 1) return { reason: 'ambiguous', candidates: hits.map((f) => get(f, 'target')) };
   }
-  return undefined;
+  return { reason: 'unanswered' };
 }
 
 /** Every named object of every reached file, by name. A name is not unique
@@ -200,10 +208,14 @@ export function nameIndex(solution) {
   const files = Object.values(get(solution, 'files') ?? {});
   // A file is found by the name it calls itself, `Get ( FileName )`, which is
   // what an external data source's `file:` path names.
+  // Every file of that name, not the first: a name two files share resolves to
+  // neither (see sourceFile).
   const filesByName = new Map();
   for (const f of files) {
     const n = get(f, 'name');
-    if (typeof n === 'string' && n !== '' && !filesByName.has(n.toLowerCase())) filesByName.set(n.toLowerCase(), f);
+    if (typeof n !== 'string' || n === '') continue;
+    const at = filesByName.get(n.toLowerCase());
+    if (at) at.push(f); else filesByName.set(n.toLowerCase(), [f]);
   }
   for (const file of files) {
     const target = get(file, 'target');
@@ -220,9 +232,14 @@ export function nameIndex(solution) {
       // `target` says where the field lives, `occurrenceTarget` where the name
       // that reaches it was written.
       const owner = sourceFile(file, to, sources, filesByName);
-      if (!owner) { unresolvedSources.push({ target, occurrence: name, table, dataSource }); continue; }
-      const ownerTarget = get(owner, 'target');
-      for (const f of fieldsOf(owner, table)) {
+      if (!owner.file) {
+        unresolvedSources.push(owner.candidates
+          ? { target, occurrence: name, table, dataSource, reason: owner.reason, candidates: owner.candidates }
+          : { target, occurrence: name, table, dataSource, reason: owner.reason });
+        continue;
+      }
+      const ownerTarget = get(owner.file, 'target');
+      for (const f of fieldsOf(owner.file, table)) {
         push(idx.fields, `${name}::${get(f, 'name')}`, { target: ownerTarget, occurrenceTarget: target, id: get(f, 'id'), name: `${name}::${get(f, 'name')}`, occurrence: name, table, field: get(f, 'name') });
       }
     }
