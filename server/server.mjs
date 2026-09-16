@@ -1,11 +1,22 @@
 // http on 127.0.0.1: static ui/, and the three JSON endpoints. Spec section 2.
 import { createServer as createHttpServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createDirectApi } from './read.mjs';
 
 const UI_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'ui');
+/** The browser cannot reach node_modules, and ui/ must stay free of a copy of the
+ *  toolkit, so the page's import map points `fm-adt-toolkit/step-display` here and
+ *  this route serves the installed package's own dist/ -- the same bytes Node loads.
+ *  Resolved through the package's exported package.json, so a hoisted or linked
+ *  install is found the same way. */
+const VENDOR_PREFIX = '/vendor/fm-adt-toolkit/';
+const TOOLKIT_DIST = resolve(
+  dirname(createRequire(import.meta.url).resolve('fm-adt-toolkit/package.json')),
+  'dist',
+);
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -113,6 +124,10 @@ export function createServer(opts) {
           return send(res, 400, { error: 'body must be { from: string, path: string }' });
         }
         return send(res, 200, await api.resolveTarget(body.from, body.path));
+      }
+      if (req.method === 'GET' && url.pathname.startsWith(VENDOR_PREFIX)) {
+        // serveStatic's own resolve()+startsWith confinement keeps this inside dist/.
+        return await serveStatic(res, TOOLKIT_DIST, '/' + url.pathname.slice(VENDOR_PREFIX.length));
       }
       if (req.method === 'GET' && !url.pathname.startsWith('/api/')) {
         return await serveStatic(res, uiDir, url.pathname);
