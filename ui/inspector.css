@@ -1,6 +1,7 @@
 /* ui/inspector.css
-   The palette is carried over verbatim from legacy/clockwork-inspector.html so the
-   rewrite looks like the tool it replaces; everything after :root is the shell only
+   The palette is carried over verbatim from legacy/clockwork-inspector.html
+   (retired 2026-09-16; in git history) so the rewrite looks like the tool it
+   replaces; everything after :root is the shell only
    (header, sidebar, panel, table, kv, badge). Tabs add nothing of their own. */
 
 :root {

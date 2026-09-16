@@ -67,7 +67,7 @@ Point it at a live file (or a hosted `fmnet://` address) and it reads the soluti
 
 **Explorer**
 - Universal search across every named object of the reached solution
-- Pick any entity to see both directions at once — what it names ("References") and what names it ("Referenced by") — with a link that lands on the object's own tab and a back stack
+- Pick any entity to see both directions at once — what it names ("References") and what names it ("Referenced by") — with a link that lands on the object's own tab
 
 **Gaps**
 - The shared coverage register's account of what fm cannot read yet, and why
@@ -104,13 +104,13 @@ The full script step ID dictionary, plus the hidden paste-handler rules that dec
 **[Layout XML Skill](https://github.com/andykear/FileMaker-XMLsnippet-Layout-Claude-Skill)** (XML2)
 All 18 layout object types mapped, every flag decoded, element order confirmed against native output. Verified across 45+ layouts in 10 production files.
 
-**[Field, Table & Value List Definitions](https://github.com/andykear/FileMaker-XML-field-definitions)** (XMFD, XMTB, XMVL) — this repo
+**[Field, Table & Value List Definitions](https://github.com/andykear/FileMaker-XML-field-definitions)** (XMFD, XMTB, XMVL)
 Field, table and value list definition XML — auto-enter, validation, storage, calculation options, and the three value list source arms — verified down to the individual option level.
 
 **Analysis — read, audit and clean existing XML**
 
-**[XML Inspector](https://github.com/andykear/FileMaker-XML-inspector-open-source)** (SaXML)
-Full-catalog dependency analysis of a Save as XML export, entirely in the browser. Finds unreferenced fields, silent-failure risks, broken references, and diffs two versions of a solution against each other.
+**[XML Inspector](https://github.com/andykear/FileMaker-XML-inspector-open-source)** (SaXML) — this repo, before version 3.0
+Did full-catalog dependency analysis of a Save as XML export, entirely in the browser: unreferenced fields, silent-failure risks, broken references, and a diff of two versions of a solution against each other. Retired on 2026-09-16; it remains in this repository's git history, and what replaced it is the fm CLI inspector this README describes.
 
 **[XML Scrubber](https://github.com/andykear/FileMaker-XML-scrubber)** (SaXML + others)
 Strips API keys, passwords and internal hostnames out of FileMaker XML before you hand it to an AI tool.
@@ -121,7 +121,7 @@ Strips API keys, passwords and internal hostnames out of FileMaker XML before yo
 
 | Version | Notes |
 |---|---|
-| 3.0 | Rewrite: reads live FileMaker files (or a hosted `fmnet://` address) through the Claris ADT `fm` CLI instead of a Save as XML export, following external data sources so a multi-file solution is inspected whole. Adds an Analysis tab (unreferenced, broken references, script issues, globals), a Reference Explorer, and a Gaps tab that reports what fm cannot read yet against a shared coverage register, with a live on-demand check. Markdown, Mermaid and JSON exports. The Save as XML version is retired; it remains in git history. |
+| 3.0 | Rewrite: reads live FileMaker files (or a hosted `fmnet://` address) through the Claris ADT `fm` CLI instead of a Save as XML export, following external data sources so a multi-file solution is inspected whole. Adds an Analysis tab (unreferenced, broken references, script issues, globals), a Reference Explorer, and a Gaps tab that reports what fm cannot read yet against a shared coverage register, with a live on-demand check. Markdown, Mermaid and JSON exports. The Save as XML version is retired; it remains in git history. Three things version 2 had that this one does not: **Compare mode**, deferred by the design spec (see Out of scope) rather than dropped, because a diff of two live reads is a different feature from a diff of two exports; **plug-in call-site detection**, which is a gap in what fm reports and is registered as `plugin-call-sites` in the coverage register, so a field or script name passed to a plug-in is not counted as a reference; and the **field performance risk score**, which was one number covering several different questions and is now the confidence tier on the Analysis tab, which says what it is uncertain about instead of scoring it. |
 | 2.7 | New Persistent Data tab surfaces FileMaker 2026's persistent data store. Script bodies no longer truncate long formulas or drop comment text. Unreferenced Fields/Table Occurrences now catches usage inside formulas — Hide conditions, conditional formatting, dialog text, merge fields, custom functions. Broken Refs now checks hide conditions, tooltips, conditional formatting and portal filters. |
 | 2.6 | Visual redesign; script bodies now show line numbers. Minimal functional changes otherwise. |
 | 2.5 | New Step Index tab — every step used in the file with usage counts, Commit Records split by dialog on/off, drill-down to the scripts using each step, and a content search to find a dialog by its message. Script steps now render their real content (Set Variable, Set Field, Commit, and more). New checks for broken value list sources, dead conditional formatting, and blank-name Set Variables. |

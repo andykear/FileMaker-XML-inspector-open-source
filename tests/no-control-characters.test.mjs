@@ -16,7 +16,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DIRS = ['ui', 'server', 'bin', 'scripts', 'tests'];
+// `docs/` is here because prose is written by the same scripted edits that
+// wrote the three NUL bytes, and a report or a spec is exactly the kind of file
+// nobody opens in an editor that would complain. The repo-root `*.md` -- README,
+// CLAUDE.md -- for the same reason.
+const DIRS = ['ui', 'server', 'bin', 'scripts', 'tests', 'docs'];
 const EXTENSIONS = new Set(['.js', '.mjs', '.html', '.css', '.md']);
 
 // eslint-disable-next-line no-control-regex -- the whole point is to find these
@@ -45,12 +49,22 @@ function findBadCharacters(text) {
   return hits;
 }
 
-test('no stray control characters in ui/, server/, bin/, scripts/ or tests/', () => {
+/** The Markdown files that sit at the repo root rather than in one of DIRS. */
+function rootMarkdown() {
+  return fs.readdirSync(ROOT, { withFileTypes: true })
+    .filter((e) => e.isFile() && path.extname(e.name) === '.md')
+    .map((e) => path.join(ROOT, e.name));
+}
+
+test('no stray control characters in the source tree, docs/ or the root *.md', () => {
   const files = DIRS
     .map((d) => path.join(ROOT, d))
     .filter((d) => fs.existsSync(d))
-    .flatMap((d) => walk(d, []));
+    .flatMap((d) => walk(d, []))
+    .concat(rootMarkdown());
   assert.ok(files.length > 0, 'expected to find source files to scan');
+  assert.ok(files.some((p) => path.relative(ROOT, p) === 'README.md'), 'the root README is not being scanned');
+  assert.ok(files.some((p) => path.relative(ROOT, p).startsWith(`docs${path.sep}`)), 'docs/ is not being scanned');
 
   const offenders = [];
   for (const file of files) {

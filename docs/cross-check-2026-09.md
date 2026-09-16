@@ -1,6 +1,6 @@
 # Count cross-check: legacy inspector vs the fm-CLI inspector, on ooe
 
-**Throwaway.** Plan 5 Task 8 writes this file and Task 9 deletes it, together with `scripts/cross-check.mjs`. It exists to prove once that the new inspector counts the reference solution the way the legacy one did, and to give every difference a reason.
+**The record of a one-off measurement.** Plan 5 Task 8 wrote this file and the script that produced it, `scripts/cross-check.mjs`; Task 9 removed the script, because it read `legacy/clockwork-inspector.html`, which is retired. The numbers below are what that run measured, and this file is the record of them: it proves once that the new inspector counts the reference solution the way the legacy one did, and gives every difference a reason. Nothing regenerates it.
 
 | | |
 |---|---|

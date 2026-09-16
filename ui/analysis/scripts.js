@@ -91,7 +91,8 @@ import { nameIndex, references, strings, tokenise } from './refs.js';
 // ── The steps FileMaker does not run on a server ──────────────────────
 
 // Lifted verbatim from legacy/clockwork-inspector.html (`PSOS_INCOMPATIBLE_STEPS`,
-// the FM STEP ID DICTIONARY section), which states its own provenance:
+// the FM STEP ID DICTIONARY section; retired 2026-09-16, in git history), which
+// states its own provenance:
 //
 //   PSoS/Server-incompatible step IDs -- GENERATED from the verified FileMaker
 //   AI Vocabulary platform matrix (clockwork_scriptsteps.md,
