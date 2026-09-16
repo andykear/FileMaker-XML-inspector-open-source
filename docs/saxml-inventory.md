@@ -543,7 +543,7 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 | render | s.tags.unique_count | gap | catalog-tags | Same. |
 | render | s.theme | covered | `read:theme` describe `name` + `displayName` | Theme-style row: which theme a style belongs to. The style list is per theme, so the owning theme is whichever describe returned the key. |
 | render | s.themes.detail | covered | `read:theme` list `items[]` + describe `{displayName,isCustom,namedStyleNames,colorPalette,layoutsUsing,layouts}` | The Themes tab's per-theme rows. |
-| render | s.themes.theme_count | covered | `read:theme` list `items[]` total | Counts the themes defined in the file, not only the distinct themes layouts wear. |
+| render | s.themes.theme_count | derived | `read:theme` list `items[]` total | Counts the themes defined in the file, not only the distinct themes layouts wear. |
 | render | s.themes.themes_detail | covered | `read:theme` describe `colorPalette.swatch1..5` + `namedStyleNames` + `layoutsUsing` / `layouts` | Per-theme palette, style list and usage: `layoutsUsing` counts the layouts wearing the theme and `layouts` names them. Per-style colours and fonts still have to be parsed out of the `css` text. |
 | render | s.unrefs.all_styles_detail | covered | `read:theme` describe `namedStyleNames` | Every style defined in the file, per theme. |
 | render | s.unrefs.broken | covered | script.problems[] + <Field Missing> / <Table Missing> in calculation text | Confirmed in the samples: fm returns both the markers inside calculation text and its own live re-check per script. |
@@ -573,12 +573,12 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 
 | Classification | Rows |
 |---|---|
-| covered | 414 |
-| derived | 66 |
+| covered | 413 |
+| derived | 67 |
 | gap | 75 |
 | dropped | 8 |
 
-Counted from this file on 2026-09-16 by tallying the Classification column of every table row; 414 + 66 + 75 + 8 = 563, the number of rows in the table. The rows themselves have not moved since 2026-09-14; what changed is that fm 0.7.0 turned 27 gap rows into covered rows - all 23 of `catalog-theme-styles`, the one `catalog-relation-sort` row, and three of the seven `catalog-layout-parts` rows - leaving 10 gap ids. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
+Counted from this file on 2026-09-16 by tallying the Classification column of every table row; 413 + 67 + 75 + 8 = 563, the number of rows in the table. The rows themselves have not moved since 2026-09-14; what changed is that fm 0.7.0 turned 27 gap rows into covered or derived rows (the theme count is derived from the listing total, like every other count) - all 23 of `catalog-theme-styles`, the one `catalog-relation-sort` row, and three of the seven `catalog-layout-parts` rows - leaving 10 gap ids. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
 
 ## Gap ids introduced
 
