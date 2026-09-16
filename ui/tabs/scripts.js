@@ -99,6 +99,27 @@ function unbalanced(detail) {
   });
 }
 
+/** An enabled step sitting strictly inside the block of a *disabled* opener.
+ *  FileMaker disables the opener alone -- the steps under it keep running, now
+ *  outside the If or Loop they were written under, which is almost never what
+ *  was meant. Counted by index, so nested disabled openers never count a step
+ *  twice. */
+export function orphanedEnabled(detail) {
+  const body = bodyOf(detail);
+  const orphans = new Set();
+  for (const step of body) {
+    const block = get(step, 'block');
+    if (get(step, 'disabled') !== true || get(block, 'role') !== 'opener') continue;
+    const start = Number(get(block, 'start'));
+    const end = Math.min(Number(get(block, 'end')), body.length);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+    for (let i = Math.max(start + 1, 0); i < end; i += 1) {
+      if (get(body[i], 'disabled') !== true) orphans.add(i);
+    }
+  }
+  return orphans.size;
+}
+
 export function scriptStats(file) {
   const scripts = listOf(file).filter((i) => get(i, 'type') === 'script');
   const lengths = scripts.map((i) => Number(get(i, 'steps')) || 0);
@@ -107,10 +128,12 @@ export function scriptStats(file) {
     scripts: scripts.length,
     steps: lengths.reduce((n, v) => n + v, 0),
     maxLength: lengths.length ? Math.max(...lengths) : 0,
-    // fm names the steps it could not render from its own catalog; they are the tab's
-    // honest unknowns, not a guess of ours.
-    unknownSteps: details.reduce((n, d) => n + (get(d, 'problems') ?? []).length, 0),
+    // fm's own `problems`: the steps it flagged while rendering them from its
+    // catalog. They are fm's report about fm, not a finding about the file, so
+    // the tab says who flagged them and never calls the steps unknown.
+    flaggedSteps: details.reduce((n, d) => n + (get(d, 'problems') ?? []).length, 0),
     unbalanced: details.filter(unbalanced).length,
+    orphanedEnabled: details.reduce((n, d) => n + orphanedEnabled(d), 0),
   };
 }
 
@@ -127,8 +150,9 @@ function totals(solution) {
     ['Scripts', sum('scripts')],
     ['Steps', sum('steps')],
     ['Longest script', Math.max(0, ...all.map((s) => s.maxLength))],
-    ['Unrendered steps', sum('unknownSteps')],
+    ['Steps fm flagged', sum('flaggedSteps')],
     ['Unbalanced scripts', sum('unbalanced')],
+    ['Enabled steps under a disabled opener', sum('orphanedEnabled')],
   ];
   return `<p class="muted totals">${pairs.map(([k, v]) => `${esc(k)} ${count(v)}`).join(' &middot; ')}</p>`;
 }
@@ -175,12 +199,13 @@ function renderTree(solution, view) {
   return section('Scripts', totals(solution) + body, { actions });
 }
 
-/** The step names fm could not render from its catalog, once each. */
+/** What fm flagged while rendering this script, and the step names it flagged,
+ *  once each. */
 function problemText(detail) {
   const problems = get(detail, 'problems') ?? [];
   if (!problems.length) return 'none';
   const names = [...new Set(problems.map((p) => String(get(p, 'step') ?? '?')))];
-  return `${count(problems.length)} step(s) fm could not render: ${esc(names.join(', '))}`;
+  return `fm reported ${count(problems.length)} problem(s) on these steps: ${esc(names.join(', '))}`;
 }
 
 const yesNo = (on, label, tone) => (on === true ? badge(label, tone) : 'no');
@@ -221,7 +246,8 @@ const INDEX_COLUMNS = [
 
 function renderIndex(solution, view) {
   const rows = stepIndex(solution).filter((r) => matches(r.step, view.filter));
-  return section('Step index', table(INDEX_COLUMNS, rows, { empty: 'No steps' }));
+  const title = view.filter ? 'Step index (filtered)' : 'Step index';
+  return section(title, table(INDEX_COLUMNS, rows, { empty: 'No steps' }));
 }
 
 export const tab = {

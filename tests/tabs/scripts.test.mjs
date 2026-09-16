@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import { parseHash } from '../../ui/shell.js';
-import { tab, scriptTree, depths, renderScript, stepIndex, scriptStats, selectionOf } from '../../ui/tabs/scripts.js';
+import { tab, scriptTree, depths, renderScript, stepIndex, scriptStats, orphanedEnabled, selectionOf } from '../../ui/tabs/scripts.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -96,11 +96,50 @@ test('stepIndex counts every step of every file, by count then name', () => {
   assert.deepEqual(stepIndex({ files: {} }), []);
 });
 
-test('scriptStats counts scripts, steps, the longest, fm\'s problems and unbalanced blocks', () => {
-  assert.deepEqual(scriptStats(root), { scripts: 41, steps: 3104, maxLength: 1155, unknownSteps: 352, unbalanced: 0 });
+test('scriptStats counts scripts, steps, the longest, the steps fm flagged, unbalanced blocks and orphaned enabled steps', () => {
+  // ooe's two disabled steps are both plain Set Web Viewer steps, not openers, so
+  // nothing on either file is orphaned. Measured from the fixture.
+  assert.deepEqual(scriptStats(root),
+    { scripts: 41, steps: 3104, maxLength: 1155, flaggedSteps: 352, unbalanced: 0, orphanedEnabled: 0 });
   assert.equal(scriptStats(root).scripts, root.catalogs.script.list.filter((i) => i.type === 'script').length);
   assert.deepEqual(scriptStats(solution.files['fmnet://localhost/BrojDva']),
-    { scripts: 3, steps: 378, maxLength: 181, unknownSteps: 0, unbalanced: 0 });
+    { scripts: 3, steps: 378, maxLength: 181, flaggedSteps: 0, unbalanced: 0, orphanedEnabled: 0 });
+});
+
+test('orphanedEnabled counts the enabled steps left running inside a disabled opener', () => {
+  const step = (over) => ({ step: 'Set Variable', ...over });
+  // If (disabled) / two enabled steps / End If: both keep running, outside the If.
+  assert.equal(orphanedEnabled({
+    body: [
+      step({ step: 'If', disabled: true, block: { role: 'opener', start: 0, end: 3 } }),
+      step({}), step({}),
+      step({ step: 'End If', block: { role: 'closer', start: 0, end: 3 } }),
+    ],
+  }), 2);
+  // A disabled step inside the disabled block is not orphaned; nor is the closer.
+  assert.equal(orphanedEnabled({
+    body: [
+      step({ step: 'If', disabled: true, block: { role: 'opener', start: 0, end: 3 } }),
+      step({ disabled: true }), step({}),
+      step({ step: 'End If', block: { role: 'closer', start: 0, end: 3 } }),
+    ],
+  }), 1);
+  // An enabled opener orphans nothing, whatever is under it.
+  assert.equal(orphanedEnabled({
+    body: [step({ step: 'If', block: { role: 'opener', start: 0, end: 2 } }), step({}),
+      step({ step: 'End If', block: { role: 'closer', start: 0, end: 2 } })],
+  }), 0);
+  // Nested disabled openers overlap; a step inside both is counted once.
+  assert.equal(orphanedEnabled({
+    body: [
+      step({ step: 'Loop', disabled: true, block: { role: 'opener', start: 0, end: 4 } }),
+      step({ step: 'If', disabled: true, block: { role: 'opener', start: 1, end: 3 } }),
+      step({}),
+      step({ step: 'End If', block: { role: 'closer', start: 1, end: 3 } }),
+      step({ step: 'End Loop', block: { role: 'closer', start: 0, end: 4 } }),
+    ],
+  }), 2);
+  assert.equal(orphanedEnabled({}), 0);
 });
 
 test('scriptStats calls a block unbalanced when the opener\'s end is not a closer row', () => {
@@ -113,7 +152,8 @@ test('scriptStats calls a block unbalanced when the opener\'s end is not a close
     { step: 'If', block: { role: 'opener', start: 0, end: 1 } },
     { step: 'End If', block: { role: 'closer', start: 0, end: 1 } },
   ])).unbalanced, 0);
-  assert.deepEqual(scriptStats({ target: 'x', catalogs: {} }), { scripts: 0, steps: 0, maxLength: 0, unknownSteps: 0, unbalanced: 0 });
+  assert.deepEqual(scriptStats({ target: 'x', catalogs: {} }),
+    { scripts: 0, steps: 0, maxLength: 0, flaggedSteps: 0, unbalanced: 0, orphanedEnabled: 0 });
 });
 
 test('renders the tree, the totals and the step index', () => {
@@ -121,7 +161,9 @@ test('renders the tree, the totals and the step index', () => {
   assert.match(html, /<summary>[^<]*About/);
   assert.match(html, /<details open>/);
   assert.match(html, /Scripts <span class="num">44<\/span>/); // 41 + 3, the whole solution
-  assert.match(html, /Step index/);
+  assert.match(html, /<h2>Step index<\/h2>/);
+  assert.match(html, /Steps fm flagged <span class="num">352<\/span>/);
+  assert.match(html, /Enabled steps under a disabled opener <span class="num">0<\/span>/);
   assert.match(html, /data-reread-catalog="script"/);
   assert.ok(html.includes(`data-select="${ROOT}|39"`));
   // Every selection the tree offers routes to a script the tab can show.
@@ -147,6 +189,8 @@ test('the filter narrows the tree and the step index', () => {
   const index = tab.render(solution, { ...view, filter: 'set web viewer' });
   assert.ok(index.includes('Set Web Viewer'));
   assert.ok(!index.includes('<td>Set Variable</td>'));
+  // The index header says so when what it lists is a filtered subset.
+  assert.match(index, /<h2>Step index \(filtered\)<\/h2>/);
 });
 
 test('selecting a script shows its detail, its steps and the object re-read', () => {
@@ -156,8 +200,8 @@ test('selecting a script shows its detail, its steps and the object re-read', ()
   assert.match(html, /<dt>Folder<\/dt><dd>Script from fmSyntaxColorizer<\/dd>/);
   assert.match(html, /<ol class="script">/);
   assert.equal((html.match(/<li data-step=/g) ?? []).length, 952);
-  // fm could not render 180 of this script's steps from its catalog.
-  assert.match(html, /180/);
+  // fm flagged 180 of this script's steps while rendering them from its catalog.
+  assert.match(html, /fm reported <span class="num">180<\/span> problem\(s\) on these steps:/);
   // An unknown selection draws no detail section.
   assert.ok(!tab.render(solution, { ...view, selection: `${ROOT}|nope` }).includes('<ol class="script">'));
   assert.ok(!tab.render(solution, { ...view, selection: 'no-such-file|39' }).includes('<ol class="script">'));
