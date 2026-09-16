@@ -24,6 +24,53 @@ export function accessSummary(value) {
   return Object.entries(value).filter(([, v]) => v === true).map(([k]) => k).join(', ');
 }
 
+/** Where each of the four privilege areas keeps its per-item overrides. */
+const OVERRIDE_KEY = { records: 'tables', layouts: 'layouts', scripts: 'scripts', valueLists: 'valueLists' };
+
+/** The per-item overrides fm reports on one area, or `[]` when it reports none. */
+export function overridesOf(value, area) {
+  const items = get(value, OVERRIDE_KEY[area]);
+  return Array.isArray(items) ? items : [];
+}
+
+const trueFlags = (value) => (value !== null && typeof value === 'object'
+  ? Object.entries(value).filter(([, v]) => v === true).map(([k]) => k)
+  : []);
+
+/** One Records/Layouts/Scripts/Value lists cell. A blanket `access` stands for
+ *  itself. An area carrying per-item overrides is `custom`, plus whatever
+ *  top-level flags are true (`custom · allowCreation`) -- never a bare
+ *  `allowCreation` on its own, which says nothing about the overrides that are
+ *  the actual access. An object with neither is `custom` too. An area fm never
+ *  reported at all (a privilege set whose describe errored, where only the list
+ *  item is left) is not custom, it is unread, so it renders as nothing. */
+export function accessCell(value, area) {
+  if (value === null || value === undefined) return '';
+  if (typeof value !== 'object') return esc(String(value));
+  const access = get(value, 'access');
+  if (access !== undefined) return esc(String(access));
+  const flags = trueFlags(value).map((f) => esc(f));
+  if (overridesOf(value, area).length) return [badge('custom', 'info'), ...flags].join(' &middot; ');
+  return flags.length ? flags.join(', ') : badge('custom', 'info');
+}
+
+/** fm's `hasPassword` is about a FileMaker-managed password, and only a
+ *  `fileMakerUser` has one: an external, OAuth or Azure account is authenticated
+ *  elsewhere and reports `hasPassword: false` because the question does not
+ *  apply to it, not because it can be signed into blank. The inventory's
+ *  `s.accounts.acc.blank_password` is therefore the pair, not the flag alone. */
+export function passwordState(row) {
+  if (row.userType === 'fileMakerUser') return row.hasPassword === false ? 'none' : 'yes';
+  if (row.userType) return 'external';
+  return row.hasPassword === false ? 'none' : 'yes';
+}
+
+const passwordCell = (row) => {
+  const state = passwordState(row);
+  if (state === 'none') return badge('none', 'warn');
+  return state === 'external' ? badge('external', 'muted') : 'yes';
+};
+
 export function accountRows(file) {
   return listOf(file, 'account').map((item) => {
     const id = get(item, 'id');
@@ -63,6 +110,12 @@ export function privilegeSetRows(file) {
       layouts: accessSummary(get(d, 'layouts')),
       scripts: accessSummary(get(d, 'scripts')),
       valueLists: accessSummary(get(d, 'valueLists')),
+      // fm's own area objects, kept so the cells and the per-item tables read
+      // the overrides rather than the flattened summary.
+      areas: {
+        records: get(d, 'records'), layouts: get(d, 'layouts'),
+        scripts: get(d, 'scripts'), valueLists: get(d, 'valueLists'),
+      },
       extendedPrivileges: get(d, 'extendedPrivileges') ?? [],
       fileOptions: get(d, 'fileOptions') ?? {},
       passwordExpirationDays: get(d, 'passwordExpirationDays'),
@@ -102,7 +155,7 @@ export function securityTotals(solution) {
     accounts: accounts.length,
     privilegeSets: rowsOf(solution, privilegeSetRows).length,
     extendedPrivileges: rowsOf(solution, extendedPrivilegeRows).length,
-    noPassword: accounts.filter((r) => r.hasPassword === false).length,
+    noPassword: accounts.filter((r) => passwordState(r) === 'none').length,
     disabled: accounts.filter((r) => r.enabled === false).length,
   };
 }
@@ -135,7 +188,7 @@ const ACCOUNT_COLUMNS = [
   { key: 'userType', label: 'User type' },
   { key: 'privilegeSet', label: 'Privilege set' },
   { key: 'enabled', label: 'Enabled', render: (r) => (r.enabled === false ? badge('disabled', 'warn') : 'yes') },
-  { key: 'hasPassword', label: 'Password', render: (r) => (r.hasPassword === false ? badge('none', 'warn') : 'yes') },
+  { key: 'hasPassword', label: 'Password', render: passwordCell },
   { key: 'forceExpire', label: 'Force expire', render: (r) => (r.forceExpire === true ? badge('forced', 'info') : 'no') },
   { key: 'builtIn', label: 'Built-in', render: (r) => (r.builtIn ? badge('built-in', 'muted') : '') },
 ];
@@ -150,10 +203,10 @@ const PRIV_COLUMNS = [
   { key: 'name', label: 'Name', render: (r) => link(`security/${r.key}`, r.name) },
   { key: 'description', label: 'Description' },
   { key: 'builtIn', label: 'Built-in', render: (r) => (r.builtIn ? badge('built-in', 'muted') : '') },
-  { key: 'records', label: 'Records' },
-  { key: 'layouts', label: 'Layouts' },
-  { key: 'scripts', label: 'Scripts' },
-  { key: 'valueLists', label: 'Value lists' },
+  { key: 'records', label: 'Records', render: (r) => accessCell(r.areas.records, 'records') },
+  { key: 'layouts', label: 'Layouts', render: (r) => accessCell(r.areas.layouts, 'layouts') },
+  { key: 'scripts', label: 'Scripts', render: (r) => accessCell(r.areas.scripts, 'scripts') },
+  { key: 'valueLists', label: 'Value lists', render: (r) => accessCell(r.areas.valueLists, 'valueLists') },
   { key: 'extendedPrivileges', label: 'Ext. privileges', num: true, render: (r) => count(r.extendedPrivileges.length) },
 ];
 function renderPrivilegeSets(solution, view, rows) {
@@ -192,7 +245,7 @@ function accountPairs(row) {
     ['User type', esc(row.userType)],
     ['Privilege set', esc(row.privilegeSet)],
     ['Enabled', row.enabled === false ? badge('disabled', 'warn') : 'yes'],
-    ['Password', row.hasPassword === false ? badge('none', 'warn') : 'yes'],
+    ['Password', passwordCell(row)],
     ['Force expire', row.forceExpire === true ? 'yes' : 'no'],
     ['Built-in', row.builtIn ? 'yes' : 'no'],
   ];
@@ -204,13 +257,72 @@ function privPairs(row) {
     ['Description', esc(row.description) || '(none)'],
     ['Password expiration', count(row.passwordExpirationDays) + ' day(s)'],
     ['Min password length', count(row.minPasswordLength)],
-    ['Records', esc(row.records) || '(custom)'],
-    ['Layouts', esc(row.layouts) || '(custom)'],
-    ['Scripts', esc(row.scripts) || '(custom)'],
-    ['Value lists', esc(row.valueLists) || '(custom)'],
+    ['Records', accessCell(row.areas.records, 'records')],
+    ['Layouts', accessCell(row.areas.layouts, 'layouts')],
+    ['Scripts', accessCell(row.areas.scripts, 'scripts')],
+    ['Value lists', accessCell(row.areas.valueLists, 'valueLists')],
     ['Extended privileges', row.extendedPrivileges.map((p) => esc(p)).join(', ') || '(none)'],
     ['File options', trueFlags.map((f) => badge(f, 'info')).join(' ') || '(none)'],
   ];
+}
+
+/** The per-item overrides: the tables, layouts, scripts and value lists a
+ *  privilege set singles out. fm reports each item's own access plus, on a
+ *  record override, the calculations that gate view/edit/delete -- the row shows
+ *  a `calc` badge for each one present rather than the calculation text, which
+ *  belongs on the object itself. Everything here is fm's own spelling, read
+ *  through `get` and escaped. */
+const CALC_OF = { view: 'viewCalculation', edit: 'editCalculation', delete: 'deleteCalculation' };
+
+function recordCell(item, key) {
+  const value = esc(String(get(item, key) ?? ''));
+  const calcKey = CALC_OF[key];
+  return calcKey && get(item, calcKey) ? `${value} ${badge('calc', 'info')}` : value;
+}
+
+/** `limited · 7 field(s)`: the blanket field access plus how many fields the
+ *  table names one by one. */
+function recordFieldCell(item) {
+  const fields = get(item, 'fields');
+  if (fields === undefined || fields === null) return '';
+  const access = esc(String(get(fields, 'access') ?? ''));
+  const named = get(fields, 'fields');
+  const n = Array.isArray(named) ? named.length : 0;
+  return n ? `${access} &middot; ${count(n)} field(s)` : access;
+}
+
+const RECORD_COLUMNS = [
+  { key: 'name', label: 'Table', render: (i) => esc(String(get(i, 'name') ?? '')) },
+  { key: 'view', label: 'View', render: (i) => recordCell(i, 'view') },
+  { key: 'edit', label: 'Edit', render: (i) => recordCell(i, 'edit') },
+  { key: 'create', label: 'Create', render: (i) => recordCell(i, 'create') },
+  { key: 'delete', label: 'Delete', render: (i) => recordCell(i, 'delete') },
+  { key: 'fields', label: 'Fields', render: recordFieldCell },
+];
+const NAME_ACCESS_COLUMNS = [
+  { key: 'name', label: 'Name', render: (i) => esc(String(get(i, 'name') ?? '')) },
+  { key: 'access', label: 'Access', render: (i) => esc(String(get(i, 'access') ?? '')) },
+];
+const LAYOUT_COLUMNS = [
+  ...NAME_ACCESS_COLUMNS,
+  { key: 'records', label: 'Records', render: (i) => esc(String(get(i, 'records') ?? '')) },
+];
+
+const PER_ITEM_AREAS = [
+  { area: 'records', title: 'Records', columns: RECORD_COLUMNS },
+  { area: 'layouts', title: 'Layouts', columns: LAYOUT_COLUMNS },
+  { area: 'scripts', title: 'Scripts', columns: NAME_ACCESS_COLUMNS },
+  { area: 'valueLists', title: 'Value lists', columns: NAME_ACCESS_COLUMNS },
+];
+
+export function perItemAccess(row) {
+  const blocks = PER_ITEM_AREAS.map(({ area, title, columns }) => {
+    const items = overridesOf(row.areas[area], area);
+    if (!items.length) return '';
+    return `<h4>${esc(title)} ${count(items.length)}</h4>` + table(columns, items, { empty: 'None' });
+  }).filter(Boolean);
+  if (!blocks.length) return '';
+  return `<details open><summary>Per-item access</summary>${blocks.join('')}</details>`;
 }
 
 function renderSelected(solution, view) {
@@ -228,7 +340,9 @@ function renderSelected(solution, view) {
     const code = esc(get(row.error, 'code') ?? 'unread');
     return section(title, `<p class="error">${code}: ${esc(get(row.error, 'message') ?? `no describe for this ${label.toLowerCase()}`)}</p>`, { actions });
   }
-  const body = kv(sel.kind === 'acc' ? accountPairs(row) : privPairs(row));
+  const body = sel.kind === 'acc'
+    ? kv(accountPairs(row))
+    : kv(privPairs(row)) + perItemAccess(row);
   return section(title, body, { actions });
 }
 

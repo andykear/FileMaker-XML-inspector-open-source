@@ -7,7 +7,8 @@ import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import {
   tab, accountRows, privilegeSetRows, extendedPrivilegeRows, authorizationRows,
-  accessSummary, securityTotals, selectionOf,
+  accessSummary, accessCell, overridesOf, passwordState, perItemAccess,
+  securityTotals, selectionOf,
 } from '../../ui/tabs/security.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
@@ -33,10 +34,31 @@ test('accountRows: 13 accounts on the root file, each with the fields the brief 
   assert.equal(guest.enabled, false);
 });
 
-test('7 accounts on the root file have no password, and 2 are disabled', () => {
+test('no account on the root file is password-less, and 2 are disabled', () => {
+  // fm reports `hasPassword: false` on the 7 externally authenticated accounts of
+  // ooe, because a FileMaker-managed password is not a thing they have -- the
+  // inventory's blank_password is `hasPassword === false && userType ===
+  // "fileMakerUser"`, and no ooe account is that. Measured from the fixture.
   const rows = accountRows(root);
   assert.equal(rows.filter((r) => r.hasPassword === false).length, 7);
+  assert.equal(rows.filter((r) => passwordState(r) === 'none').length, 0);
+  assert.equal(rows.filter((r) => passwordState(r) === 'external').length, 7);
   assert.equal(rows.filter((r) => r.enabled === false).length, 2);
+});
+
+test('passwordState: only a fileMakerUser can be password-less; any other userType is external', () => {
+  assert.equal(passwordState({ userType: 'fileMakerUser', hasPassword: false }), 'none');
+  assert.equal(passwordState({ userType: 'fileMakerUser', hasPassword: true }), 'yes');
+  assert.equal(passwordState({ userType: 'externalServer', hasPassword: false }), 'external');
+  assert.equal(passwordState({ userType: 'microsoftAzureGroup', hasPassword: true }), 'external');
+  // No userType at all: fm's flag is all there is, so it is what the tab reports.
+  assert.equal(passwordState({ userType: '', hasPassword: false }), 'none');
+});
+
+test('the Password column reads none only under that rule, external otherwise', () => {
+  const html = tab.render(solution, view);
+  assert.ok(html.includes('<span class="badge muted">external</span>'));
+  assert.ok(!html.includes('<span class="badge warn">none</span>'));
 });
 
 test('privilegeSetRows: 7 privilege sets on the root file', () => {
@@ -64,6 +86,52 @@ test('a privilege set with per-item overrides carries no blanket access key, so 
   assert.equal(restricted.layouts, '');
   assert.equal(restricted.scripts, 'allowCreation');
   assert.equal(restricted.valueLists, 'allowCreation');
+});
+
+test('accessCell: a blanket access stands for itself, per-item overrides read custom plus the true flags', () => {
+  const rows = privilegeSetRows(root);
+  const full = rows.find((r) => r.name === '[Full Access]');
+  assert.equal(accessCell(full.areas.records, 'records'), 'createEditDelete');
+  // MyRestrictedPrivilegeSet (id 4) overrides two tables, two layouts, two scripts
+  // and two value lists; scripts and valueLists also carry allowCreation: true.
+  const restricted = rows.find((r) => r.name === 'MyRestrictedPrivilegeSet');
+  assert.equal(accessCell(restricted.areas.records, 'records'), '<span class="badge info">custom</span>');
+  assert.equal(accessCell(restricted.areas.layouts, 'layouts'), '<span class="badge info">custom</span>');
+  assert.equal(accessCell(restricted.areas.scripts, 'scripts'), '<span class="badge info">custom</span> &middot; allowCreation');
+  assert.equal(accessCell(restricted.areas.valueLists, 'valueLists'), '<span class="badge info">custom</span> &middot; allowCreation');
+  assert.equal(overridesOf(restricted.areas.records, 'records').length, 2);
+  assert.equal(overridesOf(full.areas.records, 'records').length, 0);
+  // An object with neither a blanket access nor an override is still custom;
+  // an area fm never reported is unread, not custom.
+  assert.equal(accessCell({}, 'records'), '<span class="badge info">custom</span>');
+  assert.equal(accessCell(undefined, 'records'), '');
+  assert.equal(accessCell('allViewOnly', 'layouts'), 'allViewOnly');
+  assert.equal(accessCell({ '<b>': true, tables: [{}] }, 'records'), '<span class="badge info">custom</span> &middot; &lt;b&gt;');
+});
+
+test('perItemAccess renders the four override tables of MyRestrictedPrivilegeSet', () => {
+  const restricted = privilegeSetRows(root).find((r) => r.name === 'MyRestrictedPrivilegeSet');
+  const html = perItemAccess(restricted);
+  assert.match(html, /<details open><summary>Per-item access<\/summary>/);
+  assert.match(html, /<th>Table<\/th><th>View<\/th><th>Edit<\/th><th>Create<\/th><th>Delete<\/th><th>Fields<\/th>/);
+  // Contacts is limited on view, edit and delete, each gated by a calculation, and
+  // names 7 of its fields one by one; create is plain `no` with no calc badge.
+  assert.match(html, /<td>Contacts<\/td><td>limited <span class="badge info">calc<\/span><\/td>/);
+  assert.match(html, /<td>no<\/td>/);
+  assert.match(html, /limited &middot; <span class="num">7<\/span> field\(s\)/);
+  assert.match(html, /<td>TestTable<\/td><td>yes<\/td>/);
+  assert.match(html, /<td>My Layout for TestTable<\/td><td>noAccess<\/td><td>modifiable<\/td>/);
+  assert.match(html, /<td>LICENSE<\/td><td>executableOnly<\/td>/);
+  assert.match(html, /<td>MyRelatedValueList<\/td><td>viewOnly<\/td>/);
+  // A set with no overrides gets no section at all.
+  assert.equal(perItemAccess(privilegeSetRows(root).find((r) => r.name === '[Full Access]')), '');
+});
+
+test('the privilege-set detail pane carries the per-item tables', () => {
+  const restricted = privilegeSetRows(root).find((r) => r.name === 'MyRestrictedPrivilegeSet');
+  const html = tab.render(solution, { ...view, selection: `${api.meta.root}|priv:${restricted.id}` });
+  assert.match(html, /<summary>Per-item access<\/summary>/);
+  assert.match(html, /<th>Table<\/th>/);
 });
 
 test('accessSummary on plain values', () => {
@@ -102,7 +170,8 @@ test('securityTotals sums accounts, privilege sets and extended privileges acros
   assert.equal(t.accounts, accounts);
   assert.equal(t.privilegeSets, privilegeSets);
   assert.equal(t.extendedPrivileges, extendedPrivileges);
-  assert.equal(t.noPassword, 7); // BrojDva's three accounts all have passwords
+  // Measured: every fileMakerUser account of both files has a password.
+  assert.equal(t.noPassword, 0);
   assert.equal(t.disabled, 3); // root's 2 plus BrojDva's [Guest]
 });
 
