@@ -158,6 +158,7 @@ const FIELD_COLUMNS = [
   { key: 'autoEnter', label: 'Auto-enter' },
   { key: 'validation', label: 'Validation' },
   { key: 'calc', label: 'Calc', render: (r) => (r.calc ? `<code>${esc(r.calc)}</code>` : '') },
+  { key: 'comment', label: 'Comment' },
   { key: 'tags', label: 'Tags' },
 ];
 
@@ -173,6 +174,7 @@ function fieldRow(field) {
     autoEnter: autoEnterSummary(field),
     validation: validationSummary(field),
     calc: calcSummary(field),
+    comment: String(path(field, 'options.comment') ?? ''),
     tags: (path(field, 'options.tags') ?? []).join(', '),
   };
 }
@@ -194,7 +196,8 @@ function renderFields(solution, view) {
   const fields = fieldsOf(file, sel.table);
   const entry = get(get(path(file, 'catalogs.field'), 'detailById'), `table:${sel.table}`);
   if (!entry) return '';
-  const rows = fields.map(fieldRow).filter((r) => matches(r.name, view.filter) || matches(r.calc, view.filter));
+  const rows = fields.map(fieldRow)
+    .filter((r) => matches(r.name, view.filter) || matches(r.calc, view.filter) || matches(r.comment, view.filter));
   const error = get(entry, 'error');
   const body = error
     ? `<p class="error">${esc(get(error, 'code'))}: ${esc(get(error, 'message'))}</p>`

@@ -122,6 +122,16 @@ test('the filter narrows the field rows', () => {
   assert.ok(some.length < all.length);
 });
 
+test('the field table shows the developer comment, and the filter matches it', () => {
+  const html = tab.render(solution, { ...view, selection: `${api.meta.root}|TestTable` });
+  assert.ok(html.includes('<th>Comment</th>'));
+  // TestTable::ID carries a comment on the fixture; TextField1 carries none.
+  assert.ok(html.includes('<td>Unique identifier of each record in this table</td>'));
+  const byComment = tab.render(solution, { ...view, selection: `${api.meta.root}|TestTable`, filter: 'unique identifier' });
+  assert.match(byComment, /<td>ID<\/td>/);
+  assert.ok(!byComment.includes('>TextField1</td>'), 'a field matching neither name, calc nor comment is filtered out');
+});
+
 test('the filter matches calculation text as well as the name', () => {
   const byCalc = tab.render(solution, { ...view, selection: `${api.meta.root}|TestTable`, filter: 'testtable_contacts' });
   assert.match(byCalc, /ContactNameList_u/);
