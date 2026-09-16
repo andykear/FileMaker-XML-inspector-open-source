@@ -39,7 +39,7 @@ const outcome = () => ({
   errored: [{ id: 'theme:theme', reason: 'probe refused: 1200' }],
   erroredExpected: [{ id: 'layout-object:button', reason: 'probe refused: 1200' }],
   expectedResolved: [{ id: 'persistent-store:store', expectedError: 'probe refused: 3' }],
-  notFound: 2,
+  probeFailures: 2,
   fmVersion: '0.7.0',
   build: '29823677',
   ranAt: '2026-09-16T10:00:00.000Z',
@@ -119,12 +119,20 @@ test('the live check renders every list, and flags a newly reported attribute in
   assert.match(html, /data-action="gaps-check"/);
 });
 
-test('a run where most probes found nothing says so rather than reading as 300 fm bugs', () => {
-  const most = { ...outcome(), entries: 10, notFound: 8 };
-  const html = tab.render(bare({ register: REGISTER, gaps: most }), view);
-  assert.match(html, /not the reference solution/);
-  const few = tab.render(bare({ register: REGISTER, gaps: outcome() }), view);
-  assert.doesNotMatch(few, /not the reference solution/);
+test('a run where most probes could not find their object says so rather than reading as 300 fm bugs', () => {
+  // Every probe refused, which is what any file but the reference solution answers:
+  // the register addresses its objects by the reference solution's own ids.
+  const refused = {
+    ...outcome(),
+    entries: 302,
+    errored: Array.from({ length: 302 }, (_, i) => ({ id: `kind:${i}`, reason: 'probe refused: 105' })),
+    erroredExpected: [],
+    probeFailures: 302,
+  };
+  assert.match(tab.render(bare({ register: REGISTER, gaps: refused }), view), /not the reference solution/);
+  // The ooe-shaped run: 302 entries, one expected failure and nothing else.
+  const ooeShaped = { ...outcome(), entries: 302, errored: [], probeFailures: 0 };
+  assert.doesNotMatch(tab.render(bare({ register: REGISTER, gaps: ooeShaped }), view), /not the reference solution/);
 });
 
 test('renderingGaps: measured on the ooe fixture', () => {
@@ -143,6 +151,30 @@ test('renderingGaps: measured on the ooe fixture', () => {
   assert.equal(top.example.script, 'Records');
   assert.equal(top.example.index, 16);
   assert.equal(top.example.key, 'createFolders');
+});
+
+test('renderingGaps is re-measured when one script is re-read, not only the whole solution', () => {
+  // A catalog- or object-grain re-read replaces `catalogs.script.detailById` in place
+  // and keeps the solution object (ui/discovery.js), so a memo guarded on the solution
+  // alone would leave the old counts on screen.
+  const step = { stepID: 1, step: 'Save Records as PDF', createFolders: true };
+  const withOne = (n) => ({
+    root: 'file:///x.fmp12',
+    cli: { version: '0.7.0' },
+    unreachable: [],
+    files: {
+      'file:///x.fmp12': {
+        target: 'file:///x.fmp12',
+        name: 'x',
+        facts: {},
+        catalogs: { script: { list: [], detailById: { 1: { result: { id: 1, name: 'S', body: Array(n).fill(step) } } } } },
+      },
+    },
+  });
+  const solution = withOne(1);
+  assert.equal(renderingGaps(solution).gaps, 1);
+  solution.files['file:///x.fmp12'].catalogs.script.detailById = withOne(3).files['file:///x.fmp12'].catalogs.script.detailById;
+  assert.equal(renderingGaps(solution).gaps, 3, 'the memo followed the re-read');
 });
 
 test('the rendering-gaps section names the step types and the counts', () => {
@@ -175,7 +207,7 @@ test('every string the register and the outcome carry is escaped', () => {
     attributeErrors: [{ id: '<a>', attribute: '<b>', reason: '<c>' }],
     unexplained: [{ id: '<u>', keys: ['<k>'] }],
     errored: [{ id: '<e>', reason: '<r>' }], erroredExpected: [], expectedResolved: [{ id: '<p>', expectedError: '<q>' }],
-    notFound: 0, fmVersion: '<fv>', build: '<fb>', ranAt: '<ra>',
+    probeFailures: 0, fmVersion: '<fv>', build: '<fb>', ranAt: '<ra>',
   };
   const html = tab.render(bare({ register: hostile, gaps, cli: { version: '<cli>' } }), view);
   assert.doesNotMatch(html, /<script>alert/);

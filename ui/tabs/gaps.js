@@ -162,12 +162,15 @@ function liveSection(solution) {
     return section('Live check', `<p class="error">The batch failed: ${esc(get(outcome.fatal, 'message') ?? get(outcome.fatal, 'code'))}</p>`,
       { actions: CHECK_BUTTON });
   }
-  // A probe that found nothing of its kind is this file having no such object, not fm
-  // failing to report one. On anything but the reference solution that is most of them.
-  const foreign = outcome.notFound > outcome.entries / 2
-    ? `<p class="muted">${count(outcome.notFound)} of ${count(outcome.entries)} probes found nothing of their kind in this file. `
-      + 'The register\'s probes address the reference solution by id, so against a file that is not the reference solution '
-      + 'most of them cannot be measured at all -- read the errors below as "not here", not as fm faults.</p>'
+  // An entry whose probe failed was not scored either way. The register's probes
+  // address the reference solution BY ID, so against any other file nearly every
+  // one of them fails -- a refused probe and a selector that matched nothing are
+  // the same fact, no such object here -- and a page that called that 300 fm bugs
+  // would be lying. Half is the line: the reference solution answers 1 of 302.
+  const foreign = outcome.probeFailures >= outcome.entries / 2
+    ? `<p class="muted">${count(outcome.probeFailures)} of ${count(outcome.entries)} probes could not find their object. `
+      + 'The register\'s probes address the reference solution by id, so most of them could not find their object '
+      + 'because this is not the reference solution -- read the errors below as "not here", not as fm faults.</p>'
     : '';
   const body = `<p class="muted">Ran ${esc(outcome.ranAt)} against fm ${esc(outcome.fmVersion)} (${esc(outcome.build)}).</p>`
     + totalsLine([['Entries', outcome.entries], ...LIVE_LISTS.map((l) => [l.title, (outcome[l.key] ?? []).length])])
@@ -186,10 +189,15 @@ const renderCache = new WeakMap();
  *  entry for is counted apart and not rendered: the catalog says nothing about it, so
  *  it has no gaps -- it is a hole of a different shape.
  *
- *  Memoised on the solution object, which a re-read replaces (ui/discovery.js). */
+ *  Memoised on the solution and guarded by the identity of each file's
+ *  `catalogs.script.detailById` -- what a re-read replaces at EITHER grain (see
+ *  ui/model.js). Guarding on the solution object alone would be wrong: only a
+ *  solution-grain re-read builds a new one, so re-reading one script would leave the
+ *  old counts on screen. Same rule as stepIndex in ui/tabs/scripts.js. */
 export function renderingGaps(solution) {
-  const hit = renderCache.get(solution);
-  if (hit) return hit;
+  const details = Object.values(solution?.files ?? {}).map((f) => path(f, 'catalogs.script.detailById'));
+  const hit = renderCache.get(solution ?? {});
+  if (hit && hit.details.length === details.length && hit.details.every((d, i) => d === details[i])) return hit.out;
   const conventions = stepConventions(CATALOG);
   const groups = new Map();
   const byKind = {};
@@ -215,7 +223,7 @@ export function renderingGaps(solution) {
         for (const gap of rendered.gaps) {
           gaps += 1;
           byKind[gap.gap] = (byKind[gap.gap] ?? 0) + 1;
-          const key = `${name} ${gap.gap}`;
+          const key = JSON.stringify([name, gap.gap]);
           if (!groups.has(key)) {
             groups.set(key, {
               step: name,
@@ -243,7 +251,7 @@ export function renderingGaps(solution) {
     byKind,
     groups: [...groups.values()].sort((a, b) => b.count - a.count || a.step.localeCompare(b.step)),
   };
-  if (solution !== null && typeof solution === 'object') renderCache.set(solution, out);
+  if (solution !== null && typeof solution === 'object') renderCache.set(solution, { details, out });
   return out;
 }
 

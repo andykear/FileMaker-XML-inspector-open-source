@@ -77,10 +77,6 @@ const asRunResult = (r) => ({
   stderr: '',
 });
 
-/** Reasons that mean "this file has no such object", as against "fm cannot read it".
- *  A solution that is not the reference one answers most of the register this way. */
-const NOT_FOUND = /matched nothing|container key absent|returned no result body|no result line/;
-
 const entryRef = (e) => ({ id: e.id, ...(e.lastChecked?.reason ? { reason: e.lastChecked.reason } : {}) });
 const pairRef = ({ entry, attribute }) => ({ id: entry.id, attribute: attribute.name });
 
@@ -97,7 +93,13 @@ function reduceOutcome(outcome, meta) {
     errored,
     erroredExpected,
     expectedResolved: outcome.expectedResolved.map((e) => ({ id: e.id, expectedError: e.expectedError })),
-    notFound: [...errored, ...erroredExpected].filter((e) => NOT_FOUND.test(e.reason ?? '')).length,
+    // How many entries could not be scored at all this run, either way. Against a
+    // solution that is not the reference one nearly every entry lands here -- the
+    // register's probes address the reference solution BY ID, so a refused probe
+    // (`probe refused: <code>`) and a selector that matched nothing are the same
+    // fact: no such object here. Counted rather than read out of the reason text,
+    // which is the toolkit's prose and not a contract.
+    probeFailures: errored.length + erroredExpected.length,
     ...(outcome.fatal ? { fatal: outcome.fatal } : {}),
     fmVersion: meta.version,
     build: meta.build,

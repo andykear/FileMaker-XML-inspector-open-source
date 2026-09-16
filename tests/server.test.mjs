@@ -283,6 +283,13 @@ test('POST /api/gaps/check runs the register\'s probes once, read-only, and redu
     for (const key of ['stillMissing', 'newlyReported', 'regressed', 'errored', 'erroredExpected', 'expectedResolved', 'unexplained', 'attributeErrors']) {
       assert.ok(Array.isArray(body[key]), key);
     }
+    // Every probe of this fake answers `{kind:'x'}`. The 258 entries whose probe
+    // carries a selector find nothing in it and are not scored either way; that is
+    // the count the page shows its "not the reference solution" note from. Measured
+    // against the installed register before it was pinned.
+    assert.equal(body.probeFailures, body.errored.length + body.erroredExpected.length);
+    assert.equal(body.probeFailures, 258);
+    assert.equal(body.notFound, undefined, 'no reason-text heuristic in the outcome');
     assert.equal(body.fmVersion, '0.6.0');
     assert.equal(typeof body.build, 'string');
     assert.match(body.ranAt, /^\d{4}-\d\d-\d\dT/);

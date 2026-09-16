@@ -60,7 +60,10 @@ async function run(label, fn) {
   }
   busy = true;
   $('reread-solution').disabled = true;
-  for (const b of document.querySelectorAll('button[data-reread-catalog], button[data-reread-object]')) b.disabled = true;
+  // Every button a tab drew: the re-read buttons and the generic actions (the Gaps
+  // tab's two). They are replaced wholesale by the render at the end of this run,
+  // which is what enables them again.
+  for (const b of document.querySelectorAll('button[data-reread-catalog], button[data-reread-object], button[data-action]')) b.disabled = true;
   progress(label);
   let ok = true;
   try {
@@ -158,11 +161,12 @@ function rereadSlot(slot) {
 /** The coverage register is ~3MB of prose and only the Gaps tab wants it, so it is
  *  fetched when that tab is first shown rather than with the solution. Stored ON the
  *  solution, by mutation: the tabs that memoise on the solution's identity (the
- *  explorer's object list, the rendering gaps below) must not have it replaced under
- *  them for a field none of them reads. */
+ *  explorer's object list) must not have it replaced under them for a field none of
+ *  them reads. */
 async function loadRegister() {
-  if (!solution || solution.register) return;
-  await run('Loading the coverage register', async () => {
+  if (!solution) return false;
+  if (solution.register) return true;
+  return run('Loading the coverage register', async () => {
     solution.register = await api.register();
   });
 }
@@ -174,7 +178,10 @@ async function runGapsCheck() {
     guard('Nothing read yet, so there is nothing to check');
     return;
   }
-  await loadRegister();
+  // The register is what the outcome is READ against -- an id and an attribute name
+  // mean nothing without it -- so a failed fetch stops the check here, with run()'s
+  // own error message on screen rather than a second one over the top of it.
+  if (!await loadRegister()) return;
   await run('Running the register\'s probes', async () => {
     solution.gaps = await api.gapsCheck(solution.root);
   });
