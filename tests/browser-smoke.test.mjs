@@ -14,6 +14,24 @@
 // selectable row draws again without either fault. Then the Gaps tab's live check is
 // run for real, the Markdown export is downloaded and read back, and the console is
 // asserted to have stayed quiet for the whole walk.
+//
+// What this does NOT check, so a green run is not read as more than it is:
+//
+//   * only `#main` is scanned. The sidebar, the header, the progress line and the
+//     export menu are drawn by the same code and are never looked at here.
+//   * `span.detail` -- the Scripts tab's raw step options, fm's own text -- is not
+//     inside <code> or <pre>, so it IS scanned as if it were the page's prose. A
+//     file whose step option legitimately reads `undefined` would be reported as a
+//     renderer fault here. ooe has none; another solution might.
+//   * one row per tab. The FIRST `[data-select]` is clicked and nothing else, so a
+//     tab is proved to render one selection, not all of them -- the kind of row
+//     that comes second (a relation after an occurrence, a folder after a script)
+//     is never opened.
+//   * the screenshots are evidence, not assertions: nothing reads them back, and a
+//     page taller than 6000px is saved as its first screenful only (Chrome will not
+//     encode a PNG past ~16k pixels), so the bottom of a long tab is not pictured.
+//   * every read is of one solution, `fmnet://localhost/ooe`, in one fm build. A
+//     shape no reference file carries is not walked by anything here.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
@@ -110,28 +128,13 @@ test('browser: walk every tab of the live page', { skip, timeout: 30 * MINUTE },
   mkdirSync(SHOTS, { recursive: true });
   const downloads = mkdtempSync(join(tmpdir(), 'inspector-export-'));
 
-  const server = createServer({ cli, root, username, noPrompt: true });
-  await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  const base = `http://127.0.0.1:${server.address().port}`;
-
-  const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--disable-gpu'] });
-  const page = await browser.newPage();
-  await page.setViewport({ width: 1440, height: 1000 });
-
   const consoleErrors = [];
   const consoleWarnings = [];
   const pageErrors = [];
   const requestFailures = [];
-  page.on('console', (m) => {
-    if (m.type() === 'error') consoleErrors.push(m.text());
-    else if (m.type() === 'warning') consoleWarnings.push(m.text());
-  });
-  page.on('pageerror', (e) => pageErrors.push(e.message));
-  page.on('requestfailed', (r) => requestFailures.push(`${r.url()} ${r.failure()?.errorText}`));
   // Chrome's own console error for a 404 says only "Failed to load resource": the
   // URL is here, so a broken asset can be named rather than hunted for.
   const badResponses = [];
-  page.on('response', (r) => { if (r.status() >= 400) badResponses.push(`${r.status()} ${r.url()}`); });
 
   const timings = {};
   const clock = async (label, fn) => {
@@ -142,7 +145,29 @@ test('browser: walk every tab of the live page', { skip, timeout: 30 * MINUTE },
     return value;
   };
 
+  // Both live outside the try only so `finally` can reach them. Everything that
+  // can throw -- binding a port, launching a Chrome that exists but will not
+  // start -- happens INSIDE it, so a half-built setup is still torn down: a
+  // listening server or a live Chrome left behind hangs the test run.
+  let server = null;
+  let browser = null;
   try {
+    server = createServer({ cli, root, username, noPrompt: true });
+    await new Promise((r) => server.listen(0, '127.0.0.1', r));
+    const base = `http://127.0.0.1:${server.address().port}`;
+
+    browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--disable-gpu'] });
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1440, height: 1000 });
+
+    page.on('console', (m) => {
+      if (m.type() === 'error') consoleErrors.push(m.text());
+      else if (m.type() === 'warning') consoleWarnings.push(m.text());
+    });
+    page.on('pageerror', (e) => pageErrors.push(e.message));
+    page.on('requestfailed', (r) => requestFailures.push(`${r.url()} ${r.failure()?.errorText}`));
+    page.on('response', (r) => { if (r.status() >= 400) badResponses.push(`${r.status()} ${r.url()}`); });
+
     await clock('discovery', async () => {
       await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
       // Discovery is ~200 fm reads in one invocation: the header stops saying
@@ -245,16 +270,19 @@ test('browser: walk every tab of the live page', { skip, timeout: 30 * MINUTE },
 
     await t.test('the console stayed quiet', async () => {
       for (const w of consoleWarnings) console.log(`  console warning: ${w}`);
-      for (const r of badResponses) console.log(`  response: ${r}`);
       for (const f of requestFailures) console.log(`  request failed: ${f}`);
       assert.deepEqual(pageErrors, [], 'no uncaught exception on the page');
       assert.deepEqual(consoleErrors, [], 'no console error on the page');
       assert.deepEqual(requestFailures, [], 'no failed request');
+      // Every asset the page asks for is one the server serves. A 404 here is a
+      // broken href the console only ever calls "Failed to load resource", and
+      // it was being printed and then passed over.
+      assert.deepEqual(badResponses, [], 'no response of 400 or worse');
     });
     console.log('timings:', JSON.stringify(timings));
   } finally {
-    await browser.close();
-    await new Promise((r) => server.close(r));
+    if (browser) await browser.close();
+    if (server) await new Promise((r) => server.close(r));
     rmSync(downloads, { recursive: true, force: true });
   }
 });
