@@ -8,7 +8,7 @@ import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import {
   byteSize, catalogActions, catalogHash, detailOf, FACT_FOLD, factValue, kindSelection, listOf, parseSelection,
-  selectRow, selectionKey, selectionTail, selectionWithTail, totalsLine, withFile,
+  selectRow, selectionKey, selectionTail, selectionWithTail, solutionKey, totalsLine, withFile,
 } from '../../ui/tabs/common.js';
 import { selectionOf as scriptSelectionOf, stepAnchor } from '../../ui/tabs/scripts.js';
 import { selectionOf as layoutSelectionOf } from '../../ui/tabs/layouts.js';
@@ -77,6 +77,24 @@ test('selectionKey and parseSelection round-trip the one selection shape', () =>
   // The target itself carries `:` and `/`; only the first `|` divides.
   assert.deepEqual(parseSelection('fmnet://localhost/ooe|to:1065089'),
     { target: 'fmnet://localhost/ooe', parts: ['to', '1065089'] });
+});
+
+test('solutionKey names the solution rather than a file, and reads back as one', () => {
+  assert.equal(solutionKey('step', 'Set Variable'), '*|step:Set Variable');
+  // It is the one selection shape, so parseSelection and kindSelection read it
+  // with no special case -- only the target says it belongs to no file.
+  assert.deepEqual(parseSelection(solutionKey('step', 'Set Variable')),
+    { target: '*', parts: ['step', 'Set Variable'] });
+  assert.deepEqual(kindSelection(solutionKey('step', 'Set Variable'), ['step']),
+    { target: '*', kind: 'step', id: 'Set Variable' });
+  // A name carrying a colon of its own comes back whole.
+  assert.deepEqual(kindSelection(solutionKey('step', 'Go to Field: x'), ['step']),
+    { target: '*', kind: 'step', id: 'Go to Field: x' });
+  // No file answers to `*`, which is what makes it safe as a target.
+  assert.equal(solution.files['*'], undefined);
+  // A script selection is not a kind selection, tail or no tail.
+  assert.equal(kindSelection(`${ROOT}|39`, ['step']), null);
+  assert.equal(kindSelection(`${ROOT}|39#L83`, ['step']), null);
 });
 
 test('selectionTail hands back the whole tail, colons and all', () => {

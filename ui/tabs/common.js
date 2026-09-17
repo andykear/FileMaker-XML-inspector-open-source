@@ -141,6 +141,15 @@ export function selectionKey(target, ...parts) {
   return `${target}|${parts.join(':')}`;
 }
 
+/** `*` is THE SOLUTION, not a file. Most of what a tab selects lives in one
+ *  file, so the target names it; a few things do not -- a step TYPE is used
+ *  across every script of every file reached, and belongs to none of them. Those
+ *  take `*`, which no fm target can spell, so `solution.files['*']` is reliably
+ *  nothing and a tab that forgets to branch shows an empty section rather than
+ *  the wrong file's. A tab reading one back branches on `target === '*'` BEFORE
+ *  it looks the target up. */
+export const solutionKey = (kind, id) => selectionKey('*', kind, id);
+
 export function parseSelection(sel) {
   const at = typeof sel === 'string' ? sel.indexOf('|') : -1;
   if (at < 0) return null;

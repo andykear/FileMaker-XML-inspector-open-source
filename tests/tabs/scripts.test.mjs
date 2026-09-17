@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import { parseHash } from '../../ui/shell.js';
+import { link } from '../../ui/dom.js';
+import { selectionWithTail, solutionKey } from '../../ui/tabs/common.js';
 import { tab, scriptTree, depths, renderScript, stepIndex, scriptStats, orphanedEnabled, selectionOf } from '../../ui/tabs/scripts.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
@@ -87,13 +89,134 @@ test('stepIndex counts every step of every file, by count then name', () => {
   // 220 distinct step names across ooe and BrojDva; 3482 steps in all.
   assert.equal(index.length, 220);
   assert.equal(index.reduce((n, r) => n + r.count, 0), 3482);
-  assert.deepEqual(index[0], { step: '#', count: 1147, scripts: 33 });
-  assert.deepEqual(index[1], { step: 'Set Variable', count: 190, scripts: 12 });
+  const bare = (r) => ({ step: r.step, count: r.count, scripts: r.scripts });
+  assert.deepEqual(bare(index[0]), { step: '#', count: 1147, scripts: 33 });
+  assert.deepEqual(bare(index[1]), { step: 'Set Variable', count: 190, scripts: 12 });
   // A tie in count is broken by name: End If before If, both 81.
   assert.deepEqual(index.slice(2, 4).map((r) => r.step), ['End If', 'If']);
   assert.ok(index[0].count > 0);
   for (let i = 1; i < index.length; i += 1) assert.ok(index[i - 1].count >= index[i].count);
   assert.deepEqual(stepIndex({ files: {} }), []);
+});
+
+test('every index row carries its own solution-wide selection and every occurrence of the step', () => {
+  const index = stepIndex(solution);
+  // `*` is the solution: a step TYPE is used across every file, so it belongs to none.
+  assert.equal(index[1].key, '*|step:Set Variable');
+  assert.equal(index[1].key, solutionKey('step', index[1].step));
+  for (const row of index) assert.equal(row.uses.length, row.count, row.step);
+  assert.equal(index.reduce((n, r) => n + r.uses.length, 0), 3482);
+
+  const uses = index[1].uses;
+  // Measured on the fixture: Set Variable is used 190 times in 12 scripts.
+  assert.equal(uses.length, 190);
+  assert.equal(new Set(uses.map((u) => `${u.target}|${u.scriptId}`)).size, 12);
+  // Every occurrence names a script the solution really has, on a line that script has.
+  for (const use of uses) {
+    const detail = solution.files[use.target].catalogs.script.detailById[use.scriptId].result;
+    assert.equal(detail.name, use.scriptName);
+    assert.equal(detail.body[use.line - 1].step, 'Set Variable');
+  }
+  // Body order, per script: script 39's Set Variables start at line 6 and 83.
+  assert.deepEqual(uses.filter((u) => u.target === ROOT && u.scriptId === '39').map((u) => u.line),
+    [6, 83, 84, 85, 86, 701, 702, 703, 704, 705, 706]);
+  // Both files are reached, so a use is only located by target AND script id.
+  assert.deepEqual([...new Set(uses.map((u) => u.target))].sort(),
+    ['fmnet://localhost/BrojDva', ROOT]);
+});
+
+test('the step index links each row to its own drill-down', () => {
+  const html = tab.render(solution, view);
+  // The href is what buildHash writes, not a hand-spelled one: `|` and `:` are encoded.
+  assert.ok(html.includes(link(`scripts/${solutionKey('step', 'Set Variable')}`, 'Set Variable')));
+  assert.match(html, /href="#scripts\/\*%7Cstep%3ASet%20Variable"/);
+  assert.ok(html.includes('data-select="*|step:Set Variable"'));
+  // The row the view is showing is the marked one, and only it.
+  const selected = tab.render(solution, { ...view, selection: solutionKey('step', 'Set Variable') });
+  assert.ok(selected.includes('<tr data-select="*|step:Set Variable" class="selected">'));
+  assert.equal((selected.match(/<tr data-select="[^"]*" class="selected">/g) ?? []).length, 1);
+});
+
+/** The step section the tab draws between the tree and the index. */
+const stepSection = (html, name) => {
+  const at = html.indexOf(`<h2>Step ${name}</h2>`);
+  if (at < 0) return '';
+  const end = html.indexOf('<section', at);
+  return html.slice(at, end < 0 ? html.length : end);
+};
+
+test('selecting a step lists the scripts using it, with a link to every line', () => {
+  const html = tab.render(solution, { ...view, selection: solutionKey('step', 'Set Variable') });
+  const panel = stepSection(html, 'Set Variable');
+  assert.ok(panel, 'the step section is drawn');
+  assert.match(panel, /Used <span class="num">190<\/span> &middot; Scripts <span class="num">12<\/span>/);
+  // A step selection is not a script selection: no script body is drawn.
+  assert.ok(!html.includes('<ol class="script">'));
+
+  // One row per script, and the Uses cells add back up to the index's count.
+  const rows = panel.slice(panel.indexOf('<tbody>')).split('<tr').slice(1);
+  assert.equal(rows.length, 12);
+  const uses = rows.map((r) => Number(/<td class="num"><span class="num">(\d+)<\/span><\/td>/.exec(r)[1]));
+  assert.equal(uses.reduce((n, v) => n + v, 0), 190);
+  // Multi-file view, so the File column says which file each script is in.
+  assert.match(panel, /<th[^>]*>File<\/th>/);
+  // A list of links is not a value to order rows by, so Lines does not sort.
+  assert.ok(panel.includes('<th>Lines</th>'));
+  assert.ok(panel.includes('<td>BrojDva</td>'));
+
+  // Every Lines link parses back to a script this tab can open, on a real line.
+  const hrefs = [...panel.matchAll(/href="(#scripts\/[^"]*)"/g)].map((m) => m[1]);
+  const tails = hrefs.map((h) => selectionWithTail(parseHash(h).selection, 'step')).filter((s) => s.step);
+  assert.ok(tails.length >= 12 * 2, 'each script row carries several line links');
+  for (const t of tails) {
+    const detail = solution.files[t.target].catalogs.script.detailById[t.id].result;
+    assert.equal(detail.body[Number(t.step.slice(1)) - 1].step, 'Set Variable');
+  }
+  // A line link lands on the same step anchor the script view renders.
+  assert.ok(panel.includes(link(`scripts/${ROOT}|39#L83`, '83')));
+});
+
+test('a script using a step more than twelve times folds the rest of its lines', () => {
+  const panel = stepSection(tab.render(solution, { ...view, selection: solutionKey('step', 'Set Variable') }), 'Set Variable');
+  // ooe script 53 uses Set Variable 33 times: twelve links, then the count of the rest.
+  const pipeline = panel.split('<tr').find((r) => r.includes('%7C53'));
+  assert.ok(pipeline, 'the pipeline row is there');
+  assert.equal((pipeline.match(/#L\d+/g) ?? []).length, 0, 'the hash is encoded, not raw');
+  assert.equal((pipeline.match(/%23L\d+/g) ?? []).length, 12, 'twelve line links, no more');
+  assert.ok(pipeline.includes('… and 21 more'));
+  // Script 39 uses it 11 times, under the fold: all eleven links, nothing folded.
+  const all = panel.split('<tr').find((r) => r.includes('%7C39'));
+  assert.equal((all.match(/%23L\d+/g) ?? []).length, 11);
+  assert.ok(!all.includes('more'));
+});
+
+test('a step name with markup in it is escaped everywhere it is drawn', () => {
+  const weird = {
+    files: {
+      x: {
+        target: 'x',
+        name: 'x',
+        catalogs: {
+          script: {
+            list: [{ id: 7, name: 'Boom<b>', type: 'script', steps: 2, folder: '' }],
+            detailById: { 7: { result: { id: 7, name: 'Boom<b>', steps: 2, problems: [], body: [{ stepID: 1, step: '<b>&x' }, { stepID: 1, step: '<b>&x' }] } } },
+          },
+        },
+      },
+    },
+  };
+  const sel = solutionKey('step', '<b>&x');
+  const html = tab.render(weird, { selection: sel, filter: '', multiFile: false });
+  assert.ok(html.includes('<h2>Step &lt;b&gt;&amp;x</h2>'));
+  assert.ok(!html.includes('<h2>Step <b>'));
+  assert.ok(html.includes(link(`scripts/${sel}`, '<b>&x')), 'the index row links to the escaped selection');
+  assert.ok(html.includes('data-select="*|step:&lt;b&gt;&amp;x"'));
+  assert.ok(html.includes('<td>Boom&lt;b&gt;</td>') || html.includes('>Boom&lt;b&gt;</a>'));
+  assert.match(html, /Used <span class="num">2<\/span> &middot; Scripts <span class="num">1<\/span>/);
+  // One file, so no File column on the drill-down.
+  assert.ok(!/<th[^>]*>File<\/th>/.test(stepSection(html, '&lt;b&gt;&amp;x')));
+  // A step no file uses draws no section at all.
+  assert.ok(!tab.render(solution, { ...view, selection: solutionKey('step', 'No Such Step') }).includes('<h2>Step No Such Step</h2>'));
 });
 
 test('scriptStats counts scripts, steps, the longest, the steps fm flagged, unbalanced blocks and orphaned enabled steps', () => {
@@ -166,8 +289,9 @@ test('renders the tree, the totals and the step index', () => {
   assert.match(html, /Enabled steps under a disabled opener <span class="num">0<\/span>/);
   assert.match(html, /data-reread-catalog="script"/);
   assert.ok(html.includes(`data-select="${ROOT}|39"`));
-  // Every selection the tree offers routes to a script the tab can show.
-  const keys = [...html.matchAll(/data-select="([^"]+)"/g)].map((m) => m[1]);
+  // Every selection the TREE offers routes to a script the tab can show. The index
+  // below it selects step types, which belong to the solution and to no file.
+  const keys = [...html.matchAll(/<li data-select="([^"]+)"/g)].map((m) => m[1]);
   assert.equal(keys.length, 44);
   for (const key of keys) {
     const sel = selectionOf({ selection: key });
@@ -188,7 +312,7 @@ test('the filter narrows the tree and the step index', () => {
   assert.ok(!html.includes('>Hello world<'));
   const index = tab.render(solution, { ...view, filter: 'set web viewer' });
   assert.ok(index.includes('Set Web Viewer'));
-  assert.ok(!index.includes('<td>Set Variable</td>'));
+  assert.ok(!index.includes('>Set Variable</a>'));
   // The index header says so when what it lists is a filtered subset.
   assert.match(index, /<h2>Step index \(filtered\)<\/h2>/);
 });

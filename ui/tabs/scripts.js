@@ -15,7 +15,10 @@ import { badge, count, esc, kv, link, matches, rereadObjectButton, section, tabl
 import { get, path } from '../access.js';
 import { stepDisplay } from 'fm-adt-toolkit/step-display';
 import { memoise } from '../analysis/memo.js';
-import { catalogActions, detailOf, listOf, selectionKey, selectionWithTail, totalsLine } from './common.js';
+import {
+  catalogActions, detailOf, fileName, kindSelection, listOf, selectRow, selectionKey, selectionWithTail,
+  solutionKey, totalsLine, withFile,
+} from './common.js';
 
 const scriptsOf = (file) => listOf(file, 'script');
 const entryOf = (file, id) => detailOf(file, 'script', id);
@@ -103,24 +106,37 @@ export function renderScript(detail, selected = null) {
   return `<ol class="script">${rows}</ol>`;
 }
 
-/** How often each step type is used, and in how many scripts, across every file.
- *  Every step of every script of every file, so it is memoised through
+/** How often each step type is used, in how many scripts, and WHERE, across every
+ *  file. Every step of every script of every file, so it is memoised through
  *  ui/analysis/memo.js, which keys on the catalog slots a re-read swaps at any
- *  grain (`list`, `detailById`) rather than on the solution object. */
+ *  grain (`list`, `detailById`) rather than on the solution object.
+ *
+ *  `uses` is every occurrence, in the order the bodies were walked -- file, then
+ *  script, then body order -- so the drill-down never has to walk the bodies a
+ *  second time to answer "which scripts use this, and on which lines". A row's
+ *  `count` is `uses.length` by construction; both are kept because the table
+ *  reads the number and only the selected step reads the list. `key` is the
+ *  row's own selection: a step TYPE spans every file, so it is a SOLUTION
+ *  selection (`*`), not a selection in any one file. */
 export const stepIndex = (solution) => memoise(solution, computeStepIndex);
 
 function computeStepIndex(solution) {
   const counts = new Map();
   for (const file of Object.values(solution?.files ?? {})) {
     for (const detail of detailsOf(file)) {
+      const scriptId = String(get(detail, 'id') ?? '');
+      const scriptName = String(get(detail, 'name') ?? '');
       const seen = new Set();
-      for (const step of bodyOf(detail)) {
+      bodyOf(detail).forEach((step, i) => {
         const name = String(get(step, 'step') ?? '');
-        if (!counts.has(name)) counts.set(name, { step: name, count: 0, scripts: 0 });
+        if (!counts.has(name)) {
+          counts.set(name, { step: name, key: solutionKey('step', name), count: 0, scripts: 0, uses: [] });
+        }
         const row = counts.get(name);
         row.count += 1;
+        row.uses.push({ target: file.target, scriptId, scriptName, line: i + 1 });
         if (!seen.has(name)) { seen.add(name); row.scripts += 1; }
-      }
+      });
     }
   }
   return [...counts.values()].sort((a, b) => b.count - a.count || a.step.localeCompare(b.step));
@@ -248,7 +264,70 @@ function problemText(detail) {
 
 const yesNo = (on, label, tone) => (on === true ? badge(label, tone) : 'no');
 
+/** Past this many lines of one script, the rest are a count. Twelve links still
+ *  read as a list a reader can scan; the thirty-three of ooe's pipeline script
+ *  read as a wall, and the row the reader came for is the SCRIPT, not the line. */
+const LINE_FOLD = 12;
+
+/** Every line of one script, each a link that opens the script on that step.
+ *  Built through `link`, so the href goes through buildHash like every other
+ *  link on the page rather than through a second, hand-spelled encoder. */
+function lineLinks(target, scriptId, lines) {
+  const shown = lines.slice(0, LINE_FOLD)
+    .map((line) => link(`scripts/${selectionKey(target, scriptId)}#${stepPart(line)}`, String(line)))
+    .join(', ');
+  const rest = lines.length - LINE_FOLD;
+  return rest > 0 ? `${shown}, … and ${rest} more` : shown;
+}
+
+const STEP_USE_COLUMNS = [
+  { key: 'script', label: 'Script', render: (r) => link(`scripts/${r.key}`, r.script) },
+  { key: 'uses', label: 'Uses', num: true, render: (r) => count(r.uses) },
+  // A list of links is not a value to order rows by, so this column does not sort.
+  { key: 'lines', label: 'Lines', sort: false, render: (r) => lineLinks(r.target, r.scriptId, r.lines) },
+];
+
+/** The index's `uses` folded to one row per script, in the order the index
+ *  recorded them. "Which scripts use Set Variable" is the question the reader
+ *  clicked on; its 190 lines are that answer's detail, not 190 more rows. */
+function stepUses(solution, name) {
+  const row = stepIndex(solution).find((r) => r.step === name);
+  if (!row) return null;
+  const perScript = new Map();
+  for (const use of row.uses) {
+    const key = selectionKey(use.target, use.scriptId);
+    if (!perScript.has(key)) {
+      perScript.set(key, {
+        key,
+        target: use.target,
+        scriptId: use.scriptId,
+        file: fileName(solution, use.target),
+        script: use.scriptName,
+        lines: [],
+      });
+    }
+    perScript.get(key).lines.push(use.line);
+  }
+  const rows = [...perScript.values()].map((s) => ({ ...s, uses: s.lines.length }));
+  return { row, rows };
+}
+
+/** The drill-down the step index links to: one step TYPE, and every script that
+ *  uses it. A step no file uses draws nothing -- the same answer a script id no
+ *  file has gets. */
+function renderStep(solution, view, name) {
+  const found = stepUses(solution, name);
+  if (!found) return '';
+  const totals = totalsLine([['Used', found.row.count], ['Scripts', found.row.scripts]]);
+  return section(`Step ${name}`, totals + table(withFile(STEP_USE_COLUMNS, view), found.rows, { empty: 'No scripts' }));
+}
+
 function renderSelected(solution, view) {
+  // `*|step:<name>` is a SOLUTION selection, read before the script branch: a
+  // script selection is `<target>|<id>`, and `*` is no file, so leaving this to
+  // the branch below would look up a file that is not there and draw nothing.
+  const step = kindSelection(view?.selection, ['step']);
+  if (step && step.target === '*') return renderStep(solution, view, step.id);
   const sel = selectionOf(view);
   const file = sel && solution.files[sel.target];
   if (!file) return '';
@@ -277,7 +356,9 @@ function renderSelected(solution, view) {
 }
 
 const INDEX_COLUMNS = [
-  { key: 'step', label: 'Step' },
+  // The name is the way in: a count of 190 is only useful next to the twelve
+  // scripts it is spread over, which is what selecting the row shows.
+  { key: 'step', label: 'Step', render: (r) => link(`scripts/${r.key}`, r.step) },
   { key: 'count', label: 'Used', num: true, render: (r) => count(r.count) },
   { key: 'scripts', label: 'Scripts', num: true, render: (r) => count(r.scripts) },
 ];
@@ -285,7 +366,7 @@ const INDEX_COLUMNS = [
 function renderIndex(solution, view) {
   const rows = stepIndex(solution).filter((r) => matches(r.step, view.filter));
   const title = view.filter ? 'Step index (filtered)' : 'Step index';
-  return section(title, table(INDEX_COLUMNS, rows, { empty: 'No steps' }));
+  return section(title, table(INDEX_COLUMNS, rows, { empty: 'No steps', rowAttrs: selectRow(view.selection) }));
 }
 
 export const tab = {
