@@ -60,21 +60,25 @@ export function catalogHash(catalog, target) {
 /** A byte count the way a reader thinks in it: bare bytes under 1024, then
  *  KB/MB/GB with one decimal, dropping a trailing `.0` (`1048576` -> `'1 MB'`).
  *  Not a finite number (fm's error shape, `undefined`, text) -> `''`, so a
- *  caller can tell "no size" from "zero bytes". */
+ *  caller can tell "no size" from "zero bytes". The unit is chosen on the
+ *  ROUNDED value at each step, not the raw one -- deciding on the raw value
+ *  and rounding after lets a value just under a boundary (`1048575`) round up
+ *  to `'1024 KB'` instead of stepping up to `'1 MB'`. */
 export function byteSize(n) {
   if (n === null || n === undefined || n === '') return '';
   const num = Number(n);
   if (!Number.isFinite(num)) return '';
   if (num < 1024) return `${num} B`;
   const units = ['KB', 'MB', 'GB'];
-  let value = num / 1024;
-  let unit = units[0];
-  for (let i = 1; i < units.length && value >= 1024; i += 1) {
-    value /= 1024;
-    unit = units[i];
+  let value = num;
+  let unit = 'B';
+  for (const u of units) {
+    const next = Math.round((value / 1024) * 10) / 10;
+    unit = u;
+    if (next < 1024 || u === 'GB') { value = next; break; }
+    value = value / 1024;
   }
-  const rounded = Math.round(value * 10) / 10;
-  return `${rounded % 1 === 0 ? rounded : rounded.toFixed(1)} ${unit}`;
+  return `${value % 1 === 0 ? value : value.toFixed(1)} ${unit}`;
 }
 
 /** What an emptied table says. A table emptied BY THE FILTER has not found

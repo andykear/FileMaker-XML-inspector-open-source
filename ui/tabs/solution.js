@@ -21,8 +21,12 @@ const FILE_SIZE_KEY = 'Get ( FileSize )';
 function factLine(key, v) {
   if (key !== FILE_SIZE_KEY) return factValue(v);
   const value = get(v, 'value');
-  if (value === undefined) return factValue(v); // an errored fact renders like any other
-  return `<span title="${esc(`${value} bytes`)}">${esc(byteSize(value))}</span>`;
+  const size = byteSize(value);
+  // Anything byteSize can't turn into a size (an error, undefined, null, text)
+  // falls back to the general fact rendering, so the fallback stays the rule
+  // rather than one carved-out case (undefined) among several.
+  if (!size) return factValue(v);
+  return `<span title="${esc(`${value} bytes`)}">${esc(size)}</span>`;
 }
 
 const COLUMNS = [

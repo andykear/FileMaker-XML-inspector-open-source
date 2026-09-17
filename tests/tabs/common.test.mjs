@@ -131,6 +131,16 @@ test('byteSize renders bytes, KB, MB, GB with one decimal, dropping a trailing .
   assert.equal(byteSize(null), '');
 });
 
+test('byteSize steps up a unit rather than rounding up to 1024 of the one below', () => {
+  // Rounding on the raw value first would read 1048575 as "1024 KB": the unit
+  // has to be chosen on the rounded value at each step.
+  assert.equal(byteSize(1048575), '1 MB');
+  assert.equal(byteSize(1048570), '1 MB');
+  assert.equal(byteSize(1073741823), '1 GB');
+  assert.equal(byteSize(5368709120), '5 GB');
+  assert.equal(byteSize(2415919104), '2.3 GB');
+});
+
 test('catalogHash maps every catalog LIST_CATALOGS carries to a real tab, never null', () => {
   for (const catalog of LIST_CATALOGS) {
     assert.ok(catalogHash(catalog), `${catalog} should map to a tab`);

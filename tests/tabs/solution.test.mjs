@@ -42,6 +42,16 @@ test('the file size fact renders as a rounded size, the exact byte count on hove
   assert.ok(!html.includes('<dd>3727360</dd>'));
 });
 
+test('a null file size falls back to the general fact rendering, not a "null bytes" title', () => {
+  const fakeSolution = {
+    files: { fake: { target: 'fake', name: 'Fake', facts: { 'Get ( FileSize )': { value: null } }, catalogs: {} } },
+    unreachable: [],
+  };
+  const html = tab.render(fakeSolution);
+  assert.ok(!html.includes('bytes'));
+  assert.match(html, /<dt>Get \( FileSize \)<\/dt><dd><\/dd>/);
+});
+
 test('the Catalog column links to the tab that shows each catalog', () => {
   const html = tab.render(solution);
   assert.match(html, /<a href="#tables">table<\/a>/);
