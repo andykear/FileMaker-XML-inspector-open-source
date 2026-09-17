@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-14-fm-cli-rewrite-design.md` §2 (page and read controls), §3 (derived views). Owner's ruling 2026-09-17: detail above the list is the rule on every tab; key field labels are drawn on the graph lines and dropped only if they crowd ooe's picture.
 
+**Ruling as built (2026-09-17, after the browser pass):** the key field labels were drawn, screenshotted on ooe, and dropped: seven relations leaving one box put their labels on top of each other, and one label per pair would not have helped. Task 4's label bullets describe what was tried; what shipped is the hover title and the click. The wide-cell rule in the fix wave is `white-space: normal; overflow-wrap: break-word` on `td`, not `anywhere`, which broke identifiers mid-word.
+
 ## Global Constraints
 
 - House rules: `ui/` imports nothing from `node:`/`server/`; tabs are pure renderers (no `document`); `esc` on every string; every fm key read through `get`/`path` from `ui/access.js`; totals lines are never filtered or sorted; selections ride raw in `data-select` and percent-encoded once in the hash; tests measure the fixture before pinning a number; never `rows.length === list.length`; `tests/no-control-characters.test.mjs` stays green; nothing in a test or the page ever sends an op that is not `read:*`, `evaluate:calculation` or `validate:calculation`.
