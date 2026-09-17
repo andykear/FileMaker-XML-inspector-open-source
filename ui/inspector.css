@@ -199,9 +199,17 @@ th, td {
    Known from sentence -- wraps inside its column instead of pushing the table
    past the panel's right edge. Auto table layout only shrinks a column when the
    row cannot fit, so a short cell still sits on one line; .table-wrap's
-   horizontal scroll stays for the tables that are genuinely wide. */
-td { white-space: normal; overflow-wrap: anywhere; }
-td code { white-space: pre-wrap; overflow-wrap: anywhere; }
+   horizontal scroll stays for the tables that are genuinely wide.
+   `break-word` and not `anywhere`, for both: `anywhere` takes a column's
+   minimum width down to one character, and the browser then squeezes every
+   narrow column too -- it hyphenated `timestamp` and `container` down the
+   middle, and gave a calculation a column one word wide. `break-word` keeps a
+   whole word as the column's minimum and breaks one only when it cannot fit at
+   all, which is what makes a paragraph cell wrap without shrinking the cells
+   beside it. A table still wider than the panel after that scrolls, which is
+   what .table-wrap has always been for. */
+td { white-space: normal; overflow-wrap: break-word; }
+td code { white-space: pre-wrap; overflow-wrap: break-word; }
 
 th {
   color: var(--ink-3);
