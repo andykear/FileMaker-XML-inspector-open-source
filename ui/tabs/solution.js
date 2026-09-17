@@ -4,7 +4,8 @@
 // the clicks, so the buttons only carry the slot they want re-read.
 import { esc, kv, rereadCatalogButton, section, table } from '../dom.js';
 import { catalogCounts } from '../model.js';
-import { factValue } from './common.js';
+import { get } from '../access.js';
+import { byteSize, catalogHash, factValue, linkOr } from './common.js';
 
 // fm's flattened lists (layout, script, customFunction) carry folders and
 // separators alongside the real entries, so their count in this column is not
@@ -12,8 +13,20 @@ import { factValue } from './common.js';
 const FLATTENED_CATALOGS = new Set(['layout', 'script', 'customFunction']);
 const ENTRIES_TITLE = 'list entries including folders and separators';
 
+// `Get ( FileSize )` is bytes as a bare number -- everywhere else on the page
+// a reader wants "3.6 MB", so this one fact gets its own rendering, the exact
+// byte count kept on hover for whoever needs it precisely.
+const FILE_SIZE_KEY = 'Get ( FileSize )';
+
+function factLine(key, v) {
+  if (key !== FILE_SIZE_KEY) return factValue(v);
+  const value = get(v, 'value');
+  if (value === undefined) return factValue(v); // an errored fact renders like any other
+  return `<span title="${esc(`${value} bytes`)}">${esc(byteSize(value))}</span>`;
+}
+
 const COLUMNS = [
-  { key: 'catalog', label: 'Catalog', render: (r) => `${esc(r.catalog)}${r.listError ? ` <span class="error">${esc(r.listError.code)}</span>` : ''}` },
+  { key: 'catalog', label: 'Catalog', render: (r) => `${linkOr(catalogHash(r.catalog), r.catalog)}${r.listError ? ` <span class="error">${esc(r.listError.code)}</span>` : ''}` },
   {
     key: 'listed',
     label: 'Entries',
@@ -40,7 +53,7 @@ function renderFile(file) {
   }));
   const title = `${file.name ?? file.target}`;
   const body = `<p class="muted target">${esc(file.target)}</p>`
-    + kv(Object.entries(file.facts).map(([k, v]) => [k, factValue(v)]))
+    + kv(Object.entries(file.facts).map(([k, v]) => [k, factLine(k, v)]))
     + table(COLUMNS, rows, { empty: 'No catalogs read' });
   return section(title, body, { actions: rereadCatalogButton(file.target, 'facts', 'Re-read facts') });
 }

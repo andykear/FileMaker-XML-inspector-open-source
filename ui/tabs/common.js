@@ -24,6 +24,59 @@ export const fileName = (solution, target) => get(get(solution, 'files'), target
  *  as text rather than as a link that goes nowhere. */
 export const linkOr = (hash, label) => (hash ? link(hash, label) : esc(label));
 
+/** Which tab shows a catalog's rows, as a bare tab id (`'tables'`, not
+ *  `'#tables'`) -- the tabs already scope by file when there is more than one,
+ *  so a selection per catalog on top of that would be a second scheme for the
+ *  same thing. `target` is unused today; it names the file the question is
+ *  about, kept in the signature for whatever needs it next. Unknown catalog
+ *  -> `null`, which `linkOr` renders as plain text rather than a dead link. */
+const CATALOG_TABS = {
+  table: 'tables',
+  field: 'tables',
+  tableOccurrence: 'graph',
+  relation: 'graph',
+  graphNote: 'graph',
+  layout: 'layouts',
+  script: 'scripts',
+  account: 'security',
+  privilegeSet: 'security',
+  extendedPrivilege: 'security',
+  authorization: 'security',
+  theme: 'themes',
+  valueList: 'catalogs',
+  customFunction: 'catalogs',
+  customMenu: 'catalogs',
+  customMenuSet: 'catalogs',
+  externalDataSource: 'catalogs',
+  baseDirectory: 'catalogs',
+  persistentData: 'catalogs',
+  font: 'catalogs',
+};
+
+export function catalogHash(catalog, target) {
+  return CATALOG_TABS[catalog] ?? null;
+}
+
+/** A byte count the way a reader thinks in it: bare bytes under 1024, then
+ *  KB/MB/GB with one decimal, dropping a trailing `.0` (`1048576` -> `'1 MB'`).
+ *  Not a finite number (fm's error shape, `undefined`, text) -> `''`, so a
+ *  caller can tell "no size" from "zero bytes". */
+export function byteSize(n) {
+  if (n === null || n === undefined || n === '') return '';
+  const num = Number(n);
+  if (!Number.isFinite(num)) return '';
+  if (num < 1024) return `${num} B`;
+  const units = ['KB', 'MB', 'GB'];
+  let value = num / 1024;
+  let unit = units[0];
+  for (let i = 1; i < units.length && value >= 1024; i += 1) {
+    value /= 1024;
+    unit = units[i];
+  }
+  const rounded = Math.round(value * 10) / 10;
+  return `${rounded % 1 === 0 ? rounded : rounded.toFixed(1)} ${unit}`;
+}
+
 /** What an emptied table says. A table emptied BY THE FILTER has not found
  *  nothing, it has been narrowed to nothing, and saying "none" there
  *  contradicts the count in the heading above it. */

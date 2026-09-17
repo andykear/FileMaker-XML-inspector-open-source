@@ -7,11 +7,12 @@ import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import {
-  catalogActions, detailOf, FACT_FOLD, factValue, kindSelection, listOf, parseSelection, selectRow,
-  selectionKey, selectionTail, selectionWithTail, totalsLine, withFile,
+  byteSize, catalogActions, catalogHash, detailOf, FACT_FOLD, factValue, kindSelection, listOf, parseSelection,
+  selectRow, selectionKey, selectionTail, selectionWithTail, totalsLine, withFile,
 } from '../../ui/tabs/common.js';
 import { selectionOf as scriptSelectionOf, stepAnchor } from '../../ui/tabs/scripts.js';
 import { selectionOf as layoutSelectionOf } from '../../ui/tabs/layouts.js';
+import { LIST_CATALOGS } from '../../ui/read-plan.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -118,6 +119,43 @@ test('factValue reads fm\'s keys through access.js, so a folded spelling still a
   // for a fact that has no value key at all.
   assert.equal(factValue({ value: null }), '');
   assert.match(factValue({}), /class="error">unread: </);
+});
+
+test('byteSize renders bytes, KB, MB, GB with one decimal, dropping a trailing .0', () => {
+  assert.equal(byteSize(512), '512 B');
+  assert.equal(byteSize(1536), '1.5 KB');
+  assert.equal(byteSize(1048576), '1 MB');
+  assert.equal(byteSize(3727360), '3.6 MB');
+  assert.equal(byteSize('abc'), '');
+  assert.equal(byteSize(undefined), '');
+  assert.equal(byteSize(null), '');
+});
+
+test('catalogHash maps every catalog LIST_CATALOGS carries to a real tab, never null', () => {
+  for (const catalog of LIST_CATALOGS) {
+    assert.ok(catalogHash(catalog), `${catalog} should map to a tab`);
+  }
+  assert.equal(catalogHash('table'), 'tables');
+  assert.equal(catalogHash('field'), 'tables');
+  assert.equal(catalogHash('tableOccurrence'), 'graph');
+  assert.equal(catalogHash('relation'), 'graph');
+  assert.equal(catalogHash('graphNote'), 'graph');
+  assert.equal(catalogHash('layout'), 'layouts');
+  assert.equal(catalogHash('script'), 'scripts');
+  assert.equal(catalogHash('account'), 'security');
+  assert.equal(catalogHash('privilegeSet'), 'security');
+  assert.equal(catalogHash('extendedPrivilege'), 'security');
+  assert.equal(catalogHash('authorization'), 'security');
+  assert.equal(catalogHash('theme'), 'themes');
+  assert.equal(catalogHash('valueList'), 'catalogs');
+  assert.equal(catalogHash('customFunction'), 'catalogs');
+  assert.equal(catalogHash('customMenu'), 'catalogs');
+  assert.equal(catalogHash('customMenuSet'), 'catalogs');
+  assert.equal(catalogHash('externalDataSource'), 'catalogs');
+  assert.equal(catalogHash('baseDirectory'), 'catalogs');
+  assert.equal(catalogHash('persistentData'), 'catalogs');
+  assert.equal(catalogHash('font'), 'catalogs');
+  assert.equal(catalogHash('nosuchcatalog'), null);
 });
 
 test('kindSelection accepts only the kinds the tab knows', () => {

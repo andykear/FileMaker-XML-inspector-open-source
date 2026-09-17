@@ -31,3 +31,22 @@ test('the Solution tab lists every catalog with the Entries column, titled only 
 test('every model string in the Solution tab is escaped', () => {
   assert.ok(!tab.render(solution).includes('<script>'));
 });
+
+test('the file size fact renders as a rounded size, the exact byte count on hover', () => {
+  const root = solution.files[api.meta.root];
+  const size = root.facts['Get ( FileSize )'];
+  assert.equal(size.value, '3727360', 'measured against the fixture before pinning');
+  const html = tab.render(solution);
+  assert.ok(html.includes('<span title="3727360 bytes">3.6 MB</span>'));
+  // The bare number never leaks onto the page unformatted.
+  assert.ok(!html.includes('<dd>3727360</dd>'));
+});
+
+test('the Catalog column links to the tab that shows each catalog', () => {
+  const html = tab.render(solution);
+  assert.match(html, /<a href="#tables">table<\/a>/);
+  assert.match(html, /<a href="#graph">relation<\/a>/);
+  assert.match(html, /<a href="#security">account<\/a>/);
+  assert.match(html, /<a href="#themes">theme<\/a>/);
+  assert.match(html, /<a href="#catalogs">valueList<\/a>/);
+});
