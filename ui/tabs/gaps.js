@@ -170,15 +170,19 @@ function kindSection(groups, kind, view) {
 }
 
 /** One entry of the register: what it is read with, and every fact the export
- *  carries about it. Filtered on the attribute's own name and export path. */
+ *  carries about it. Filtered on everything the row shows a reader -- the
+ *  attribute's name, its export path, the fm key it would arrive under, and the
+ *  sentence saying where it was known from. */
 function entrySection(register, id, view) {
   const entry = (register ?? []).find((e) => (e.id ?? '') === id);
   if (!entry) return '';
   const kind = String(entry.id ?? '').split(':')[0];
   const attributes = entry.attributes ?? [];
-  const counts = { reported: 0, missing: 0, wontfix: 0 };
-  for (const a of attributes) counts[statusOf(a)] += 1;
-  const rows = attributes.filter((a) => matches(a.name ?? '', view.filter) || matches(a.path ?? '', view.filter));
+  // The same tally the entries table draws, counted by the same function, so the
+  // two tables cannot disagree about one entry.
+  const [counts] = registerEntries({ entries: [entry] });
+  const rows = attributes.filter((a) => matches(a.name ?? '', view.filter) || matches(a.path ?? '', view.filter)
+    || matches(a.fmKey ?? '', view.filter) || matches(a.knownFrom ?? '', view.filter));
   // The Kind row is also the way back to the kind's entries: the entry came from
   // that table and a reader wants the neighbouring entries next.
   const pairs = [['Kind', link(`gaps/${solutionKey('gap-kind', kind)}`, kind)
@@ -188,7 +192,7 @@ function entrySection(register, id, view) {
   if (probe) pairs.push(['Read with', probe]);
   if (entry.expectedError) pairs.push(['Expected error', badge(entry.expectedError, 'warn')]);
   const body = totalsLine([
-    ['Attributes', attributes.length],
+    ['Attributes', counts.attributes],
     ['Reported', counts.reported],
     ['Missing', counts.missing],
     ['Wontfix', counts.wontfix],
@@ -200,23 +204,22 @@ function entrySection(register, id, view) {
 
 /** What the selection is showing, ABOVE the kinds table: a click's answer lands
  *  where the eye already is, and the overview stays under it. */
-function registerDetail(solution, view) {
+function registerDetail(solution, view, groups) {
   const register = solution.register;
   const sel = register && registerSelection(view);
   if (!sel) return '';
   return sel.kind === 'gap-kind'
-    ? kindSection(registerGroups(register), sel.id, view)
+    ? kindSection(groups, sel.id, view)
     : entrySection(register, sel.id, view);
 }
 
-function registerSection(solution, view) {
+function registerSection(solution, view, groups) {
   const register = solution.register;
   if (!register) {
     return section('What fm cannot read yet', '<p class="muted">The coverage register is the toolkit\'s, and it is 3MB of prose: '
       + 'it is fetched the first time this tab is opened rather than with the solution.</p>'
       + '<button data-action="gaps-register">Load the register</button>');
   }
-  const groups = registerGroups(register);
   const body = totalsLine([
     ['Kinds', groups.length],
     ['Entries', register.length],
@@ -226,7 +229,9 @@ function registerSection(solution, view) {
     ['Wontfix', groups.reduce((n, g) => n + g.wontfix, 0)],
   ])
     + '<p class="muted">One row per kind the Save as XML export knows. Select a kind for its entries, an entry for its '
-    + 'facts: which fm reports, which it does not, and where each was known from.</p>'
+    + 'facts: which fm reports, which it does not, and where each was known from. '
+    + 'The filter narrows the table you are looking at: kinds by name, entries by id and op, attributes by name, path, '
+    + 'fm key and where they were known from.</p>'
     + table(KIND_COLUMNS, groups.filter((g) => matches(g.kind, view.filter)),
       { empty: emptyNote(groups.length, 'The register is empty'), rowAttrs: selectRow(view.selection) });
   return section('What fm cannot read yet', body);
@@ -414,8 +419,11 @@ export const tab = {
   id: 'gaps',
   label: 'Gaps',
   render(solution, view = {}) {
-    return registerDetail(solution, view)
-      + registerSection(solution, view)
+    // Grouped once: the detail above the table and the table itself are two views
+    // of the same grouping, and the register is 302 entries of prose.
+    const groups = registerGroups(solution.register);
+    return registerDetail(solution, view, groups)
+      + registerSection(solution, view, groups)
       + liveSection(solution)
       + renderingSection(solution, view)
       + factsSection(solution);

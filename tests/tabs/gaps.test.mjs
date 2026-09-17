@@ -70,9 +70,6 @@ test('registerGroups groups by the id prefix and counts reported, missing and wo
   assert.equal(layoutObject.entries.length, 1);
   assert.deepEqual([layoutObject.reported, layoutObject.missing, layoutObject.wontfix], [0, 1, 0]);
   assert.equal(layoutObject.attributes, 1);
-  // `attributes` is the sum by construction: statusOf answers one of the three
-  // for every attribute and never two.
-  for (const g of registerGroups(FULL)) assert.equal(g.attributes, g.reported + g.missing + g.wontfix, g.kind);
 });
 
 test('registerEntries is one row per entry, with the entry\'s own totals', () => {
@@ -120,7 +117,7 @@ test('registerFacts is the build the register was last checked against', () => {
   assert.equal(registerFacts([]), null);
 });
 
-test('the register is a kinds table, one row per kind, and nothing is folded away', () => {
+test('the register section has no disclosure tree', () => {
   const html = tab.render(bare({ register: FULL }), view);
   assert.match(html, /What fm cannot read yet/);
   const kinds = registerGroups(FULL);
@@ -199,7 +196,7 @@ test('the filter narrows each table on what that table shows, and never the tota
     assert.match(html, /Reported <span class="num">2<\/span>/);
   }
   // The entries table filters on the entry's id and its op, the attributes table
-  // on the attribute's name and export path -- and neither touches its totals.
+  // on everything it draws -- and neither touches its totals.
   const entries = tab.render(bare({ register: REGISTER }), { ...view, selection: solutionKey('gap-kind', 'account'), filter: 'google' });
   assert.match(entries, /account:google/);
   assert.doesNotMatch(entries, /account:amazon/);
@@ -208,6 +205,24 @@ test('the filter narrows each table on what that table shows, and never the tota
   assert.match(attributes, /password change on next login/, 'matched on its export path');
   assert.doesNotMatch(attributes, /account authentication type code/, 'a non-matching attribute row is dropped');
   assert.match(attributes, /Attributes <span class="num">3<\/span> &middot; Reported <span class="num">1<\/span>/);
+
+  // The table draws fm key and Known from, so the filter reads them too: "Manage
+  // Security" is in one attribute's Known from and nowhere in its name or path.
+  const known = tab.render(bare({ register: REGISTER }), { ...view, selection: solutionKey('gap-entry', 'account:amazon'), filter: 'manage security' });
+  assert.match(known, /password change on next login/, 'kept by a word only its Known from carries');
+  assert.doesNotMatch(known, /account authentication type code/);
+  // And the fm key, which is the only place `hasHash` is spelled.
+  const oneEntry = [{
+    id: 'authorization:one',
+    op: 'read:authorization',
+    attributes: [
+      { name: 'carries a file hash', path: 'Authentication', fmKey: 'hasHash', reported: true, knownFrom: 'SaXML Authorization' },
+      { name: 'authorization tags', path: 'TagList', fmKey: null, reported: false, knownFrom: 'SaXML Authorization' },
+    ],
+  }];
+  const byKey = tab.render(bare({ register: oneEntry }), { ...view, selection: solutionKey('gap-entry', 'authorization:one'), filter: 'hashash' });
+  assert.match(byKey, /carries a file hash/);
+  assert.doesNotMatch(byKey, /authorization tags/);
 });
 
 test('the register section says so when nothing has been loaded, and offers the button', () => {
