@@ -168,6 +168,7 @@ async function loadRegister() {
   if (solution.register) return true;
   return run('Loading the coverage register', async () => {
     solution.register = await api.register();
+    progress(`Loaded the coverage register: ${solution.register.length} entries`);
   });
 }
 
@@ -182,8 +183,12 @@ async function runGapsCheck() {
   // mean nothing without it -- so a failed fetch stops the check here, with run()'s
   // own error message on screen rather than a second one over the top of it.
   if (!await loadRegister()) return;
+  // The last message a read leaves on screen is the one the reader is left with, so
+  // every read says what it DID and not only what it was doing: a line still reading
+  // "Running the register's probes" five minutes later reads as a page still working.
   await run('Running the register\'s probes', async () => {
     solution.gaps = await api.gapsCheck(solution.root);
+    progress(`Ran ${solution.gaps.entries} of the register's probes`);
   });
 }
 

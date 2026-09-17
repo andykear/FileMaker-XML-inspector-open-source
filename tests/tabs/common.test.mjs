@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import {
-  catalogActions, detailOf, kindSelection, listOf, parseSelection, selectRow,
+  catalogActions, detailOf, FACT_FOLD, factValue, kindSelection, listOf, parseSelection, selectRow,
   selectionKey, selectionTail, totalsLine, withFile,
 } from '../../ui/tabs/common.js';
 
@@ -90,4 +90,21 @@ test('kindSelection accepts only the kinds the tab knows', () => {
   assert.equal(kindSelection(null, ['acc']), null);
   // An id that carries its own colon comes back whole.
   assert.deepEqual(kindSelection(`${ROOT}|cf:a:b`, ['cf']), { target: ROOT, kind: 'cf', id: 'a:b' });
+});
+
+test('factValue prints a short fact, folds a document, and says what fm could not read', () => {
+  assert.equal(factValue({ value: 'ooe' }), 'ooe');
+  assert.equal(factValue({ value: '<b>' }), '&lt;b&gt;');
+  assert.match(factValue({ error: { code: 'refused', message: 'no' } }), /class="error">refused: no</);
+  assert.match(factValue(undefined), /class="error">unread: </);
+
+  // fm answers Get ( FileLocaleElements ) with a JSON document: unfolded it is
+  // twenty lines of one key/value line, and the facts around it are unreadable.
+  const long = root.facts['Get ( FileLocaleElements )'];
+  assert.ok(long.value.length > FACT_FOLD, 'the fixture carries the long fact');
+  const html = factValue(long);
+  assert.match(html, /^<details><summary>/);
+  assert.match(html, /chars\)<\/span><\/summary><pre>/, 'the whole answer is in a pre, where it can be read and selected');
+  assert.match(html.slice(0, 200), /APIVers/, 'the summary opens with the answer itself, escaped');
+  assert.equal(factValue({ value: 'x'.repeat(FACT_FOLD) }), 'x'.repeat(FACT_FOLD), 'exactly at the limit does not fold');
 });

@@ -4,12 +4,7 @@
 // the clicks, so the buttons only carry the slot they want re-read.
 import { esc, kv, rereadCatalogButton, section, table } from '../dom.js';
 import { catalogCounts } from '../model.js';
-
-function factValue(v) {
-  return 'value' in v
-    ? esc(v.value)
-    : `<span class="error">${esc(v.error.code)}: ${esc(v.error.message)}</span>`;
-}
+import { factValue } from './common.js';
 
 // fm's flattened lists (layout, script, customFunction) carry folders and
 // separators alongside the real entries, so their count in this column is not

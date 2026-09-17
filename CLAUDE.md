@@ -11,6 +11,7 @@ The Clockwork Inspector rewrite is complete: the fm CLI inspector is the product
 - `npm test`: `node --test 'tests/*.test.mjs'` (the directory form of `node --test` fails on Node 22.19).
 - `npm start -- --file=<target> --username=<account> [--port=0] [--no-open] [--no-prompt]`: run the inspector against a live file. The Gaps tab's live check runs its probes on demand, not at startup — reads only.
 - `INSPECTOR_LIVE=1 npm test`: also runs the live smoke test against the reference solution (reads only).
+- `INSPECTOR_BROWSER=1 npm run test:browser`: the browser pass — headless Chrome walks every tab of the live page (reads only). Needs Chrome installed; `INSPECTOR_CHROME` overrides its path. Screenshots land in `.local/screenshots/`.
 - `npm run record -- --file=... --username=admin --out=tests/fixtures/ooe`: re-record the ooe fixture, after ooe changes or a new fm build.
 - Read-only probes against the reference solution: `fm --file=fmnet://localhost/ooe --username=admin --keychain --no-prompt --abort-on-error=false --out=<out> <ops.ndjson>`. Only read-only ops, ever: `read:*`, plus `evaluate:calculation` and `validate:calculation` (fm's help guarantees they never change the file).
 

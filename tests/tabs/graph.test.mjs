@@ -114,6 +114,19 @@ test('graphSvg draws a rect per occurrence, a line per relation and the notes', 
   assert.ok(!svg.includes('class="to highlight"'));
 });
 
+test('graphSvg carries its own size, so a small file\'s graph is not blown up to fit', () => {
+  const svg = graphSvg(root);
+  const attrs = svg.match(/^<svg viewBox="0 0 (\d+) (\d+)" width="(\d+)" height="(\d+)"/);
+  assert.ok(attrs, 'width and height follow the viewBox');
+  assert.equal(attrs[3], attrs[1], 'the width is the viewBox width: one unit is one pixel');
+  assert.equal(attrs[4], attrs[2], 'and so is the height');
+  // BrojDva is three boxes in a corner. Stretched to a 1200px panel its labels were
+  // four times life size; at its own width it is the size FileMaker draws it.
+  const small = graphSvg(solution.files[Object.keys(solution.files).find((t) => t !== ROOT)]);
+  const smallWidth = Number(small.match(/ width="(\d+)"/)[1]);
+  assert.ok(smallWidth > 0 && smallWidth < 700, `BrojDva's graph asks for its own ${smallWidth}px, not the panel's`);
+});
+
 test('graphSvg highlights the occurrence it is given, and only that one', () => {
   const svg = graphSvg(root, { highlight: 1065089 });
   assert.equal(times(svg, /class="to highlight"/g), 1);
@@ -173,6 +186,10 @@ test('a selected occurrence adds its detail, its re-read and the highlight', () 
   assert.match(html, /TestTable_Contacts/);
   assert.match(html, /data-reread-object='\{[^']*"catalog":"tableOccurrence"[^']*"key":"1065089"/);
   assert.equal(times(html, /class="to highlight"/g), 1);
+  // Where the box is, said the way a reader says it: the wire's own JSON in a
+  // key/value line is the model leaking into prose.
+  assert.match(html, /<dt>Graph<\/dt><dd>131 \u00d7 116 at 20, 20 /);
+  assert.ok(!html.includes('{&quot;left&quot;'), 'the bounds are not printed as JSON');
 });
 
 test('a selected relation adds its detail and its re-read', () => {

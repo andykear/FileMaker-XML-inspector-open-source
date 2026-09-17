@@ -280,7 +280,10 @@ ul.notes { margin: 8px 0 0; padding-left: 18px; color: var(--ink-2); }
   padding: 6px;
 }
 
-svg.graph { display: block; width: 100%; height: auto; max-height: 72vh; }
+/* The graph is drawn at FileMaker's own scale (the svg carries its width in
+   units); max-width shrinks one too wide for the panel and never grows a
+   small one. */
+svg.graph { display: block; width: auto; max-width: 100%; height: auto; max-height: 72vh; }
 
 svg.graph .to { stroke-width: 1; }
 svg.graph .to.highlight { stroke: var(--brand); stroke-width: 3; fill: var(--brand); fill-opacity: .18; }
@@ -317,6 +320,22 @@ ul.tree > li:hover { background: var(--surface-mute); }
 ul.tree > li.selected { background: var(--navy-tint); font-weight: 600; }
 
 .panel details > summary { cursor: pointer; padding: 2px 0; color: var(--ink-2); font-weight: 600; }
+
+/* Where a long answer is shown whole -- a theme's CSS, a fact fm returns as a JSON
+   document. It wraps: Get ( FileLocaleElements ) is 1.5k characters on one line, and
+   a <pre> that does not wrap pushes the whole page sideways. */
+.panel pre {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  max-height: 40vh;
+  overflow: auto;
+  background: var(--surface-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 
 /* One li per script step. The indent is fm's own block nesting, carried on --depth so
    any nesting depth indents; the depth-n class is what a stylesheet or a test matches. */

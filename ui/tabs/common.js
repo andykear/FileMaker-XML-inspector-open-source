@@ -29,6 +29,24 @@ export const linkOr = (hash, label) => (hash ? link(hash, label) : esc(label));
  *  contradicts the count in the heading above it. */
 export const emptyNote = (total, none) => (total ? 'None match the filter' : none);
 
+/** A Get() answer longer than this is a document, not a value, and is folded. fm
+ *  returns Get ( FileLocaleElements ) as ~1.5k of JSON: as one key/value line it
+ *  buries the twenty facts around it. */
+export const FACT_FOLD = 160;
+
+/** One of a file's facts: fm's answer, or fm's error where the answer should be.
+ *  A long answer folds into a <details> and is shown for what it is -- text the
+ *  file gave us -- inside a <pre>, which is also where a reader can select it. */
+export function factValue(v) {
+  if (!v || !('value' in v)) {
+    return `<span class="error">${esc(get(v?.error, 'code') ?? 'unread')}: ${esc(get(v?.error, 'message') ?? '')}</span>`;
+  }
+  const text = String(v.value ?? '');
+  if (text.length <= FACT_FOLD) return esc(text);
+  return `<details><summary>${esc(text.slice(0, FACT_FOLD))}\u2026 <span class="muted">(${count(text.length)} chars)</span></summary>`
+    + `<pre>${esc(text)}</pre></details>`;
+}
+
 /** `3 steps`, `1 step`: a count and the word it counts, agreeing. */
 export const plural = (n, word) => `${count(n)} ${n === 1 ? word : `${word}s`}`;
 

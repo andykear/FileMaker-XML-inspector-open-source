@@ -119,12 +119,12 @@ const box = (b) => ({
 const centre = (b) => ({ x: b.left + b.width / 2, y: b.top + b.height / 2 });
 
 function viewBoxOf(boxes) {
-  if (!boxes.length) return `0 0 ${MARGIN * 2} ${MARGIN * 2}`;
+  if (!boxes.length) return { x: 0, y: 0, width: MARGIN * 2, height: MARGIN * 2 };
   const left = Math.min(...boxes.map((b) => b.left));
   const top = Math.min(...boxes.map((b) => b.top));
   const right = Math.max(...boxes.map((b) => b.left + b.width));
   const bottom = Math.max(...boxes.map((b) => b.top + b.height));
-  return `${left - MARGIN} ${top - MARGIN} ${right - left + MARGIN * 2} ${bottom - top + MARGIN * 2}`;
+  return { x: left - MARGIN, y: top - MARGIN, width: right - left + MARGIN * 2, height: bottom - top + MARGIN * 2 };
 }
 
 /** SVG text does not wrap or clip, so a label wider than its box would smear across
@@ -164,8 +164,14 @@ export function graphSvg(file, opts = {}) {
     const [p, q] = [centre(a), centre(b)];
     return `<line data-rel="${esc(r.id)}" class="rel" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}"/>`;
   }).join('');
-  const viewBox = viewBoxOf([...placed.map((r) => box(r.bounds)), ...notes.map((n) => box(get(n, 'bounds')))]);
-  return `<svg viewBox="${viewBox}" class="graph" role="img" preserveAspectRatio="xMinYMin meet">`
+  const vb = viewBoxOf([...placed.map((r) => box(r.bounds)), ...notes.map((n) => box(get(n, 'bounds')))]);
+  // The width and height are the graph's own, in FileMaker's units: one unit is one
+  // pixel, the same size the graph is in FileMaker. Without them the browser stretches
+  // the SVG to the panel's width, and a small file's three boxes -- BrojDva's -- blow
+  // up to a quarter of the screen each with 40px labels. The stylesheet shrinks a
+  // graph too wide to fit; it never grows one.
+  return `<svg viewBox="${vb.x} ${vb.y} ${vb.width} ${vb.height}" width="${vb.width}" height="${vb.height}"`
+    + ' class="graph" role="img" preserveAspectRatio="xMinYMin meet">'
     + notes.map(noteSvg).join('') + lines + placed.map((r) => occurrenceSvg(r, opts.highlight)).join('')
     + '</svg>';
 }
@@ -222,6 +228,13 @@ function renderRelations(solution, view, rows) {
   return section('Relationships', body, { actions: catalogActions(solution, 'relation', view, 'relations') });
 }
 
+/** Where fm says the box is, as a reader would say it rather than as the wire says
+ *  it: `{"left":20,...}` in a key/value line is the model leaking into prose. */
+function boundsText(b) {
+  if (!b) return 'not placed';
+  return `${b.width} \u00d7 ${b.height} at ${b.left}, ${b.top}`;
+}
+
 function sideKv(label, side) {
   const flags = ['createRelated', 'cascadeDelete', 'cascadeUpdate', 'sortRelated'].filter((f) => get(side, f) === true);
   const sort = sortText(side);
@@ -246,7 +259,7 @@ function renderDetail(solution, view, occurrences, relations) {
     ['Source', sourceBadges(row) || 'none'], ['Position', esc(get(d, 'position'))],
     ['Related', (get(d, 'related') ?? []).map((r) => esc(nameOf(r))).join(', ') || 'none'],
     ['Cascade', row.cascade ? badge('has cascade', 'warn') : 'none'],
-    ['Graph', `${esc(JSON.stringify(row.bounds))} <span class="swatch" style="background:${row.color}"></span> ${esc(row.color)}, view ${esc(path(d, 'graph.view'))}`],
+    ['Graph', `${esc(boundsText(row.bounds))} <span class="swatch" style="background:${row.color}"></span> ${esc(row.color)}, view ${esc(path(d, 'graph.view'))}`],
     ['Tags', esc(row.tags) || 'none'],
   ] : [
     ['Left', esc(row.left)], ['Right', esc(row.right)],
