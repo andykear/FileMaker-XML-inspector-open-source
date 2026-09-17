@@ -4,7 +4,8 @@
 // the clicks, so the buttons only carry the slot they want re-read.
 import { esc, kv, rereadCatalogButton, section, table } from '../dom.js';
 import { catalogCounts } from '../model.js';
-import { factValue } from './common.js';
+import { get } from '../access.js';
+import { byteSize, catalogHash, factValue, linkOr } from './common.js';
 
 // fm's flattened lists (layout, script, customFunction) carry folders and
 // separators alongside the real entries, so their count in this column is not
@@ -12,20 +13,49 @@ import { factValue } from './common.js';
 const FLATTENED_CATALOGS = new Set(['layout', 'script', 'customFunction']);
 const ENTRIES_TITLE = 'list entries including folders and separators';
 
+// The `field` slot has no list op at all: fm describes fields one table at a
+// time, so nothing ever listed them and the count would read a flat 0 beside a
+// Described of 14. The cell says what actually happened instead, and the row
+// borrows the `table` slot's timestamp -- the read that fetched the fields is
+// the table read, so an empty Read at would be the second half of the same lie.
+const PER_TABLE_CATALOG = 'field';
+const PER_TABLE_SOURCE = 'table';
+const PER_TABLE_TITLE = 'fields are read one table at a time; Described counts the tables read';
+
+// `Get ( FileSize )` is bytes as a bare number -- everywhere else on the page
+// a reader wants "3.6 MB", so this one fact gets its own rendering, the exact
+// byte count kept on hover for whoever needs it precisely.
+const FILE_SIZE_KEY = 'Get ( FileSize )';
+
+function factLine(key, v) {
+  if (key !== FILE_SIZE_KEY) return factValue(v);
+  const value = get(v, 'value');
+  const size = byteSize(value);
+  // Anything byteSize can't turn into a size (an error, undefined, null, text)
+  // falls back to the general fact rendering, so the fallback stays the rule
+  // rather than one carved-out case (undefined) among several.
+  if (!size) return factValue(v);
+  return `<span title="${esc(`${value} bytes`)}">${esc(size)}</span>`;
+}
+
 const COLUMNS = [
-  { key: 'catalog', label: 'Catalog', render: (r) => `${esc(r.catalog)}${r.listError ? ` <span class="error">${esc(r.listError.code)}</span>` : ''}` },
+  { key: 'catalog', label: 'Catalog', render: (r) => `${linkOr(catalogHash(r.catalog), r.catalog)}${r.listError ? ` <span class="error">${esc(r.listError.code)}</span>` : ''}` },
   {
     key: 'listed',
     label: 'Entries',
     num: true,
-    render: (r) => (FLATTENED_CATALOGS.has(r.catalog)
-      ? `<span title="${esc(ENTRIES_TITLE)}">${esc(r.listed)}</span>`
-      : esc(r.listed)),
+    render: (r) => {
+      if (r.catalog === PER_TABLE_CATALOG) return `<span title="${esc(PER_TABLE_TITLE)}">per table</span>`;
+      return FLATTENED_CATALOGS.has(r.catalog)
+        ? `<span title="${esc(ENTRIES_TITLE)}">${esc(r.listed)}</span>`
+        : esc(r.listed);
+    },
   },
   { key: 'described', label: 'Described', num: true },
   { key: 'errors', label: 'Errors', num: true, render: (r) => `<span class="${r.errors ? 'error' : ''}">${esc(r.errors)}</span>` },
   { key: 'readAt', label: 'Read at', render: (r) => `<span class="muted">${esc(r.readAt ?? '')}</span>` },
-  { key: 'reread', label: '', render: (r) => rereadCatalogButton(r.target, r.catalog) },
+  // A column of buttons under a blank header: there is nothing to sort by, so it opts out.
+  { key: 'reread', label: '', sort: false, render: (r) => rereadCatalogButton(r.target, r.catalog) },
 ];
 
 function renderFile(file) {
@@ -34,13 +64,13 @@ function renderFile(file) {
     listed: c.listed,
     described: c.described,
     errors: c.errors,
-    readAt: file.catalogs[catalog].readAt,
+    readAt: (catalog === PER_TABLE_CATALOG ? file.catalogs[PER_TABLE_SOURCE] : file.catalogs[catalog])?.readAt,
     listError: file.catalogs[catalog].listError,
     target: file.target,
   }));
   const title = `${file.name ?? file.target}`;
   const body = `<p class="muted target">${esc(file.target)}</p>`
-    + kv(Object.entries(file.facts).map(([k, v]) => [k, factValue(v)]))
+    + kv(Object.entries(file.facts).map(([k, v]) => [k, factLine(k, v)]))
     + table(COLUMNS, rows, { empty: 'No catalogs read' });
   return section(title, body, { actions: rereadCatalogButton(file.target, 'facts', 'Re-read facts') });
 }

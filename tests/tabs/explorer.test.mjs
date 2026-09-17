@@ -220,7 +220,7 @@ test("a reference written on a script step shows FileMaker's line beside the key
   assert.ok(layout.every((r) => r.line === ''));
   // And the column is on the page, with the sentence that says what it is.
   const html = tab.render(solution, viewOf(selectionKey(ROOT, 'script', '55')));
-  const th = /<th class="num" title="([^"]*)">Line<\/th>/.exec(html);
+  const th = /<th class="num" data-sort="num" title="([^"]*)">Line<\/th>/.exec(html);
   assert.ok(th, 'no Line column with a title on it');
   assert.match(th[1], /line number/);
   // And the line is the link: it lands on that step of that script.

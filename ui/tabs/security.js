@@ -351,10 +351,10 @@ export const tab = {
     const privilegeSets = rowsOf(solution, privilegeSetRows);
     const extendedPrivileges = rowsOf(solution, extendedPrivilegeRows);
     const authorizations = rowsOf(solution, authorizationRows);
-    return renderAccounts(solution, view, accounts)
+    return renderSelected(solution, view)
+      + renderAccounts(solution, view, accounts)
       + renderPrivilegeSets(solution, view, privilegeSets)
       + renderExtendedPrivileges(solution, view, extendedPrivileges)
-      + renderAuthorizations(solution, view, authorizations)
-      + renderSelected(solution, view);
+      + renderAuthorizations(solution, view, authorizations);
   },
 };

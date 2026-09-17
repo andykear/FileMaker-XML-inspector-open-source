@@ -112,7 +112,7 @@ test('Unreferenced styles are grouped by theme, not listed flat', () => {
   const block = html.slice(at, html.indexOf('</details>', at));
   assert.ok(block.includes('Apex Blue'));
   // The theme is a column of its own, so a style row says which theme it is in.
-  assert.ok(/<th>Theme<\/th>/.test(block));
+  assert.ok(/<th data-sort="text" title="Click to sort">Theme<\/th>/.test(block));
 });
 
 test('Broken references: grouped by kind, the occurrence/dangling pair adjacent, links round-trip', () => {
@@ -271,7 +271,7 @@ test('every model string goes through esc', () => {
 test("the Broken table's Where header says fm's /N paths are fm's own JSON pointers", () => {
   const html = tab.render(solution, view);
   const section = html.slice(html.indexOf('<h2>Broken references and fm problem steps</h2>'), html.indexOf('<h2>Script issues'));
-  const th = /<th title="([^"]*)">Where<\/th>/.exec(section);
+  const th = /<th data-sort="text" title="([^"]*)">Where<\/th>/.exec(section);
   assert.ok(th, 'no title on the Where header');
   assert.match(th[1], /JSON pointer/);
   assert.match(th[1], /not a line number/);

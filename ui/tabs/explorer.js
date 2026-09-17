@@ -8,13 +8,12 @@
 // this file owns is `refHash`, the map from a reference's kind and id to the
 // tab that shows it; ui/tabs/analysis.js imports it rather than repeating it.
 //
-// The one place this tab departs from the page's list-then-detail order: when
-// something is selected its detail is rendered ABOVE the object list, not below
-// it. Every other tab lists one catalog -- a few dozen rows a reader scrolls
-// past in a second -- while this list is every named object of the whole
-// solution, thousands of rows on a real file, and the detail under it would be
-// off the bottom of the screen with no way to know it had arrived. The list
-// stays on the page underneath, because picking the next object is the next
+// Detail above the list is the rule on every tab (see ui/tabs/common.js), and
+// this tab is no different: when something is selected its detail is rendered
+// ABOVE the object list, not below it. Here the list is every named object of
+// the whole solution, thousands of rows on a real file, and the detail under it
+// would be off the bottom of the screen with no way to know it had arrived. The
+// list stays on the page underneath, because picking the next object is the next
 // thing a reader does.
 //
 // A pure renderer: no document, every fm key through access.js, every model

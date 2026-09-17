@@ -104,7 +104,7 @@ test('customFunctionRows: all 9 custom functions of the root file, folders skipp
 
 test('the custom-function table shows the folder column and the nested functions', () => {
   const html = tab.render(solution, view);
-  assert.ok(html.includes('<th>Folder</th>'));
+  assert.ok(html.includes('<th data-sort="text" title="Click to sort">Folder</th>'));
   assert.ok(html.includes('>GetFileMakerVersionMajor</a>'));
   assert.ok(html.includes('<td>MyCustomFunctionParentFolder/MyCustomFunctionFolder</td>'));
   assert.ok(html.includes(`Custom functions <span class="num">9</span>`));
@@ -137,7 +137,7 @@ test('externalDataSourceRows: 7 external sources on the root file, with the odbc
   assert.equal(odbc.sourceType, 'odbc');
   assert.equal(odbc.dsn, 'ets');
   assert.equal(odbc.hasData, true);
-  assert.ok(tab.render(solution, view).includes('<th>Has data</th>'));
+  assert.ok(tab.render(solution, view).includes('<th data-sort="text" title="Click to sort">Has data</th>'));
   const fm = rows.find((r) => r.name === 'Self');
   assert.equal(fm.sourceType, 'filemaker');
   assert.equal(fm.dsn, '');
@@ -242,6 +242,15 @@ test('selecting a value list shows its kv detail, the values and a re-read contr
   assert.ok(html.includes('"catalog":"valueList"'));
 });
 
+test('the value list detail renders above the Value lists list', () => {
+  const yn = valueListRows(root).find((r) => r.name === 'YN');
+  const html = tab.render(solution, { ...view, selection: `${api.meta.root}|vl:${yn.id}` });
+  const detail = html.indexOf('<h2>Value list YN');
+  const list = html.indexOf('<h2>Value lists</h2>');
+  assert.ok(detail >= 0 && list >= 0);
+  assert.ok(detail < list, 'a click\'s result renders where the eye is, above the list');
+});
+
 test('selecting a custom function shows its escaped body in a <pre> and a re-read control', () => {
   const fn = customFunctionRows(root).find((r) => r.name === 'MyCustomFunction');
   const html = tab.render(solution, { ...view, selection: `${api.meta.root}|cf:${fn.id}` });
@@ -270,7 +279,7 @@ test('a selection in the second file reads that file, not the root', () => {
 
 test('the File column appears in multiFile view', () => {
   const html = tab.render(solution, view);
-  assert.ok(html.includes('<th>File</th>'));
+  assert.ok(html.includes('<th data-sort="text" title="Click to sort">File</th>'));
 });
 
 test('every model string is escaped', () => {

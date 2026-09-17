@@ -129,7 +129,7 @@ test('the Themes table lists every theme with a data-select row and a re-read co
   assert.match(html, /Minimalist/);
   assert.ok(html.includes(`data-select="${api.meta.root}|1"`));
   assert.ok(html.includes('data-reread-catalog="theme"'));
-  assert.ok(html.includes('<th>File</th>'));
+  assert.ok(html.includes('<th data-sort="text" title="Click to sort">File</th>'));
 });
 
 test('selecting a theme shows kv, swatches, named styles, layouts using as links, and the CSS in an escaped <pre>', () => {
@@ -143,6 +143,15 @@ test('selecting a theme shows kv, swatches, named styles, layouts using as links
   assert.ok(html.includes('<details>'));
   assert.match(html, /<pre>/);
   assert.ok(html.includes('background-color'));
+});
+
+test('the theme detail renders above the Themes list', () => {
+  const apex = root.catalogs.theme.list.find((t) => t.displayName === 'Apex Blue');
+  const html = tab.render(solution, { ...view, selection: `${api.meta.root}|${apex.id}` });
+  const detail = html.indexOf('<h2>Theme Apex Blue');
+  const list = html.indexOf('<h2>Themes</h2>');
+  assert.ok(detail >= 0 && list >= 0);
+  assert.ok(detail < list, 'a click\'s result renders where the eye is, above the list');
 });
 
 test("the Layouts-using list names only layouts; the rest are counted and said to be fm's folder and separator rows", () => {

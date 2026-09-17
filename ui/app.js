@@ -4,6 +4,7 @@
 import { createApi } from './api.js';
 import { esc } from './dom.js';
 import { discover, reread } from './discovery.js';
+import { createReadLog } from './read-log.js';
 import { createShell, parseHash } from './shell.js';
 import { markdownReport } from './export/markdown.js';
 import { mermaidCallGraph, mermaidRelationships } from './export/mermaid.js';
@@ -53,6 +54,20 @@ function guard(message) {
   $('progress').textContent = message;
 }
 
+/** A discovery of the reference solution takes about ten seconds, most of it in
+ *  one fm read: the hooks draw a read log in the main area (the page had nothing
+ *  there until the first render) and the header keeps its progress line. */
+function readHooks() {
+  const log = createReadLog();
+  return {
+    onProgress: progress,
+    onPhase: (event) => {
+      log.push(event);
+      shell.showMessage(log.html());
+    },
+  };
+}
+
 async function run(label, fn) {
   if (busy) {
     guard('Already reading, wait for it to finish');
@@ -65,6 +80,14 @@ async function run(label, fn) {
   // which is what enables them again.
   for (const b of document.querySelectorAll('button[data-reread-catalog], button[data-reread-object], button[data-action]')) b.disabled = true;
   progress(label);
+  // A read that takes ten seconds has to look like it is still going: the
+  // seconds ride on the end of whatever message the read last wrote, and
+  // lastProgress is that message without them, so they never accumulate.
+  const startedAt = Date.now();
+  const ticking = setInterval(() => {
+    if (guardShown) return;
+    $('progress').textContent = `${lastProgress} · ${Math.round((Date.now() - startedAt) / 1000)} s`;
+  }, 500);
   let ok = true;
   try {
     await fn();
@@ -73,11 +96,12 @@ async function run(label, fn) {
     failure = e.message;
     progress(`Failed: ${e.message}`);
   } finally {
+    clearInterval(ticking);
     busy = false;
-    if (guardShown) {
-      guardShown = false;
-      $('progress').textContent = lastProgress;
-    }
+    // Both the guard's message and the elapsed seconds the interval appended
+    // are over the top of the read's own last message: put it back.
+    guardShown = false;
+    $('progress').textContent = lastProgress;
     $('reread-solution').disabled = false;
     render();
   }
@@ -91,7 +115,7 @@ async function discoverSolution() {
   failure = null;
   ctx = await api.context();
   $('context').textContent = `${ctx.root} as ${ctx.username}, fm ${ctx.cli.version}`;
-  solution = await discover(api, ctx.root, { onProgress: progress });
+  solution = await discover(api, ctx.root, readHooks());
 }
 
 function render() {
@@ -149,7 +173,9 @@ function rereadLabel(slot) {
 function rereadSlot(slot) {
   return run(rereadLabel(slot), async () => {
     const previous = solution;
-    solution = await reread(api, solution, slot, { onProgress: progress });
+    // A solution-grain re-read is a fresh discovery, so it draws the read log
+    // too; the narrower grains send no phase events and the tab stays put.
+    solution = await reread(api, solution, slot, readHooks());
     // A full re-read builds a new solution object. The register and the last
     // live check are not read from the file at all, so they survive it -- what
     // fm can report did not change because we read the file again.

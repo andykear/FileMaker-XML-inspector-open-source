@@ -7,11 +7,12 @@ import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import {
-  catalogActions, detailOf, FACT_FOLD, factValue, kindSelection, listOf, parseSelection, selectRow,
-  selectionKey, selectionTail, selectionWithTail, totalsLine, withFile,
+  byteSize, catalogActions, catalogHash, detailOf, FACT_FOLD, factValue, kindSelection, listOf, parseSelection,
+  selectRow, selectionKey, selectionTail, selectionWithTail, solutionKey, totalsLine, withFile,
 } from '../../ui/tabs/common.js';
 import { selectionOf as scriptSelectionOf, stepAnchor } from '../../ui/tabs/scripts.js';
 import { selectionOf as layoutSelectionOf } from '../../ui/tabs/layouts.js';
+import { LIST_CATALOGS } from '../../ui/read-plan.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -78,6 +79,24 @@ test('selectionKey and parseSelection round-trip the one selection shape', () =>
     { target: 'fmnet://localhost/ooe', parts: ['to', '1065089'] });
 });
 
+test('solutionKey names the solution rather than a file, and reads back as one', () => {
+  assert.equal(solutionKey('step', 'Set Variable'), '*|step:Set Variable');
+  // It is the one selection shape, so parseSelection and kindSelection read it
+  // with no special case -- only the target says it belongs to no file.
+  assert.deepEqual(parseSelection(solutionKey('step', 'Set Variable')),
+    { target: '*', parts: ['step', 'Set Variable'] });
+  assert.deepEqual(kindSelection(solutionKey('step', 'Set Variable'), ['step']),
+    { target: '*', kind: 'step', id: 'Set Variable' });
+  // A name carrying a colon of its own comes back whole.
+  assert.deepEqual(kindSelection(solutionKey('step', 'Go to Field: x'), ['step']),
+    { target: '*', kind: 'step', id: 'Go to Field: x' });
+  // No file answers to `*`, which is what makes it safe as a target.
+  assert.equal(solution.files['*'], undefined);
+  // A script selection is not a kind selection, tail or no tail.
+  assert.equal(kindSelection(`${ROOT}|39`, ['step']), null);
+  assert.equal(kindSelection(`${ROOT}|39#L83`, ['step']), null);
+});
+
 test('selectionTail hands back the whole tail, colons and all', () => {
   assert.deepEqual(selectionTail(`${ROOT}|My:Table`), { target: ROOT, tail: 'My:Table' });
   assert.deepEqual(selectionTail(`${ROOT}|39#12`), { target: ROOT, tail: '39#12' });
@@ -118,6 +137,53 @@ test('factValue reads fm\'s keys through access.js, so a folded spelling still a
   // for a fact that has no value key at all.
   assert.equal(factValue({ value: null }), '');
   assert.match(factValue({}), /class="error">unread: </);
+});
+
+test('byteSize renders bytes, KB, MB, GB with one decimal, dropping a trailing .0', () => {
+  assert.equal(byteSize(512), '512 B');
+  assert.equal(byteSize(1536), '1.5 KB');
+  assert.equal(byteSize(1048576), '1 MB');
+  assert.equal(byteSize(3727360), '3.6 MB');
+  assert.equal(byteSize('abc'), '');
+  assert.equal(byteSize(undefined), '');
+  assert.equal(byteSize(null), '');
+});
+
+test('byteSize steps up a unit rather than rounding up to 1024 of the one below', () => {
+  // Rounding on the raw value first would read 1048575 as "1024 KB": the unit
+  // has to be chosen on the rounded value at each step.
+  assert.equal(byteSize(1048575), '1 MB');
+  assert.equal(byteSize(1048570), '1 MB');
+  assert.equal(byteSize(1073741823), '1 GB');
+  assert.equal(byteSize(5368709120), '5 GB');
+  assert.equal(byteSize(2415919104), '2.3 GB');
+});
+
+test('catalogHash maps every catalog LIST_CATALOGS carries to a real tab, never null', () => {
+  for (const catalog of LIST_CATALOGS) {
+    assert.ok(catalogHash(catalog), `${catalog} should map to a tab`);
+  }
+  assert.equal(catalogHash('table'), 'tables');
+  assert.equal(catalogHash('field'), 'tables');
+  assert.equal(catalogHash('tableOccurrence'), 'graph');
+  assert.equal(catalogHash('relation'), 'graph');
+  assert.equal(catalogHash('graphNote'), 'graph');
+  assert.equal(catalogHash('layout'), 'layouts');
+  assert.equal(catalogHash('script'), 'scripts');
+  assert.equal(catalogHash('account'), 'security');
+  assert.equal(catalogHash('privilegeSet'), 'security');
+  assert.equal(catalogHash('extendedPrivilege'), 'security');
+  assert.equal(catalogHash('authorization'), 'security');
+  assert.equal(catalogHash('theme'), 'themes');
+  assert.equal(catalogHash('valueList'), 'catalogs');
+  assert.equal(catalogHash('customFunction'), 'catalogs');
+  assert.equal(catalogHash('customMenu'), 'catalogs');
+  assert.equal(catalogHash('customMenuSet'), 'catalogs');
+  assert.equal(catalogHash('externalDataSource'), 'catalogs');
+  assert.equal(catalogHash('baseDirectory'), 'catalogs');
+  assert.equal(catalogHash('persistentData'), 'catalogs');
+  assert.equal(catalogHash('font'), 'catalogs');
+  assert.equal(catalogHash('nosuchcatalog'), null);
 });
 
 test('kindSelection accepts only the kinds the tab knows', () => {

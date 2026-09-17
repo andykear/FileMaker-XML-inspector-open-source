@@ -38,6 +38,11 @@ export function occurrenceRows(file) {
     const source = get(base, 'dataSource');
     const graph = get(d, 'graph');
     const id = get(d, 'id');
+    // What FileMaker draws, not what the occurrence would measure open: a collapsed
+    // or related-view box reports the full height under `bounds` and the height on
+    // the graph under `drawnBounds`. Drawing `bounds` put an empty box under every
+    // collapsed occurrence.
+    const drawn = get(graph, 'drawnBounds') ?? get(graph, 'bounds') ?? null;
     return {
       target: file.target,
       file: file.name ?? file.target,
@@ -50,26 +55,37 @@ export function occurrenceRows(file) {
       cascade: get(d, 'hasCascade') === true,
       tags: (get(d, 'tags') ?? []).join(', '),
       color: safeColor(get(graph, 'color')),
-      bounds: get(graph, 'bounds') ?? null,
-      placed: isPlaced(get(graph, 'bounds')),
+      bounds: drawn,
+      // The other rectangle, so the detail can say what the box opens to.
+      expanded: get(graph, 'bounds') ?? null,
+      view: get(graph, 'view') ?? null,
+      placed: isPlaced(drawn),
       detail: result ?? null,
       error: get(entry, 'error') ?? null,
     };
   });
 }
 
+/** The predicates as a list, one entry per join condition, read through `get` once.
+ *  A cartesian join is one predicate with an operator and no fields: fm reports
+ *  {op: "×"} and nothing else, so both field names stay `undefined`. */
+function predicateList(d) {
+  return (get(d, 'predicates') ?? []).map((p) => ({
+    leftField: get(p, 'leftField'),
+    rightField: get(p, 'rightField'),
+    op: get(p, 'op'),
+  }));
+}
+
+const isCartesian = (p) => p.leftField === undefined && p.rightField === undefined;
+
 function predicateText(d) {
   const left = nameOf(get(d, 'left'));
   const right = nameOf(get(d, 'right'));
-  return (get(d, 'predicates') ?? [])
-    .map((p) => {
-      // A cartesian join is one predicate with an operator and no fields: fm
-      // reports {op: "×"} and nothing else, so it reads as `Left × Right`.
-      const lf = get(p, 'leftField');
-      const rf = get(p, 'rightField');
-      if (lf === undefined && rf === undefined) return `${left} ${get(p, 'op')} ${right}`;
-      return `${left}::${lf} ${get(p, 'op')} ${right}::${rf}`;
-    })
+  return predicateList(d)
+    .map((p) => (isCartesian(p)
+      ? `${left} ${p.op} ${right}`
+      : `${left}::${p.leftField} ${p.op} ${right}::${p.rightField}`))
     .join('; ');
 }
 
@@ -117,6 +133,19 @@ const box = (b) => ({
 });
 
 const centre = (b) => ({ x: b.left + b.width / 2, y: b.top + b.height / 2 });
+
+/** A relation is a group, not a bare line: SVG `<line>` is not a container every
+ *  browser will hang a `<title>` tooltip off, and the group also carries the
+ *  Relationships row key, so a click on the line selects the relation exactly as a
+ *  click on the row does. The predicates are the tooltip, not drawn text: written
+ *  along the lines they collided into an unreadable knot wherever several relations
+ *  leave one box, which on the reference solution is most of them. */
+function relationSvg(row, a, b) {
+  const [p, q] = [centre(a), centre(b)];
+  return `<g class="rel-group" data-select="${esc(row.key)}"><title>${esc(row.predicates)}</title>`
+    + `<line data-rel="${esc(row.id)}" class="rel" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}"/>`
+    + '</g>';
+}
 
 /** The occurrences fm puts at a position another occurrence already has. It
  *  happens on the reference solution -- ooe's TestTable and SaXMLDelivery both
@@ -184,8 +213,7 @@ export function graphSvg(file, opts = {}) {
   const lines = relationRows(file).map((r) => {
     const [a, b] = [byId.get(String(r.leftId)), byId.get(String(r.rightId))];
     if (!a || !b) return '';
-    const [p, q] = [centre(a), centre(b)];
-    return `<line data-rel="${esc(r.id)}" class="rel" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}"/>`;
+    return relationSvg(r, a, b);
   }).join('');
   const vb = viewBoxOf([...placed.map((r) => box(r.bounds)), ...notes.map((n) => box(get(n, 'bounds')))]);
   // The width and height are the graph's own, in FileMaker's units: one unit is one
@@ -214,7 +242,7 @@ const OCCURRENCE_COLUMNS = [
   { key: 'related', label: 'Related', num: true, render: (r) => count(r.related) },
   { key: 'cascade', label: 'Cascade', render: (r) => (r.cascade ? badge('cascade', 'warn') : '') },
   { key: 'tags', label: 'Tags' },
-  { key: 'error', label: '', render: (r) => (r.error ? `<span class="error">${esc(get(r.error, 'code'))}</span>` : '') },
+  { key: 'error', label: '', sort: false, render: (r) => (r.error ? `<span class="error">${esc(get(r.error, 'code'))}</span>` : '') },
 ];
 
 const RELATION_COLUMNS = [
@@ -264,6 +292,26 @@ function boundsText(bounds) {
   return `${b.width} \u00d7 ${b.height} at ${b.left}, ${b.top}`;
 }
 
+/** True when fm draws the occurrence smaller than it measures -- a collapsed or
+ *  related-view box, whose `drawnBounds` and `bounds` disagree. */
+function shrunk(row) {
+  if (!isPlaced(row.bounds) || !isPlaced(row.expanded)) return false;
+  const [drawn, full] = [box(row.bounds), box(row.expanded)];
+  return drawn.width !== full.width || drawn.height !== full.height;
+}
+
+/** A collapsed or related-view occurrence is two rectangles: the one FileMaker
+ *  draws and the one it would fill open. Saying only the first hides why the box
+ *  is a sliver; saying only the second contradicts the picture, so when they
+ *  differ the line says both, and names the view that made them differ (which is
+ *  then left off the tail of the Graph line, rather than said twice). */
+function geometryText(row) {
+  if (!shrunk(row)) return boundsText(row.bounds);
+  const full = box(row.expanded);
+  const why = [row.view, `expands to ${full.width} \u00d7 ${full.height}`].filter(Boolean).join('; ');
+  return `drawn ${boundsText(row.bounds)} (${why})`;
+}
+
 function sideKv(label, side) {
   const flags = ['createRelated', 'cascadeDelete', 'cascadeUpdate', 'sortRelated'].filter((f) => get(side, f) === true);
   const sort = sortText(side);
@@ -288,7 +336,7 @@ function renderDetail(solution, view, occurrences, relations) {
     ['Source', sourceBadges(row) || 'none'], ['Position', esc(get(d, 'position'))],
     ['Related', (get(d, 'related') ?? []).map((r) => esc(nameOf(r))).join(', ') || 'none'],
     ['Cascade', row.cascade ? badge('has cascade', 'warn') : 'none'],
-    ['Graph', `${esc(boundsText(row.bounds))} <span class="swatch" style="background:${row.color}"></span> ${esc(row.color)}, view ${esc(path(d, 'graph.view'))}`],
+    ['Graph', `${esc(geometryText(row))} <span class="swatch" style="background:${row.color}"></span> ${esc(row.color)}${shrunk(row) ? '' : `, view ${esc(row.view)}`}`],
     ['Tags', esc(row.tags) || 'none'],
   ] : [
     ['Left', esc(row.left)], ['Right', esc(row.right)],
@@ -328,9 +376,9 @@ export const tab = {
   render(solution, view = {}) {
     const occurrences = rowsOf(solution, occurrenceRows);
     const relations = rowsOf(solution, relationRows);
-    return renderOccurrences(solution, view, occurrences, relations)
+    return renderDetail(solution, view, occurrences, relations)
+      + renderOccurrences(solution, view, occurrences, relations)
       + renderRelations(solution, view, relations)
-      + renderDetail(solution, view, occurrences, relations)
       + renderGraph(solution, view);
   },
 };

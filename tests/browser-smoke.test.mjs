@@ -15,6 +15,21 @@
 // run for real, the Markdown export is downloaded and read back, and the console is
 // asserted to have stayed quiet for the whole walk.
 //
+// Five things are walked further than that, because each is an answer about WHERE
+// or HOW a thing is drawn rather than whether it draws at all:
+//
+//   * during discovery, `#main` is non-empty within three seconds of the page loading and
+//     says `Reading` -- the read log, which is all there is to look at for the ten
+//     seconds fm takes. It is screenshot as `read-log.png` before the wait goes on.
+//   * Scripts: the first row of the step index opens, and its `Step <name>` section
+//     is asserted to come BEFORE the `Scripts` tree in document order.
+//   * Gaps: after the register lands, the first kind row opens, then the first entry
+//     row inside it, and the `Entry <id>` section is asserted to draw.
+//   * Tables: the `Fields` header sorts the column it names -- ascending puts the
+//     smallest count first, a second click the largest -- and the hash never moves.
+//   * Relationships: the graph carries relation groups with a `<title>`, so the
+//     drawing says what each line joins.
+//
 // What this does NOT check, so a green run is not read as more than it is:
 //
 //   * only `#main` is scanned. The sidebar, the header, the progress line and the
@@ -23,10 +38,17 @@
 //     inside <code> or <pre>, so it IS scanned as if it were the page's prose. A
 //     file whose step option legitimately reads `undefined` would be reported as a
 //     renderer fault here. ooe has none; another solution might.
-//   * one row per tab. The FIRST `[data-select]` is clicked and nothing else, so a
+//   * one row per tab, bar three that click further: Scripts clicks one extra row
+//     (the first row of the step index), Gaps two (a kind, then the first entry
+//     inside it) and Tables two header clicks (the Fields column, up then down).
+//     Everywhere else the FIRST `[data-select]` is clicked and nothing else, so a
 //     tab is proved to render one selection, not all of them -- the kind of row
 //     that comes second (a relation after an occurrence, a folder after a script)
-//     is never opened.
+//     is never opened. Even on Scripts and Gaps it is the first row of the next
+//     list, never the tenth.
+//   * what the drawing LOOKS like. The graph is asserted to have a group and a
+//     tooltip per relation; whether two lines land on top of each other is a
+//     question for a human with the screenshot, and nothing here reads one back.
 //   * the screenshots are evidence, not assertions: nothing reads them back, and a
 //     page taller than 6000px is saved as its first screenful only (Chrome will not
 //     encode a PNG past ~16k pixels), so the bottom of a long tab is not pictured.
@@ -91,6 +113,47 @@ async function settled(page) {
   await page.waitForFunction(() => !!document.querySelector('#main h2'), { timeout: MINUTE });
 }
 
+/** The section a tab drew under a heading matching `source` (a RegExp source
+ *  string, so it crosses into the page), as an element handle, or null. A tab
+ *  draws several sections and the test names the one it means by its own <h2>,
+ *  never by its position -- the position is the thing being asserted. */
+async function sectionByHeading(page, source) {
+  const handle = await page.evaluateHandle((src) => {
+    const re = new RegExp(src);
+    return [...document.querySelectorAll('#main section')]
+      .find((s) => re.test(s.querySelector('h2')?.textContent?.trim() ?? '')) ?? null;
+  }, source);
+  const element = handle.asElement();
+  // Only the null path disposes, and that is not an oversight: puppeteer's
+  // `asElement()` returns `this` when the handle wraps a node, so the element
+  // the caller is about to use IS this handle. Disposing it "on both paths"
+  // would hand every caller a dead handle. When there was no section there is
+  // nothing to hand back, so the handle is released here.
+  if (!element) await handle.dispose();
+  return element;
+}
+
+/** Waits until some <h2> of #main matches `source`. A render is a hashchange
+ *  away from the click that asked for it, so nothing is read until it lands. */
+async function waitForHeading(page, source) {
+  await page.waitForFunction(
+    (src) => [...document.querySelectorAll('#main h2')].some((h) => new RegExp(src).test(h.textContent.trim())),
+    { timeout: MINUTE }, source,
+  );
+}
+
+/** A name as a RegExp source that matches only itself: a step is called
+ *  `Set Field [...]` and the brackets are a character class otherwise. */
+const literal = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** True when `first` comes before `second` in document order. */
+function precedes(page, first, second) {
+  return page.evaluate(
+    (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING),
+    first, second,
+  );
+}
+
 /** A row may sit inside a closed <details>, which has no box for the mouse to land
  *  on. A real click is tried first -- it is what a user does, and it is what catches
  *  an element covered by another -- and the in-page click is the fallback. */
@@ -109,6 +172,18 @@ async function clickRow(page, handle) {
   }
   await handle.evaluate((el) => el.click());
   return 'script';
+}
+
+/** A click that asks for a render, waited out. The shell renders on `hashchange`
+ *  -- a task of its own, after the click returns -- and it replaces #main
+ *  wholesale, so the clicked element is detached exactly when the new render is
+ *  on the page. Waiting for anything less races it: the next thing the test
+ *  clicks is a node that is about to be thrown away, and the click does nothing
+ *  because a detached node's event reaches no listener on #main. */
+async function clickAndRender(page, handle) {
+  const how = await clickRow(page, handle);
+  await page.waitForFunction((el) => !el.isConnected, { timeout: MINUTE, polling: 'raf' }, handle);
+  return how;
 }
 
 async function shoot(page, name) {
@@ -170,6 +245,26 @@ test('browser: walk every tab of the live page', { skip, timeout: 30 * MINUTE },
 
     await clock('discovery', async () => {
       await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
+      // The ten seconds discovery takes used to be a blank rectangle. The read
+      // log fills it, and the deadline times the whole chain that has to happen
+      // before there is anything in #main at all: the page's modules load, the
+      // context fetch answers, the first phase event arrives from the server's
+      // fm spawn, and the shell renders it. Three seconds is slack over the
+      // tenth of a second that takes, not a measurement of it -- a cold Chrome
+      // on a loaded machine is what the slack is for.
+      await page.waitForFunction(
+        () => (document.getElementById('main')?.innerText ?? '').trim() !== '',
+        { timeout: 3000, polling: 50 },
+      );
+      await clock('read-log', async () => {
+        await page.waitForFunction(
+          () => /Reading/.test(document.getElementById('main')?.innerText ?? ''),
+          { timeout: MINUTE, polling: 100 },
+        );
+      });
+      const lines = await page.evaluate(() => document.querySelectorAll('#main .read-log li').length);
+      console.log(`  read log: ${lines} line(s) while fm is still reading`);
+      await shoot(page, 'read-log');
       // Discovery is ~200 fm reads in one invocation: the header stops saying
       // "connecting" and the progress line ends with the count of files read.
       await page.waitForFunction(
@@ -203,9 +298,8 @@ test('browser: walk every tab of the live page', { skip, timeout: 30 * MINUTE },
 
           const row = await page.$('#main [data-select]');
           if (row) {
-            const how = await clickRow(page, row);
+            const how = await clickAndRender(page, row);
             await settled(page);
-            await page.waitForFunction(() => !!document.querySelector('#main h2'), { timeout: MINUTE });
             const selection = await page.evaluate(() => location.hash);
             console.log(`  ${id}: selected ${selection} (${how} click)`);
             const after = faultsIn(await page.evaluate(mainText));
@@ -214,11 +308,106 @@ test('browser: walk every tab of the live page', { skip, timeout: 30 * MINUTE },
             console.log(`  ${id}: nothing selectable`);
           }
 
+          if (id === 'scripts') {
+            // The step index is the second way into a script: a step TYPE, and
+            // the scripts that use it. Its answer draws ABOVE the tree.
+            const index = await sectionByHeading(page, '^Step index');
+            assert.ok(index, 'scripts: the step index drew');
+            // Not the row already open: the walk's own click above may have
+            // landed on it, and re-selecting it is no hash change and so no
+            // render for clickAndRender to wait for.
+            const stepRow = await index.$('tr[data-select]:not(.selected)');
+            assert.ok(stepRow, 'scripts: the step index has a row to open');
+            const key = await stepRow.evaluate((el) => el.dataset.select);
+            const name = key.slice(key.indexOf(':') + 1);
+            const how = await clickAndRender(page, stepRow);
+            await settled(page);
+            await waitForHeading(page, `^Step ${literal(name)}$`);
+            const step = await sectionByHeading(page, `^Step ${literal(name)}$`);
+            assert.ok(step, `scripts: the step index opened ${name}`);
+            const tree = await sectionByHeading(page, '^Scripts$');
+            assert.ok(tree, 'scripts: the tree is still drawn under it');
+            assert.ok(await precedes(page, step, tree), `scripts: "Step ${name}" draws above the tree`);
+            console.log(`  scripts: step index opened ${JSON.stringify(name)} (${how} click)`);
+            const faults = faultsIn(await page.evaluate(mainText));
+            assert.deepEqual(faults, [], 'scripts: the step drill-down is free of renderer faults');
+            await shoot(page, 'scripts-step');
+          }
+
+          if (id === 'tables') {
+            // One header click sorts the column it names, in the DOM, without
+            // touching the hash: the reader's selection and route survive it.
+            const hashBefore = await page.evaluate(() => location.hash);
+            const handle = await page.evaluateHandle(() => [...document.querySelectorAll('#main th')]
+              .find((h) => h.textContent.trim() === 'Fields') ?? null);
+            const header = handle.asElement();
+            assert.ok(header, 'tables: the Fields column has a header');
+            const column = () => page.evaluate(() => {
+              const th = [...document.querySelectorAll('#main th')].find((h) => h.textContent.trim() === 'Fields');
+              const rows = [...th.closest('table').tBodies[0].rows];
+              // A cell with no digit in it is not a number, and Number('') is 0:
+              // reading a blank as a zero would make an empty column "sorted".
+              const numbers = rows.map((tr) => {
+                const text = tr.cells[th.cellIndex].textContent;
+                return /\d/.test(text) ? Number(text.replace(/[^\d.-]/g, '')) : NaN;
+              });
+              return { dir: th.dataset.dir ?? null, first: numbers[0], numbers };
+            });
+            await clickRow(page, header);
+            const asc = await column();
+            assert.ok(asc.numbers.every(Number.isFinite), `tables: every Fields cell is a number: ${JSON.stringify(asc.numbers)}`);
+            assert.equal(asc.dir, 'asc', 'tables: the first click points the Fields column up');
+            assert.equal(asc.first, Math.min(...asc.numbers), 'tables: ascending puts the smallest field count first');
+            await clickRow(page, header);
+            const desc = await column();
+            assert.equal(desc.dir, 'desc', 'tables: the second click turns the Fields column around');
+            assert.equal(desc.first, Math.max(...desc.numbers), 'tables: descending puts the largest field count first');
+            assert.equal(await page.evaluate(() => location.hash), hashBefore, 'tables: sorting leaves the hash alone');
+            console.log(`  tables: Fields sorted ${asc.first} up, ${desc.first} down over ${asc.numbers.length} rows`);
+          }
+
+          if (id === 'graph') {
+            // The drawing is the answer here: every line carries what it joins,
+            // as a tooltip on its group.
+            const drawn = await page.evaluate(() => ({
+              groups: document.querySelectorAll('svg.graph .rel-group title').length,
+            }));
+            assert.ok(drawn.groups > 0, `graph: the relation lines carry their predicates: ${drawn.groups}`);
+            console.log(`  graph: ${drawn.groups} relation group(s)`);
+          }
+
           if (id === 'gaps') {
             // The tab's own hashchange handler fetches the 3MB register; the check
             // button is disabled while that runs, so wait for the register first.
             await page.waitForFunction(() => !!window.inspector?.solution?.register, { timeout: 5 * MINUTE, polling: 500 });
             await settled(page);
+
+            // The register is three tables deep: kinds, then a kind's entries,
+            // then the entry's own facts. Both clicks are made here, because
+            // the entry row only exists once a kind has been opened.
+            const kinds = await sectionByHeading(page, '^What fm cannot read yet$');
+            assert.ok(kinds, 'gaps: the register drew its kinds');
+            // The walk's own click above lands on the first kind row, so the
+            // one opened here is the first that is not already open.
+            const kindRow = await kinds.$('tr[data-select]:not(.selected)');
+            assert.ok(kindRow, 'gaps: the kinds table has a row to open');
+            await clickAndRender(page, kindRow);
+            await settled(page);
+            await waitForHeading(page, '^Kind ');
+            const kindSection = await sectionByHeading(page, '^Kind ');
+            assert.ok(kindSection, 'gaps: the opened kind drew above the kinds table');
+            const entryRow = await kindSection.$('tr[data-select]');
+            assert.ok(entryRow, 'gaps: the opened kind lists its entries');
+            await clickAndRender(page, entryRow);
+            await settled(page);
+            await waitForHeading(page, '^Entry ');
+            const entry = await sectionByHeading(page, '^Entry ');
+            assert.ok(entry, 'gaps: the entry drew its facts');
+            const drilled = faultsIn(await page.evaluate(mainText));
+            assert.deepEqual(drilled, [], 'gaps: the entry drill-down is free of renderer faults');
+            console.log(`  gaps: opened ${await page.evaluate(() => location.hash)}`);
+            await shoot(page, 'gaps-entry');
+
             await clock('gaps:live-check', async () => {
               await page.click('button[data-action="gaps-check"]');
               await page.waitForFunction(

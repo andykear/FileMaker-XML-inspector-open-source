@@ -332,6 +332,6 @@ export const tab = {
   render(solution, view = {}) {
     const files = Object.values(solution.files).map((f) => renderFile(f, view.multiFile)).join('');
     const sections = CATALOGS.map((entry) => renderCatalog(solution, view, entry)).join('');
-    return catalogsTotalsLine(solution) + files + sections + renderSelected(solution, view);
+    return renderSelected(solution, view) + catalogsTotalsLine(solution) + files + sections;
   },
 };

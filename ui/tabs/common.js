@@ -4,6 +4,12 @@
 // re-read buttons of a catalog, and the one selection-string shape. Pure
 // functions to strings and plain objects, like the rest of ui/: no document, no
 // server, every fm key through access.js and every model string through esc.
+//
+// Every tab renders its selected-detail section before its lists, in the order
+// the lists have today. A click's result renders where the eye is, at the top
+// of the page a reader is already looking at; a list below it can be a
+// thousand rows, and a detail rendered after one would land off the bottom of
+// the screen with no sign it had arrived.
 import { count, esc, link, rereadCatalogButton } from '../dom.js';
 import { get, path } from '../access.js';
 
@@ -23,6 +29,62 @@ export const fileName = (solution, target) => get(get(solution, 'files'), target
  *  is not -- a kind no tab routes (a variable, a style with no theme) must read
  *  as text rather than as a link that goes nowhere. */
 export const linkOr = (hash, label) => (hash ? link(hash, label) : esc(label));
+
+/** Which tab shows a catalog's rows, as a bare tab id (`'tables'`, not
+ *  `'#tables'`) -- the tabs already scope by file when there is more than one,
+ *  so a selection per catalog on top of that would be a second scheme for the
+ *  same thing. Unknown catalog -> `null`, which `linkOr` renders as plain text
+ *  rather than a dead link. */
+const CATALOG_TABS = {
+  table: 'tables',
+  field: 'tables',
+  tableOccurrence: 'graph',
+  relation: 'graph',
+  graphNote: 'graph',
+  layout: 'layouts',
+  script: 'scripts',
+  account: 'security',
+  privilegeSet: 'security',
+  extendedPrivilege: 'security',
+  authorization: 'security',
+  theme: 'themes',
+  valueList: 'catalogs',
+  customFunction: 'catalogs',
+  customMenu: 'catalogs',
+  customMenuSet: 'catalogs',
+  externalDataSource: 'catalogs',
+  baseDirectory: 'catalogs',
+  persistentData: 'catalogs',
+  font: 'catalogs',
+};
+
+export function catalogHash(catalog) {
+  return CATALOG_TABS[catalog] ?? null;
+}
+
+/** A byte count the way a reader thinks in it: bare bytes under 1024, then
+ *  KB/MB/GB with one decimal, dropping a trailing `.0` (`1048576` -> `'1 MB'`).
+ *  Not a finite number (fm's error shape, `undefined`, text) -> `''`, so a
+ *  caller can tell "no size" from "zero bytes". The unit is chosen on the
+ *  ROUNDED value at each step, not the raw one -- deciding on the raw value
+ *  and rounding after lets a value just under a boundary (`1048575`) round up
+ *  to `'1024 KB'` instead of stepping up to `'1 MB'`. */
+export function byteSize(n) {
+  if (n === null || n === undefined || n === '') return '';
+  const num = Number(n);
+  if (!Number.isFinite(num)) return '';
+  if (num < 1024) return `${num} B`;
+  const units = ['KB', 'MB', 'GB'];
+  let value = num;
+  let unit = 'B';
+  for (const u of units) {
+    const next = Math.round((value / 1024) * 10) / 10;
+    unit = u;
+    if (next < 1024 || u === 'GB') { value = next; break; }
+    value = value / 1024;
+  }
+  return `${value % 1 === 0 ? value : value.toFixed(1)} ${unit}`;
+}
 
 /** What an emptied table says. A table emptied BY THE FILTER has not found
  *  nothing, it has been narrowed to nothing, and saying "none" there
@@ -83,6 +145,15 @@ export function catalogActions(solution, catalog, view, what) {
 export function selectionKey(target, ...parts) {
   return `${target}|${parts.join(':')}`;
 }
+
+/** `*` is THE SOLUTION, not a file. Most of what a tab selects lives in one
+ *  file, so the target names it; a few things do not -- a step TYPE is used
+ *  across every script of every file reached, and belongs to none of them. Those
+ *  take `*`, which no fm target can spell, so `solution.files['*']` is reliably
+ *  nothing and a tab that forgets to branch shows an empty section rather than
+ *  the wrong file's. A tab reading one back branches on `target === '*'` BEFORE
+ *  it looks the target up. */
+export const solutionKey = (kind, id) => selectionKey('*', kind, id);
 
 export function parseSelection(sel) {
   const at = typeof sel === 'string' ? sel.indexOf('|') : -1;
