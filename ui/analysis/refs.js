@@ -22,8 +22,13 @@
 //     global is ever set is globals.js's question, not this one's. The one thing
 //     this file reads the `Set Variable` steps for is SPELLING -- see
 //     `setVariableNames` and the tokeniser -- which is not resolving;
-//   * `from.stepID` is present exactly when the naming object is a script step,
-//     which is the anchor the Scripts tab links to (`#<stepID>`);
+//   * `from.stepID` is present exactly when the naming object is a script step.
+//     It is fm's step TYPE id -- 141 is EVERY `Set Variable` -- so it identifies
+//     what the step is, never which step it is, and it is NOT the anchor the
+//     Scripts tab links to: that is FileMaker's 1-based line, `#L<line>`, built
+//     from `from.where` (`body[<index>]` + 1) by ui/tabs/explorer.js. It is kept
+//     because a caller asking what KIND of step wrote a name would otherwise
+//     have to find the step again;
 //   * an occurrence's fields are the SOURCE file's: `nameIndex` follows
 //     `table.dataSource` to the file that source opens, so a field entry's
 //     `target` is where the field lives and `occurrenceTarget` where the name
@@ -59,6 +64,7 @@
 import { foldKey } from 'fm-adt-toolkit/step-display';
 import { get, path } from '../access.js';
 import { memoise } from './memo.js';
+import { detailOf } from '../tabs/common.js';
 import { walkObjects } from '../tabs/layouts.js';
 import { fieldsOf } from '../tabs/tables.js';
 
@@ -332,7 +338,16 @@ function computeNameIndex(solution) {
       push(idx.relations, name, { target, id, name });
     }
     for (const menu of listOf(file, 'customMenu')) {
-      push(idx.customMenus, get(menu, 'name'), { target, id: get(menu, 'id'), name: get(menu, 'name') });
+      // Most of a file's custom menus are FileMaker's own, inherited whole:
+      // ooe's list is 25 menus of which 24 are `[Format]`, `[Scripts]` and the
+      // rest of the built-ins. Only the describe says which, so it is read here
+      // -- a reader scanning the Explorer's list needs the one hand-made menu to
+      // stand out from the two dozen that come with the product.
+      const detail = detailOf(file, 'customMenu', get(menu, 'id'));
+      push(idx.customMenus, get(menu, 'name'), {
+        target, id: get(menu, 'id'), name: get(menu, 'name'),
+        inheritedMenu: get(get(detail, 'result'), 'inheritedMenu') === true,
+      });
     }
     for (const theme of listOf(file, 'theme')) {
       // An object wears a style by its display name, so that is the key; the
@@ -516,7 +531,9 @@ function* sources(solution) {
       const src = { target, kind: 'script', id: get(detail, 'id'), name: get(detail, 'name') };
       const body = get(detail, 'body') ?? [];
       // A step has no name of its own -- `name` on a step is an operand -- so
-      // `hasOwnName` stays false here. `stepID` is what the Scripts tab anchors.
+      // `hasOwnName` stays false here. `stepID` is fm's step TYPE id, which says
+      // what the step is; WHICH step it is, is the `body[<index>]` in `where`,
+      // and the Scripts tab's anchor is that index + 1 (`#L<line>`).
       for (let i = 0; i < body.length; i += 1) yield { ...src, record: body[i], prefix: `body[${i}]`, stepID: get(body[i], 'stepID') };
       // `problems` is fm's own list of what it could not resolve: Task 3's
       // input, not a reference, so it is not scanned here.

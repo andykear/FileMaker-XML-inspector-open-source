@@ -71,9 +71,16 @@ test('nameIndex carries every kind, keyed by name, values arrays', () => {
   // A relation has no name of its own, so the index keys it the way every
   // other reader of a relation spells it: the two occurrences it joins.
   assert.deepEqual(idx.relations.get('Contacts_TestTable \u2194 Contacts'), [{ target: ROOT, id: 1, name: 'Contacts_TestTable \u2194 Contacts' }]);
-  assert.deepEqual(idx.customMenus.get('MyCustomMenu'), [{ target: ROOT, id: 26, name: 'MyCustomMenu' }]);
+  // A menu entry carries fm's `inheritedMenu` off the describe: most of a file's
+  // menus are FileMaker's own. Measured on ooe: 24 of its 25 are inherited, and
+  // MyCustomMenu is the one that is not.
+  assert.deepEqual(idx.customMenus.get('MyCustomMenu'), [{ target: ROOT, id: 26, name: 'MyCustomMenu', inheritedMenu: false }]);
   // `[Format]` is a menu of both files, so the name answers with both.
   assert.equal(idx.customMenus.get('[Format]').length, 2);
+  assert.ok(idx.customMenus.get('[Format]').every((m) => m.inheritedMenu === true));
+  const ooeMenus = [...idx.customMenus.values()].flat().filter((m) => m.target === ROOT);
+  assert.equal(ooeMenus.length, 25);
+  assert.equal(ooeMenus.filter((m) => m.inheritedMenu).length, 24);
   assert.equal(nameIndex(solution), idx, 'memoised on the solution object');
 });
 
@@ -350,12 +357,16 @@ test('a step `from` is an occurrence only when the index has that name', () => {
   assert.ok(rows.every((r) => r.kind === 'occurrence' && r.how === 'named' && r.resolved));
 });
 
-test('every reference whose owner is a script step carries the stepID the Scripts tab anchors', () => {
+test("every reference whose owner is a script step carries fm's step TYPE id", () => {
   const rows = references(solution);
   const fromSteps = rows.filter((r) => r.from.kind === 'script');
   assert.ok(fromSteps.length > 0);
   assert.ok(fromSteps.every((r) => Number.isInteger(r.from.stepID)));
   assert.ok(rows.filter((r) => r.from.kind !== 'script').every((r) => r.from.stepID === undefined));
+  // It is the TYPE, not the step: one id repeats across a body, so it can never
+  // be an anchor. The anchor is the `body[<index>]` of `where`, + 1.
+  const ids = fromSteps.map((r) => r.from.stepID);
+  assert.ok(new Set(ids).size < ids.length);
 });
 
 test('the memoised list and the index entry arrays are frozen', () => {

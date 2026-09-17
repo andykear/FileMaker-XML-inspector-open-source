@@ -135,7 +135,9 @@ test('a selected script also gets its outgoing call tree, nested', () => {
   const html = tab.render(solution, viewOf(selectionKey(ROOT, 'script', 9)));
   const at = html.indexOf('Call tree');
   assert.ok(at > 0, 'no call tree for a script');
-  const block = html.slice(at);
+  // The object list now follows the detail (see the note at the top of
+  // ui/tabs/explorer.js), so the tree's block ends where that section starts.
+  const block = html.slice(at, html.indexOf('<h2>Objects</h2>', at));
   assert.ok(block.includes('Decode base64 image'));
   assert.ok(block.includes('noop')); // the one script it calls
   const tree = block.slice(block.indexOf('<ul'), block.indexOf('</section>'));
@@ -239,7 +241,9 @@ test('the call tree marks a collapsed branch with the count it stands for', () =
   const html = tab.render(solution, viewOf(selectionKey(ROOT, 'script', '55')));
   const at = html.indexOf('<h3>Call tree</h3>');
   assert.ok(at > 0);
-  const block = html.slice(at);
+  // The object list now follows the detail (see the note at the top of
+  // ui/tabs/explorer.js), so the tree's block ends where that section starts.
+  const block = html.slice(at, html.indexOf('<h2>Objects</h2>', at));
   // Measured on ooe: script 55 performs `noop` on 19 of its steps, and the
   // tree shows one branch saying so rather than nineteen identical ones.
   assert.ok(block.includes('step &times;19') || block.includes('step ×19'), block.slice(0, 600));
@@ -280,6 +284,31 @@ test('a custom menu is selectable and lists the scripts and calculations its ite
   assert.equal(parseHash(`#${scripts[0].hash}`).tab, 'scripts');
   // The calculations its title, its install test and its items carry.
   assert.ok(rows.some((r) => r.kind === 'field' && r.where === 'titleCalculation' && r.how === 'text'));
+});
+
+test("the Table/folder column says built-in for FileMaker's own menus, so the hand-made one stands out", () => {
+  // Measured on ooe: 25 custom menus, 24 of them inherited built-ins.
+  const menus = objectEntries(solution).filter((e) => e.kind === 'menu' && e.target === ROOT);
+  assert.equal(menus.length, 25);
+  assert.equal(menus.filter((e) => e.detail === 'built-in').length, 24);
+  const mine = menus.find((e) => e.name === 'MyCustomMenu');
+  assert.equal(mine.detail, '');
+  assert.equal(menus.find((e) => e.name === '[Format]').detail, 'built-in');
+
+  const html = tab.render(solution, { ...view, filter: '[format]' });
+  assert.match(html, /<td>built-in<\/td>/);
+});
+
+test('the selected object is rendered above the object list, not below it', () => {
+  // The Explorer's one departure from list-then-detail: its list is every named
+  // object of the whole solution, so a detail under it would be off-screen.
+  const html = tab.render(solution, viewOf(selectionKey(ROOT, 'script', '55')));
+  const detail = html.indexOf('<h2>Script ');
+  const list = html.indexOf('<h2>Objects</h2>');
+  assert.ok(detail >= 0 && list >= 0, `${detail} ${list}`);
+  assert.ok(detail < list, 'the detail heading precedes the list heading');
+  // With nothing selected the list is still the whole page.
+  assert.ok(tab.render(solution, view).startsWith('<section class="panel"><header><h2>Objects</h2>'));
 });
 
 test('a relation and a menu each open on their own tab, and nothing names either', () => {

@@ -8,6 +8,15 @@
 // this file owns is `refHash`, the map from a reference's kind and id to the
 // tab that shows it; ui/tabs/analysis.js imports it rather than repeating it.
 //
+// The one place this tab departs from the page's list-then-detail order: when
+// something is selected its detail is rendered ABOVE the object list, not below
+// it. Every other tab lists one catalog -- a few dozen rows a reader scrolls
+// past in a second -- while this list is every named object of the whole
+// solution, thousands of rows on a real file, and the detail under it would be
+// off the bottom of the screen with no way to know it had arrived. The list
+// stays on the page underneath, because picking the next object is the next
+// thing a reader does.
+//
 // A pure renderer: no document, every fm key through access.js, every model
 // string through esc.
 import { badge, count, esc, link, matches, section, table } from '../dom.js';
@@ -126,7 +135,11 @@ function computeObjectEntries(solution) {
           kind, target, id, entry,
           name: String(entry.name ?? ''),
           file: fileName(solution, target),
-          detail: String(entry.table ?? entry.folder ?? ''),
+          // The Table/folder column is whatever locates the object among its
+          // kind: a field's table, a script's or a layout's folder -- and for a
+          // custom menu, whether it is one of FileMaker's own. 24 of ooe's 25
+          // menus are, so the column is what tells the hand-made one apart.
+          detail: entry.inheritedMenu === true ? 'built-in' : String(entry.table ?? entry.folder ?? ''),
           key: selectionKey(target, kind, id),
         });
       }
@@ -312,7 +325,8 @@ function renderSelected(solution, view) {
 export const tab = {
   id: 'explorer',
   label: 'Explorer',
+  // Detail first: see the note at the top of this file.
   render(solution, view = {}) {
-    return renderList(solution, view) + renderSelected(solution, view);
+    return renderSelected(solution, view) + renderList(solution, view);
   },
 };

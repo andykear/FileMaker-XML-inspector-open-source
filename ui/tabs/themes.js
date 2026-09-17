@@ -74,6 +74,14 @@ export function styleUsage(file, theme) {
     .sort((a, b) => b.used - a.used || a.display.localeCompare(b.display));
 }
 
+/** fm's own number, said to be fm's own number. It counts the entries of the
+ *  theme's `layouts`, which is a slice of the flattened layout listing and so
+ *  includes the folder and separator rows FileMaker draws -- on ooe's Apex Blue
+ *  it says 24 where the file has 15 layouts on that theme. The page does not
+ *  correct it, because it is fm's answer and a reader comparing the two numbers
+ *  should see both. */
+const LAYOUTS_USING_TITLE = "fm's own count of the entries on this theme's layout list, which also carries the folder and separator rows of FileMaker's flattened layout listing. The list below names the layouts themselves.";
+
 const COLOR_RE = /^#[0-9a-f]{3,8}$/i;
 const RGBA_RE = /^rgba?\([\d.,\s%]+\)$/i;
 const SWATCH_KEYS = ['swatch1', 'swatch2', 'swatch3', 'swatch4', 'swatch5'];
@@ -119,7 +127,7 @@ const THEME_COLUMNS = [
   { key: 'name', label: 'Internal name' },
   { key: 'group', label: 'Group' },
   { key: 'flags', label: 'Flags', render: flags },
-  { key: 'layoutsUsing', label: 'Layouts using', num: true, render: (r) => count(r.layoutsUsing) },
+  { key: 'layoutsUsing', label: 'Layouts using', num: true, title: LAYOUTS_USING_TITLE, render: (r) => count(r.layoutsUsing) },
   { key: 'namedStyleCount', label: 'Named styles', num: true, render: (r) => count(r.namedStyleCount) },
 ];
 
@@ -142,14 +150,32 @@ const STYLE_COLUMNS = [
   { key: 'used', label: 'Used', num: true, render: (r) => count(r.used) },
 ];
 
-/** A layout name from the theme's own `layouts` list, turned into a link when
- *  it names an actual layout on this file -- the list also carries the folder
- *  and separator markers fm's flattened layout catalog uses, which never match
- *  a layout by that name and so render plain. */
-function layoutLink(file, name) {
-  const item = layoutListOf(file).find((i) => get(i, 'type') === 'layout' && String(get(i, 'name')) === String(name));
-  return item ? link(`layouts/${selectionKey(file.target, get(item, 'id'))}`, name) : esc(name);
+/** fm's `layouts` on a theme is a slice of its FLATTENED layout listing, so it
+ *  carries the folder names and the separator markers (`-`, `--`) FileMaker
+ *  draws between layouts alongside the layouts themselves. Only an entry that
+ *  names a `type: layout` item of this file's layout list is a layout; the rest
+ *  are counted and said to be what they are, never rendered as if a reader could
+ *  open them. Measured on ooe's Apex Blue: 24 entries, 15 layouts.
+ *
+ *  Returns `{ layouts, extra }` -- the matching list items, and how many entries
+ *  were not layouts. */
+export function layoutsUsing(file, theme) {
+  const byName = new Map();
+  for (const item of layoutListOf(file)) {
+    if (get(item, 'type') !== 'layout') continue;
+    const name = String(get(item, 'name'));
+    if (!byName.has(name)) byName.set(name, item);
+  }
+  const layouts = [];
+  let extra = 0;
+  for (const entry of get(theme, 'layouts') ?? []) {
+    const item = byName.get(String(entry));
+    if (item) layouts.push(item); else extra += 1;
+  }
+  return { layouts, extra };
 }
+
+const layoutLink = (file, item) => link(`layouts/${selectionKey(file.target, get(item, 'id'))}`, get(item, 'name'));
 
 function themePairs(row) {
   return [
@@ -158,7 +184,7 @@ function themePairs(row) {
     ['Custom', row.isCustom ? 'yes' : 'no'],
     ['Deprecated', row.isDeprecated ? badge('deprecated', 'warn') : 'no'],
     ['Default', row.isDefault ? badge('default', 'good') : 'no'],
-    ['Layouts using', count(row.layoutsUsing)],
+    ['Layouts using', `<span title="${esc(LAYOUTS_USING_TITLE)}">${count(row.layoutsUsing)}</span>`],
     ['Named styles', count(row.namedStyleCount)],
   ];
 }
@@ -173,13 +199,16 @@ function renderSelected(solution, view) {
   const title = `Theme ${row.displayName}${view.multiFile ? ` (${file.name ?? file.target})` : ''}`;
   const actions = rereadCatalogButton(file.target, 'theme', 'Re-read themes');
   const usage = styleUsage(file, theme).filter((s) => matches(s.display, view.filter) || matches(s.key, view.filter));
-  const layoutNames = get(theme, 'layouts') ?? [];
-  const layouts = layoutNames.map((n) => layoutLink(file, n)).join(', ') || '(none)';
+  const using = layoutsUsing(file, theme);
+  const layouts = using.layouts.map((item) => layoutLink(file, item)).join(', ') || '(none)';
+  const extra = using.extra
+    ? `<p class="muted">${count(using.extra)} more entries are folder and separator names fm's flattened layout list carries.</p>`
+    : '';
   const css = String(get(theme, 'css') ?? '');
   const body = kv(themePairs(row))
     + `<div class="swatches">${paletteSwatches(theme)}</div>`
     + '<h3>Named styles</h3>' + table(STYLE_COLUMNS, usage, { empty: 'No named styles' })
-    + '<h3>Layouts using</h3>' + `<p>${layouts}</p>`
+    + '<h3>Layouts using</h3>' + `<p>${layouts}</p>${extra}`
     + `<details><summary>CSS (${count(css.length)} chars)</summary><pre>${esc(css)}</pre></details>`;
   return section(title, body, { actions });
 }

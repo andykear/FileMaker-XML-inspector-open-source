@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import { parseHash } from '../../ui/shell.js';
-import { tab, occurrenceRows, relationRows, graphSvg } from '../../ui/tabs/graph.js';
+import { tab, occurrenceRows, relationRows, graphSvg, overlapping } from '../../ui/tabs/graph.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -130,7 +130,7 @@ test('graphSvg carries its own size, so a small file\'s graph is not blown up to
 test('graphSvg highlights the occurrence it is given, and only that one', () => {
   const svg = graphSvg(root, { highlight: 1065089 });
   assert.equal(times(svg, /class="to highlight"/g), 1);
-  assert.match(svg, /data-to="1065089" class="to highlight"/);
+  assert.match(svg, /data-to="1065089" data-select="[^"]+\|to:1065089" class="to highlight"/);
   assert.equal(graphSvg(root, { highlight: 999999 }).includes('highlight'), false);
 });
 
@@ -177,6 +177,38 @@ test('the graph section carries one svg per file and lists the notes', () => {
   assert.equal(times(html, /<svg /g), Object.keys(solution.files).length);
   assert.match(html, /2nd relationship graph note/);
   assert.match(html, /occurrence\(s\) fm reports without geometry/);
+});
+
+test('every occurrence rect carries the Occurrences row key, so a click on the picture selects the row', () => {
+  const svg = graphSvg(root);
+  // One data-select per drawn box, and it is the row key the table's own rows carry.
+  assert.equal(times(svg, /data-select="/g), times(svg, /data-to="/g));
+  assert.ok(svg.includes(`data-select="${ROOT}|to:1065089"`));
+  const rows = occurrenceRows(root).filter((r) => r.placed);
+  assert.ok(rows.every((r) => svg.includes(`data-select="${r.key}"`)));
+});
+
+test('the graph names the occurrences fm stacks on one position rather than moving them', () => {
+  // Measured on tests/fixtures/ooe: fm puts TestTable and SaXMLDelivery both at
+  // 20, 20 on the root file, and blank and SaXMLDelivery both at 20, 20 on BrojDva.
+  assert.deepEqual(overlapping(root), ['TestTable', 'SaXMLDelivery']);
+  const other = solution.files[Object.keys(solution.files).find((t) => t !== ROOT)];
+  assert.deepEqual(overlapping(other), ['blank', 'SaXMLDelivery']);
+
+  const html = tab.render(solution, view);
+  assert.match(html, /occurrence\(s\) fm reports at the same position as another, so their boxes overlap: TestTable, SaXMLDelivery/);
+  assert.match(html, /overlap: blank, SaXMLDelivery/);
+  // No stagger: both boxes are drawn exactly where fm says, one over the other.
+  const svg = graphSvg(root);
+  assert.equal(times(svg, / x="20" y="20" /g), 2);
+});
+
+test('an occurrence fm reports no geometry for says so, rather than sitting at 0, 0', () => {
+  const containers = occurrenceRows(root).find((r) => r.name === 'containers');
+  assert.equal(containers.placed, false);
+  const html = tab.render(solution, { ...view, selection: `${ROOT}|to:${containers.id}` });
+  assert.match(html, /<dt>Graph<\/dt><dd>no geometry reported /);
+  assert.ok(!html.includes('0 \u00d7 0 at 0, 0'));
 });
 
 test('a selected occurrence adds its detail, its re-read and the highlight', () => {

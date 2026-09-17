@@ -118,6 +118,24 @@ const box = (b) => ({
 
 const centre = (b) => ({ x: b.left + b.width / 2, y: b.top + b.height / 2 });
 
+/** The occurrences fm puts at a position another occurrence already has. It
+ *  happens on the reference solution -- ooe's TestTable and SaXMLDelivery both
+ *  sit at 20, 20 -- and the graph draws them exactly where fm says they are, one
+ *  box hiding the other. Nudging them apart would be the page inventing geometry
+ *  fm never reported, so the page says so instead and draws the truth.
+ *  Every member of a shared position is named, in list order. */
+export function overlapping(file) {
+  const byPosition = new Map();
+  for (const row of occurrenceRows(file)) {
+    if (!row.placed) continue;
+    const b = box(row.bounds);
+    const at = `${b.left},${b.top}`;
+    if (!byPosition.has(at)) byPosition.set(at, []);
+    byPosition.get(at).push(row.name);
+  }
+  return [...byPosition.values()].filter((names) => names.length > 1).flat();
+}
+
 function viewBoxOf(boxes) {
   if (!boxes.length) return { x: 0, y: 0, width: MARGIN * 2, height: MARGIN * 2 };
   const left = Math.min(...boxes.map((b) => b.left));
@@ -143,10 +161,15 @@ function noteSvg(note) {
     + `<text class="note-text" x="${b.left + 6}" y="${b.top + 16}">${esc(fit(get(note, 'text'), b.width))}</text>`;
 }
 
+/** A box in the graph is the same object as a row in the Occurrences table, so
+ *  it carries that row's own `data-select` key -- the shell's `[data-select]`
+ *  delegation then makes a click on the picture select exactly what a click on
+ *  the row selects, with no second click path to keep in step (the wireframe of
+ *  ui/tabs/layouts.js does the same). */
 function occurrenceSvg(row, highlight) {
   const b = box(row.bounds);
   const on = highlight !== undefined && highlight !== null && String(highlight) === String(row.id);
-  return `<rect data-to="${esc(row.id)}" class="to${on ? ' highlight' : ''}" x="${b.left}" y="${b.top}" width="${b.width}" height="${b.height}"`
+  return `<rect data-to="${esc(row.id)}" data-select="${esc(row.key)}" class="to${on ? ' highlight' : ''}" x="${b.left}" y="${b.top}" width="${b.width}" height="${b.height}"`
     + ` fill="${row.color}" fill-opacity="0.12" stroke="${row.color}" rx="4"/>`
     + `<text class="to-name" x="${b.left + 6}" y="${b.top + 15}">${esc(fit(row.name, b.width))}</text>`;
 }
@@ -229,9 +252,15 @@ function renderRelations(solution, view, rows) {
 }
 
 /** Where fm says the box is, as a reader would say it rather than as the wire says
- *  it: `{"left":20,...}` in a key/value line is the model leaking into prose. */
-function boundsText(b) {
-  if (!b) return 'not placed';
+ *  it: `{"left":20,...}` in a key/value line is the model leaking into prose.
+ *  A missing box and the zero-sized box fm reports for an occurrence it has no
+ *  geometry for are the same answer -- fm did not say where it sits -- and
+ *  "0 x 0 at 0, 0" would read as a position, so neither gets one. Read through
+ *  `box`, the one place a bound becomes a number, so the sentence cannot say
+ *  `undefined`. */
+function boundsText(bounds) {
+  if (!isPlaced(bounds)) return 'no geometry reported';
+  const b = box(bounds);
   return `${b.width} \u00d7 ${b.height} at ${b.left}, ${b.top}`;
 }
 
@@ -280,11 +309,15 @@ function renderGraph(solution, view) {
       ? `<ul class="notes">${notes.map((n) => `<li>${esc(get(n, 'text'))}</li>`).join('')}</ul>`
       : '';
     const unplaced = occurrenceRows(file).filter((r) => !r.placed).map((r) => r.name);
+    const stacked = overlapping(file);
     const missing = unplaced.length
       ? `<p class="muted">${count(unplaced.length)} occurrence(s) fm reports without geometry, so not drawn: ${esc(unplaced.join(', '))}</p>`
       : '';
+    const overlap = stacked.length
+      ? `<p class="muted">${count(stacked.length)} occurrence(s) fm reports at the same position as another, so their boxes overlap: ${esc(stacked.join(', '))}</p>`
+      : '';
     const title = view.multiFile ? `<h3>${esc(file.name ?? file.target)}</h3>` : '';
-    return `${title}<div class="graph-wrap">${graphSvg(file, { highlight })}</div>${missing}${list}`;
+    return `${title}<div class="graph-wrap">${graphSvg(file, { highlight })}</div>${missing}${overlap}${list}`;
   }).join('');
   return section('Graph', body);
 }
