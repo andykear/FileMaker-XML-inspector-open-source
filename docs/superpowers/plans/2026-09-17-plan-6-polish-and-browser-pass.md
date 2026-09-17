@@ -32,9 +32,11 @@
 
 **Files:** `ui/tabs/scripts.js`, `ui/tabs/analysis.js`, `ui/tabs/explorer.js`, `ui/shell.js`, `ui/app.js`, tests.
 
-- A step `<li>` gets `id="step-<scriptId>-<stepID>"` and `data-step`. The Scripts selection accepts a `#<stepID>` tail (`<target>|<id>#<stepID>`, parsed like layouts' object tail); the selected step's `<li>` gets class `selected`.
-- After each route, the shell scrolls the first `.selected[id^="step-"]` into view (`scrollIntoView({block:'center'})`) when present; this is the one DOM action the shell adds.
-- Analysis (script issues, globals set sites) and Explorer (references from script steps, `where` starting `body[i]`) link to `#scripts/<target>|<id>#<stepID>` using the row's `stepID` (issues carry `step.stepID`; references carry `from.stepID`).
+**Ruling as built (2026-09-17):** the anchor is FileMaker's own 1-based line, `#L<line>`, not `#<stepID>`. fm's `stepID` is the step TYPE id -- 141 is every `Set Variable`, 89 every comment -- so it repeats hundreds of times in one body and cannot name a step. The line is `body[<index>] + 1`, which every tab already carries. The paragraphs below read with `#L<line>` for `#<stepID>` throughout; `stepID` stays on a row and on `from` as the step's type, never as its address. (The identity that would survive an edit above it is fm's per-step `uuid`; a later link could anchor on that once an analysis row carries it.)
+
+- A step `<li>` gets `id="step-<scriptId>-L<line>"` and `data-step` (the type id). The Scripts selection accepts a `#L<line>` tail (`<target>|<id>#L<line>`, parsed like layouts' object tail); the selected step's `<li>` gets class `selected`.
+- The shell scrolls the first `.selected[id^="step-"]` into view (`scrollIntoView({block:'center'})`) when present; this is the one DOM action the shell adds. As built it fires when the hash brought the page here -- a `hashchange` or the first render -- not on every route, because a filter keystroke re-renders the same selection.
+- Analysis (script issues, globals set sites) and Explorer (references from script steps, `where` starting `body[i]`) link to `#scripts/<target>|<id>#L<line>` using the row's line (issues carry `step.line`; references derive it from `from.where`).
 - Tests: the rendered script contains the ids; a selection with a step tail marks that `<li>` selected; an Analysis issue link round-trips through `parseHash` to the step tail.
 
 ### Task 3: `GAP_LISTS` home and the `$$` tokeniser
