@@ -1,7 +1,14 @@
 // tests/tabs/gaps.test.mjs
-// The Gaps tab. The register numbers come from a hand-made three-entry fixture
+// The Gaps tab. Most register numbers come from a hand-made three-entry fixture
 // (tests/fixtures/register-summary.json) so they can be reasoned about by hand;
-// the rendering-gap numbers were MEASURED against tests/fixtures/ooe before they
+// the drill-down is exercised against the register the page really gets -- the
+// toolkit's own, through the same loadRegisterSummary the server serves it with,
+// because the shape a reader walks (26 kinds, 302 entries, 8502 attributes) is
+// not a shape three hand-made entries have. Those numbers are MEASURED from the
+// register in the test and pinned beside the measurement, so a toolkit bump that
+// moves one fails on the pin rather than agreeing with itself.
+//
+// The rendering-gap numbers were MEASURED against tests/fixtures/ooe before they
 // were pinned here -- 3482 steps, 67 of a type the catalog has no entry for, 45
 // steps carrying 52 gaps in 15 (step type, gap kind) groups.
 import { test } from 'node:test';
@@ -10,10 +17,15 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
-import { GAP_LISTS, registerFacts, registerGroups, renderingGaps, tab } from '../../ui/tabs/gaps.js';
+import { GAP_LISTS, registerEntries, registerFacts, registerGroups, renderingGaps, statusOf, tab } from '../../ui/tabs/gaps.js';
+import { kindSelection, solutionKey } from '../../ui/tabs/common.js';
 import { GAP_LISTS as NEUTRAL_LISTS } from '../../ui/analysis/gaps-lists.js';
+import { loadRegisterSummary } from '../../server/gaps.mjs';
 
 const REGISTER = JSON.parse(await readFile(new URL('../fixtures/register-summary.json', import.meta.url), 'utf8'));
+// The register exactly as the page is served it: every key the summary drops is
+// a key no renderer here may read.
+const FULL = loadRegisterSummary();
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
 const ooe = await discover(api, api.meta.root);
@@ -53,8 +65,54 @@ test('registerGroups groups by the id prefix and counts reported, missing and wo
   const [account, layoutObject] = groups;
   assert.equal(account.entries.length, 2);
   assert.deepEqual([account.reported, account.missing, account.wontfix], [2, 1, 1]);
+  assert.equal(account.attributes, 4, 'the sum of the three, which is every attribute');
+  assert.equal(account.key, '*|gap-kind:account', 'the row selects the kind, on the solution');
   assert.equal(layoutObject.entries.length, 1);
   assert.deepEqual([layoutObject.reported, layoutObject.missing, layoutObject.wontfix], [0, 1, 0]);
+  assert.equal(layoutObject.attributes, 1);
+  // `attributes` is the sum by construction: statusOf answers one of the three
+  // for every attribute and never two.
+  for (const g of registerGroups(FULL)) assert.equal(g.attributes, g.reported + g.missing + g.wontfix, g.kind);
+});
+
+test('registerEntries is one row per entry, with the entry\'s own totals', () => {
+  const [account] = registerGroups(REGISTER);
+  assert.deepEqual(registerEntries(account), [
+    {
+      key: '*|gap-entry:account:amazon',
+      id: 'account:amazon',
+      op: 'read:account',
+      attributes: 3,
+      reported: 1,
+      missing: 1,
+      wontfix: 1,
+      expectedError: '',
+    },
+    {
+      key: '*|gap-entry:account:google',
+      id: 'account:google',
+      op: 'read:account',
+      attributes: 1,
+      reported: 1,
+      missing: 0,
+      wontfix: 0,
+      expectedError: '',
+    },
+  ]);
+  // The one entry of the fixture the register expects fm to refuse.
+  const [, layoutObject] = registerGroups(REGISTER);
+  assert.equal(registerEntries(layoutObject)[0].expectedError, 'probe refused: 1200');
+  assert.deepEqual(registerEntries(undefined), [], 'a kind no group has is no rows, not a throw');
+});
+
+test('an entry id keeps its own colon through the selection', () => {
+  // `account:filemaker` is an id with a colon in it, and the selection shape
+  // joins on colons: kindSelection must hand the whole tail back.
+  assert.equal(solutionKey('gap-entry', 'account:filemaker'), '*|gap-entry:account:filemaker');
+  assert.deepEqual(kindSelection(solutionKey('gap-entry', 'account:filemaker'), ['gap-kind', 'gap-entry']),
+    { target: '*', kind: 'gap-entry', id: 'account:filemaker' });
+  assert.deepEqual(kindSelection(solutionKey('gap-kind', 'layout-object'), ['gap-kind', 'gap-entry']),
+    { target: '*', kind: 'gap-kind', id: 'layout-object' });
 });
 
 test('registerFacts is the build the register was last checked against', () => {
@@ -62,34 +120,94 @@ test('registerFacts is the build the register was last checked against', () => {
   assert.equal(registerFacts([]), null);
 });
 
-test('the register matrix shows every group, every entry and every attribute row', () => {
-  const html = tab.render(bare({ register: REGISTER }), view);
+test('the register is a kinds table, one row per kind, and nothing is folded away', () => {
+  const html = tab.render(bare({ register: FULL }), view);
   assert.match(html, /What fm cannot read yet/);
-  assert.match(html, /account/);
-  assert.match(html, /layout-object/);
-  assert.match(html, /account:amazon/);
-  assert.match(html, /password change on next login/);
-  assert.match(html, /Authentication\/@changepassword/);
-  // The three statuses each name themselves on the row they belong to.
-  assert.match(html, /reported/);
-  assert.match(html, /missing/);
-  assert.match(html, /wontfix/);
-  // knownFrom is the column that says where the fact was known from.
-  assert.match(html, /Manage Security &gt; Require password change on next sign in/);
+  const kinds = registerGroups(FULL);
+  assert.equal(kinds.length, 26, 'measured on the pinned register');
+  // One selectable row per kind, each linking to the kind's own selection.
+  for (const g of kinds) {
+    assert.ok(html.includes(`data-select="${g.key}"`), `no row for ${g.kind}`);
+    assert.ok(html.includes(`href="#gaps/${encodeURIComponent(g.key)}"`), `no link for ${g.kind}`);
+  }
+  assert.match(html, /href="#gaps\/\*%7Cgap-kind%3Aaccount"/);
+  // The totals of the whole register, measured from it.
+  assert.match(html, /Kinds <span class="num">26<\/span>/);
+  assert.match(html, /Entries <span class="num">302<\/span>/);
+  assert.match(html, /Attributes <span class="num">8502<\/span>/);
+  assert.equal(FULL.length, 302);
+  assert.equal(FULL.reduce((n, e) => n + e.attributes.length, 0), 8502);
+  // The tree of <details> the manual test called very bad UI is gone. Nothing
+  // else on a script-less, un-checked solution folds, so one assertion does it.
+  assert.doesNotMatch(html, /<details/);
+  // Nothing is shown until a kind is selected: 302 entries and 8502 attributes
+  // are the thing the tables exist to avoid printing at once.
+  assert.doesNotMatch(html, /account:filemaker/);
 });
 
-test('the filter narrows the attribute rows but never the totals', () => {
+test('selecting a kind lists its entries, each a link to itself', () => {
+  const account = registerGroups(FULL).find((g) => g.kind === 'account');
+  const rows = registerEntries(account);
+  assert.equal(rows.length, 8, 'measured on the pinned register');
+  const html = tab.render(bare({ register: FULL }), { ...view, selection: account.key });
+  assert.match(html, /Kind account/);
+  for (const r of rows) {
+    assert.ok(html.includes(`href="#gaps/${encodeURIComponent(r.key)}"`), `no link for ${r.id}`);
+    assert.ok(html.includes(`data-select="${r.key}"`), `no row for ${r.id}`);
+  }
+  assert.match(html, /account:filemaker/);
+  // A kind's entries render ABOVE the kinds table, which stays for the overview.
+  assert.ok(html.indexOf('Kind account') < html.indexOf('What fm cannot read yet'));
+  assert.match(html, /href="#gaps\/\*%7Cgap-kind%3Alayout-object"/, 'the kinds table is still there');
+  // A kind no register has draws no section rather than an empty one.
+  const missing = tab.render(bare({ register: FULL }), { ...view, selection: solutionKey('gap-kind', 'nosuch') });
+  assert.doesNotMatch(missing, /Kind nosuch/);
+});
+
+test('selecting an entry shows what it is read with and every fact the export carries', () => {
+  const entry = FULL.find((e) => e.id === 'account:filemaker');
+  const missing = entry.attributes.filter((a) => statusOf(a) === 'missing').length;
+  assert.deepEqual([entry.attributes.length, missing], [21, 5], 'measured on the pinned register');
+  const html = tab.render(bare({ register: FULL }), { ...view, selection: solutionKey('gap-entry', entry.id) });
+  assert.match(html, /Entry account:filemaker/);
+  // One status badge per attribute, and the missing ones counted on the line above.
+  assert.equal((html.match(/<span class="badge (?:good|muted|bad)">(?:reported|wontfix|missing)<\/span>/g) ?? []).length,
+    entry.attributes.length);
+  assert.match(html, /Attributes <span class="num">21<\/span> &middot; Reported <span class="num">9<\/span> &middot; Missing <span class="num">5<\/span>/);
+  // Every attribute of the entry, by name, and the sentence saying where it was known from.
+  for (const a of entry.attributes) assert.ok(html.includes(a.name), `no row for ${a.name}`);
+  assert.match(html, /Manage Security|File &gt; Manage &gt; Security/);
+  // What fm is handed to read it: the probe's own ops, one per line.
+  assert.match(html, /Read with/);
+  assert.match(html, /\{&quot;op&quot;:&quot;read:account&quot;,&quot;id&quot;:15\}/);
+  // And the way back to the kind it belongs to.
+  assert.match(html, /href="#gaps\/\*%7Cgap-kind%3Aaccount"/);
+  // An id the register has no entry for draws nothing.
+  assert.doesNotMatch(tab.render(bare({ register: FULL }), { ...view, selection: solutionKey('gap-entry', 'account:nope') }),
+    /Entry account:nope/);
+});
+
+test('the filter narrows each table on what that table shows, and never the totals', () => {
   const all = tab.render(bare({ register: REGISTER }), view);
-  const filtered = tab.render(bare({ register: REGISTER }), { ...view, filter: 'changepassword' });
-  assert.match(all, /account:google/);
-  assert.doesNotMatch(filtered, /account:google/, 'an entry no attribute of which matches is dropped');
-  assert.match(filtered, /account:amazon/);
-  assert.doesNotMatch(filtered, /account authentication type code/, 'a non-matching attribute row is dropped');
-  // Totals are solution-wide whatever the filter says: 5 attributes, 2 reported.
-  for (const html of [all, filtered]) {
+  const nothing = tab.render(bare({ register: REGISTER }), { ...view, filter: 'zzz-no-such-kind' });
+  assert.match(all, /href="#gaps\/\*%7Cgap-kind%3Aaccount"/);
+  assert.doesNotMatch(nothing, /href="#gaps\/\*%7Cgap-kind%3Aaccount"/, 'the kinds table filters on the kind name');
+  assert.match(nothing, /None match the filter/);
+  // Totals are register-wide whatever the filter says: 5 attributes, 2 reported.
+  for (const html of [all, nothing]) {
     assert.match(html, /Attributes <span class="num">5<\/span>/);
     assert.match(html, /Reported <span class="num">2<\/span>/);
   }
+  // The entries table filters on the entry's id and its op, the attributes table
+  // on the attribute's name and export path -- and neither touches its totals.
+  const entries = tab.render(bare({ register: REGISTER }), { ...view, selection: solutionKey('gap-kind', 'account'), filter: 'google' });
+  assert.match(entries, /account:google/);
+  assert.doesNotMatch(entries, /account:amazon/);
+  assert.match(entries, /Entries <span class="num">2<\/span>/);
+  const attributes = tab.render(bare({ register: REGISTER }), { ...view, selection: solutionKey('gap-entry', 'account:amazon'), filter: 'changepassword' });
+  assert.match(attributes, /password change on next login/, 'matched on its export path');
+  assert.doesNotMatch(attributes, /account authentication type code/, 'a non-matching attribute row is dropped');
+  assert.match(attributes, /Attributes <span class="num">3<\/span> &middot; Reported <span class="num">1<\/span>/);
 });
 
 test('the register section says so when nothing has been loaded, and offers the button', () => {
@@ -245,11 +363,22 @@ test('every string the register and the outcome carry is escaped', () => {
     errored: [{ id: '<e>', reason: '<r>' }], erroredExpected: [], expectedResolved: [{ id: '<p>', expectedError: '<q>' }],
     probeFailures: 0, fmVersion: '<fv>', build: '<fb>', ranAt: '<ra>',
   };
-  const html = tab.render(bare({ register: hostile, gaps, cli: { version: '<cli>' } }), view);
-  assert.doesNotMatch(html, /<script>alert/);
-  assert.doesNotMatch(html, /<img src=x/);
-  assert.doesNotMatch(html, /<i>here<\/i>/);
-  assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
-  assert.match(html, /&lt;fv&gt;/);
-  assert.match(html, /&lt;r&gt;/);
+  const solution = bare({ register: hostile, gaps, cli: { version: '<cli>' } });
+  // Every level of the drill-down, because each draws strings the other does not:
+  // the kinds table, the kind's entries, and the entry's own facts and probe.
+  const kinds = tab.render(solution, view);
+  const entries = tab.render(solution, { ...view, selection: solutionKey('gap-kind', '<img src=x onerror=alert(1)>') });
+  const attributes = tab.render(solution, { ...view, selection: solutionKey('gap-entry', '<img src=x onerror=alert(1)>:evil') });
+  for (const html of [kinds, entries, attributes]) {
+    assert.doesNotMatch(html, /<script>alert/);
+    assert.doesNotMatch(html, /<img src=x/);
+    assert.doesNotMatch(html, /<i>here<\/i>/);
+    assert.match(html, /&lt;fv&gt;/);
+    assert.match(html, /&lt;r&gt;/);
+  }
+  assert.match(entries, /read:&quot;x&quot;/, 'the op is escaped where the entries table prints it');
+  assert.match(attributes, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.match(attributes, /&lt;b&gt;k&lt;\/b&gt;/, 'the fm key');
+  assert.match(attributes, /from &lt;i&gt;here&lt;\/i&gt;/, 'the sentence it was known from');
+  assert.match(attributes, /&quot;op&quot;:&quot;read:account&quot;/, 'the probe fm would be handed');
 });

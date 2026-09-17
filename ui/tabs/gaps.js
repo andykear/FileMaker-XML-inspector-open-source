@@ -15,15 +15,19 @@
 //                   FileMaker phrases it. Nothing to do with fm: the value is read
 //                   and printed, it is the wording that is not measured.
 //
+// The register draws as the same three tables every other tab draws: the kinds, one
+// kind's entries, one entry's attributes, each row selecting the next. Nothing nests.
+//
 // A pure renderer, like every other tab: no document, every fm key through access.js,
-// every string through esc. The one thing it asks of the shell is a click -- the two
-// `data-action` buttons, which ui/app.js turns into a fetch.
-import { badge, count, esc, kv, matches, section, table } from '../dom.js';
+// every string through esc. What it asks of the shell is a click -- the row selections
+// `*|gap-kind:<kind>` and `*|gap-entry:<id>`, and the two `data-action` buttons, which
+// ui/app.js turns into a fetch.
+import { badge, count, esc, kv, link, matches, section, table } from '../dom.js';
 import { CATALOG, catalogEntry, renderStepFromCatalog, stepConventions } from 'fm-adt-toolkit/step-display';
 import { get, path } from '../access.js';
 import { memoise } from '../analysis/memo.js';
 import { GAP_LISTS as NEUTRAL_LISTS } from '../analysis/gaps-lists.js';
-import { emptyNote, plural, totalsLine } from './common.js';
+import { emptyNote, kindSelection, selectRow, solutionKey, totalsLine } from './common.js';
 
 // ── What fm cannot read yet ───────────────────────────────────────────
 
@@ -32,19 +36,59 @@ import { emptyNote, plural, totalsLine } from './common.js';
 export const statusOf = (a) => (a.reported ? 'reported' : a.wontfix ? 'wontfix' : 'missing');
 const TONE = { reported: 'good', wontfix: 'muted', missing: 'bad' };
 
+/** The two things this tab selects: a kind of the register, and one entry of it.
+ *  Both are the SOLUTION's (`*`), not a file's -- the register is the toolkit's
+ *  measurement of fm, and says nothing about which file is open. */
+const REGISTER_KINDS = ['gap-kind', 'gap-entry'];
+
+const registerSelection = (view) => {
+  const sel = kindSelection(view?.selection, REGISTER_KINDS);
+  // `*` is the only target the register answers for. Another tab's selection is
+  // some file's, and this tab has nothing to say about it.
+  return sel && sel.target === '*' ? sel : null;
+};
+
 /** The register grouped by the kind its id names -- `layout-object:button` is a
- *  layout-object -- with the three counts, which are the group's totals and are
- *  never narrowed by the filter. */
+ *  layout-object -- with the three counts and their sum, which are the group's
+ *  totals and are never narrowed by the filter. `attributes` is
+ *  `reported + missing + wontfix` by construction: statusOf answers one of the
+ *  three for every attribute and never two. */
 export function registerGroups(register) {
   const groups = new Map();
   for (const entry of register ?? []) {
     const kind = String(entry.id ?? '').split(':')[0];
-    if (!groups.has(kind)) groups.set(kind, { kind, entries: [], reported: 0, missing: 0, wontfix: 0 });
+    if (!groups.has(kind)) {
+      groups.set(kind, { kind, key: solutionKey('gap-kind', kind), entries: [], attributes: 0, reported: 0, missing: 0, wontfix: 0 });
+    }
     const group = groups.get(kind);
     group.entries.push(entry);
-    for (const a of entry.attributes ?? []) group[statusOf(a)] += 1;
+    for (const a of entry.attributes ?? []) {
+      group[statusOf(a)] += 1;
+      group.attributes += 1;
+    }
   }
   return [...groups.values()].sort((a, b) => a.kind.localeCompare(b.kind));
+}
+
+/** One row per entry of a group, with the entry's own totals. Rows, not entries:
+ *  the table draws numbers, and the attributes themselves are a level further
+ *  down -- they are what selecting the row shows. */
+export function registerEntries(group) {
+  return (group?.entries ?? []).map((entry) => {
+    const attributes = entry.attributes ?? [];
+    const row = {
+      key: solutionKey('gap-entry', entry.id ?? ''),
+      id: entry.id ?? '',
+      op: entry.op ?? '',
+      attributes: attributes.length,
+      reported: 0,
+      missing: 0,
+      wontfix: 0,
+      expectedError: entry.expectedError ?? '',
+    };
+    for (const a of attributes) row[statusOf(a)] += 1;
+    return row;
+  });
 }
 
 /** The fm build the register was last checked against: the newest of its entries'
@@ -70,36 +114,99 @@ const ATTRIBUTE_COLUMNS = [
   { key: 'knownFrom', label: 'Known from' },
 ];
 
-const attributeMatches = (a, filter) => matches(a.name, filter) || matches(a.path, filter)
-  || matches(a.fmKey ?? '', filter) || matches(a.knownFrom ?? '', filter);
+const KIND_COLUMNS = [
+  // The kind is the way in, so it is a link as well as a selectable row: the
+  // counts beside it are only useful next to the entries they are spread over.
+  { key: 'kind', label: 'Kind', render: (g) => link(`gaps/${g.key}`, g.kind) },
+  { key: 'entries', label: 'Entries', num: true, render: (g) => count(g.entries.length) },
+  { key: 'attributes', label: 'Attributes', num: true, render: (g) => count(g.attributes) },
+  { key: 'reported', label: 'Reported', num: true, render: (g) => count(g.reported) },
+  { key: 'missing', label: 'Missing', num: true, render: (g) => count(g.missing) },
+  { key: 'wontfix', label: 'Wontfix', num: true, render: (g) => count(g.wontfix) },
+];
 
-/** The attribute rows of one entry under the filter: all of them when the filter
- *  names the entry itself, otherwise the ones that match. An entry left with none
- *  is not shown at all. */
-function rowsOf(entry, filter) {
+const ENTRY_COLUMNS = [
+  { key: 'id', label: 'Entry', render: (r) => link(`gaps/${r.key}`, r.id) },
+  { key: 'op', label: 'Op', render: (r) => (r.op ? `<code>${esc(r.op)}</code>` : '') },
+  { key: 'attributes', label: 'Attributes', num: true, render: (r) => count(r.attributes) },
+  { key: 'reported', label: 'Reported', num: true, render: (r) => count(r.reported) },
+  { key: 'missing', label: 'Missing', num: true, render: (r) => count(r.missing) },
+  { key: 'wontfix', label: 'Wontfix', num: true, render: (r) => count(r.wontfix) },
+  // The one entry the register expects fm to refuse outright. Empty on every
+  // other row rather than a word that would read as a verdict on it.
+  { key: 'expectedError', label: 'Expected error', render: (r) => (r.expectedError ? badge(r.expectedError, 'warn') : '') },
+];
+
+/** The ops the register's probe names, as the ndjson fm is handed -- one op per
+ *  line, which is the form the CLAUDE.md probe command takes and the form a
+ *  reader can paste. The summary the page is served drops `lastChecked.command`
+ *  (it is a path into a temp directory that no longer exists), so the ops ARE
+ *  the exact probe; `select` is the checker's own narrowing of the answer and is
+ *  said in words beside them. */
+function probeHtml(probe) {
+  const ops = probe?.ops;
+  if (!Array.isArray(ops) || !ops.length) return '';
+  const select = probe?.select;
+  return `<pre>${esc(ops.map((op) => JSON.stringify(op)).join('\n'))}</pre>`
+    + (select ? `<p class="muted">Narrowed to <code>${esc(select)}</code></p>` : '');
+}
+
+/** One kind of the register: its entries, one row each. Filtered on what the row
+ *  says -- the entry's id and the op it is read with. */
+function kindSection(groups, kind, view) {
+  const group = groups.find((g) => g.kind === kind);
+  if (!group) return '';
+  const rows = registerEntries(group)
+    .filter((r) => matches(r.id, view.filter) || matches(r.op, view.filter));
+  const body = totalsLine([
+    ['Entries', group.entries.length],
+    ['Attributes', group.attributes],
+    ['Reported', group.reported],
+    ['Missing', group.missing],
+    ['Wontfix', group.wontfix],
+  ])
+    + table(ENTRY_COLUMNS, rows, { empty: emptyNote(group.entries.length, 'No entries'), rowAttrs: selectRow(view.selection) });
+  return section(`Kind ${kind}`, body);
+}
+
+/** One entry of the register: what it is read with, and every fact the export
+ *  carries about it. Filtered on the attribute's own name and export path. */
+function entrySection(register, id, view) {
+  const entry = (register ?? []).find((e) => (e.id ?? '') === id);
+  if (!entry) return '';
+  const kind = String(entry.id ?? '').split(':')[0];
   const attributes = entry.attributes ?? [];
-  if (!filter || matches(entry.id, filter) || matches(entry.kind, filter) || matches(entry.op, filter)) return attributes;
-  return attributes.filter((a) => attributeMatches(a, filter));
+  const counts = { reported: 0, missing: 0, wontfix: 0 };
+  for (const a of attributes) counts[statusOf(a)] += 1;
+  const rows = attributes.filter((a) => matches(a.name ?? '', view.filter) || matches(a.path ?? '', view.filter));
+  // The Kind row is also the way back to the kind's entries: the entry came from
+  // that table and a reader wants the neighbouring entries next.
+  const pairs = [['Kind', link(`gaps/${solutionKey('gap-kind', kind)}`, kind)
+    + (entry.kind ? ` <span class="muted">${esc(entry.kind)}</span>` : '')]];
+  if (entry.op) pairs.push(['Op', `<code>${esc(entry.op)}</code>`]);
+  const probe = probeHtml(entry.probe);
+  if (probe) pairs.push(['Read with', probe]);
+  if (entry.expectedError) pairs.push(['Expected error', badge(entry.expectedError, 'warn')]);
+  const body = totalsLine([
+    ['Attributes', attributes.length],
+    ['Reported', counts.reported],
+    ['Missing', counts.missing],
+    ['Wontfix', counts.wontfix],
+  ])
+    + kv(pairs)
+    + table(ATTRIBUTE_COLUMNS, rows, { empty: emptyNote(attributes.length, 'No attributes') });
+  return section(`Entry ${entry.id ?? id}`, body);
 }
 
-function entryHtml(entry, filter) {
-  const rows = rowsOf(entry, filter);
-  if (!rows.length) return '';
-  const missing = (entry.attributes ?? []).filter((a) => statusOf(a) === 'missing').length;
-  const expected = entry.expectedError ? ` ${badge('expected error: ' + entry.expectedError, 'warn')}` : '';
-  return '<details><summary>'
-    + `${esc(entry.id)} <span class="muted">${esc(entry.op)}</span> `
-    + `${plural(entry.attributes?.length ?? 0, 'attribute')}, ${count(missing)} missing${expected}`
-    + `</summary>${table(ATTRIBUTE_COLUMNS, rows)}</details>`;
-}
-
-function groupHtml(group, filter) {
-  const entries = group.entries.map((e) => entryHtml(e, filter)).filter(Boolean).join('');
-  if (!entries) return '';
-  return '<details><summary>'
-    + `${esc(group.kind)} &middot; ${count(group.entries.length)} ${group.entries.length === 1 ? 'entry' : 'entries'} &middot; `
-    + `reported ${count(group.reported)} &middot; missing ${count(group.missing)} &middot; wontfix ${count(group.wontfix)}`
-    + `</summary>${entries}</details>`;
+/** What the selection is showing, ABOVE the kinds table: a click's answer lands
+ *  where the eye already is, and the overview stays under it. */
+function registerDetail(solution, view) {
+  const register = solution.register;
+  const sel = register && registerSelection(view);
+  if (!sel) return '';
+  return sel.kind === 'gap-kind'
+    ? kindSection(registerGroups(register), sel.id, view)
+    : entrySection(register, sel.id, view);
 }
 
 function registerSection(solution, view) {
@@ -110,18 +217,18 @@ function registerSection(solution, view) {
       + '<button data-action="gaps-register">Load the register</button>');
   }
   const groups = registerGroups(register);
-  const attributes = groups.reduce((n, g) => n + g.reported + g.missing + g.wontfix, 0);
   const body = totalsLine([
     ['Kinds', groups.length],
     ['Entries', register.length],
-    ['Attributes', attributes],
+    ['Attributes', groups.reduce((n, g) => n + g.attributes, 0)],
     ['Reported', groups.reduce((n, g) => n + g.reported, 0)],
     ['Missing', groups.reduce((n, g) => n + g.missing, 0)],
     ['Wontfix', groups.reduce((n, g) => n + g.wontfix, 0)],
   ])
-    + '<p class="muted">One row per fact the Save as XML export carries. Open a kind, then an entry, to see which of its '
-    + 'facts fm reports, which it does not, and where each was known from.</p>'
-    + (groups.map((g) => groupHtml(g, view.filter)).join('') || `<p class="empty">${esc(emptyNote(register.length, 'The register is empty'))}</p>`);
+    + '<p class="muted">One row per kind the Save as XML export knows. Select a kind for its entries, an entry for its '
+    + 'facts: which fm reports, which it does not, and where each was known from.</p>'
+    + table(KIND_COLUMNS, groups.filter((g) => matches(g.kind, view.filter)),
+      { empty: emptyNote(groups.length, 'The register is empty'), rowAttrs: selectRow(view.selection) });
   return section('What fm cannot read yet', body);
 }
 
@@ -307,7 +414,8 @@ export const tab = {
   id: 'gaps',
   label: 'Gaps',
   render(solution, view = {}) {
-    return registerSection(solution, view)
+    return registerDetail(solution, view)
+      + registerSection(solution, view)
       + liveSection(solution)
       + renderingSection(solution, view)
       + factsSection(solution);
