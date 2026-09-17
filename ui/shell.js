@@ -1,7 +1,7 @@
 // ui/shell.js
 // Sidebar, hash route, filter box, delegated clicks. Tabs are pure renderers; this is the
 // only file in ui/ that touches the document besides app.js.
-import { buildHash, esc, parseHash } from './dom.js';
+import { buildHash, esc, parseHash, sortRows } from './dom.js';
 
 // The hash functions live in ui/dom.js, one layer down, because `link` builds
 // its href with buildHash. They are re-exported here because the shell is where
@@ -66,6 +66,29 @@ export function createShell({ tabs, mount, onReread, onExport, onAction }) {
     step?.scrollIntoView?.({ block: 'center' });
   }
 
+  /** Sorting is a view of the rows that are ON THE PAGE, not state: nothing is
+   *  recorded anywhere, the hash never moves, and the next re-render -- a filter
+   *  keystroke, a route, a re-read -- draws the tab's own order again. That is
+   *  the documented behaviour, not an oversight: a sort a reader can see is a
+   *  sort a reader can redo, and a sort remembered across a filter would hide
+   *  which order the tab itself puts its rows in.
+   *
+   *  The rows are MOVED, not rewritten: appendChild takes the same `<tr>`
+   *  elements along with their `data-select`, their `class="selected"` and any
+   *  listener on them, so a table sorts without losing what the reader picked. */
+  function sortByHeader(th) {
+    const table = th.closest('table');
+    const tbody = table?.tBodies?.[0];
+    if (!tbody) return;
+    // First click ascending, the same header toggles, another header starts
+    // ascending again -- and only one header at a time wears the arrow.
+    const direction = th.dataset.dir === 'asc' ? 'desc' : 'asc';
+    for (const other of table.querySelectorAll?.('th[data-dir]') ?? []) delete other.dataset.dir;
+    th.dataset.dir = direction;
+    const rows = Array.from(tbody.rows, (tr) => ({ tr, cells: Array.from(tr.cells, (td) => td.textContent ?? '') }));
+    for (const row of sortRows(rows, th.cellIndex, th.dataset.sort, direction)) tbody.appendChild(row.tr);
+  }
+
   mount.filter.addEventListener('input', () => {
     clearTimeout(filterTimer);
     filterTimer = setTimeout(() => { filter = mount.filter.value.trim().toLowerCase(); route(); }, FILTER_DEBOUNCE_MS);
@@ -95,6 +118,13 @@ export function createShell({ tabs, mount, onReread, onExport, onAction }) {
     const action = ev.target.closest('[data-action]');
     if (action) {
       await onAction?.(action.dataset.action, action.dataset);
+      return;
+    }
+    // A click on a sortable header, before row selection so that a header
+    // inside a table of selectable rows sorts rather than selects.
+    const header = ev.target.closest('th[data-sort]');
+    if (header) {
+      sortByHeader(header);
       return;
     }
     const row = ev.target.closest('[data-select]');

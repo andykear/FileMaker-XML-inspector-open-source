@@ -32,6 +32,21 @@ function fakeElement() {
   return el;
 }
 
+/** A rendered table, the way the shell's sort handler walks one: headers that
+ *  carry a dataset and their cell index, rows whose cells carry text, and a
+ *  tbody whose appendChild records the order the rows were moved into. */
+function fakeTable(headers, rows) {
+  const order = [];
+  const ths = headers.map((sort, i) => ({ dataset: sort ? { sort } : {}, cellIndex: i }));
+  const trs = rows.map((cells) => ({ cells: cells.map((textContent) => ({ textContent })) }));
+  const table = {
+    tBodies: [{ rows: trs, appendChild(row) { order.push(row); } }],
+    querySelectorAll: (sel) => (sel === 'th[data-dir]' ? ths.filter((th) => th.dataset.dir) : []),
+  };
+  for (const th of ths) th.closest = (sel) => (sel === 'table' ? table : null);
+  return { ths, order, column: (i) => order.map((r) => r.cells[i].textContent) };
+}
+
 /** A click whose target answers `closest` from a map of selector -> element. */
 function clickOn(matchesBySelector) {
   return { target: { closest: (sel) => matchesBySelector[sel] ?? null } };
@@ -186,6 +201,46 @@ test('a shell with no onAction ignores an action click rather than throwing', as
     await mount.main.handlers.click(clickOn({ '[data-action]': { dataset: { action: 'nope' } } }));
     assert.equal(globalThis.location.hash, '');
   } finally { Object.assign(globalThis, saved); }
+});
+
+test('a click on a header sorts the rendered rows, toggles, and never touches the hash', () => {
+  const { mount, restore } = stubShell();
+  try {
+    const { ths, order, column } = fakeTable(['text', 'num'], [['b', '10'], ['a', '2'], ['c', '9']]);
+    const clickHeader = (th) => { order.length = 0; mount.main.handlers.click(clickOn({ 'th[data-sort]': th })); };
+
+    clickHeader(ths[1]);
+    assert.deepEqual(column(1), ['2', '9', '10'], 'the first click sorts the number column ascending');
+    assert.equal(ths[1].dataset.dir, 'asc');
+    assert.equal(globalThis.location.hash, '', 'a sort is a view of the rendered rows, not a route');
+
+    clickHeader(ths[1]);
+    assert.deepEqual(column(1), ['10', '9', '2'], 'the same header toggles');
+    assert.equal(ths[1].dataset.dir, 'desc');
+
+    // Another header starts ascending again, and only one header at a time
+    // carries the arrow.
+    clickHeader(ths[0]);
+    assert.deepEqual(column(0), ['a', 'b', 'c']);
+    assert.equal(ths[0].dataset.dir, 'asc');
+    assert.equal(ths[1].dataset.dir, undefined, 'the previous header lost its direction');
+    assert.equal(globalThis.location.hash, '');
+
+    // A header that opted out of sorting has no data-sort, so the handler never
+    // sees the click; neither does a header outside a table.
+    mount.main.handlers.click(clickOn({ 'th[data-sort]': null }));
+    mount.main.handlers.click(clickOn({ 'th[data-sort]': { dataset: { sort: 'text' }, cellIndex: 0, closest: () => null } }));
+    assert.equal(globalThis.location.hash, '');
+  } finally { restore(); }
+});
+
+test('a click on a header of a selectable row does not also select the row', () => {
+  const { mount, restore } = stubShell();
+  try {
+    const { ths } = fakeTable(['text'], [['b'], ['a']]);
+    mount.main.handlers.click(clickOn({ 'th[data-sort]': ths[0], '[data-select]': { dataset: { select: 'a|b' } } }));
+    assert.equal(globalThis.location.hash, '', 'the header click is the header\'s, not the row\'s');
+  } finally { restore(); }
 });
 
 test('a click on neither a row nor a button changes nothing', () => {

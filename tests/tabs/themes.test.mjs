@@ -129,7 +129,7 @@ test('the Themes table lists every theme with a data-select row and a re-read co
   assert.match(html, /Minimalist/);
   assert.ok(html.includes(`data-select="${api.meta.root}|1"`));
   assert.ok(html.includes('data-reread-catalog="theme"'));
-  assert.ok(html.includes('<th>File</th>'));
+  assert.ok(html.includes('<th data-sort="text" title="Click to sort">File</th>'));
 });
 
 test('selecting a theme shows kv, swatches, named styles, layouts using as links, and the CSS in an escaped <pre>', () => {

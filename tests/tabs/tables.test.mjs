@@ -124,7 +124,7 @@ test('the filter narrows the field rows', () => {
 
 test('the field table shows the developer comment, and the filter matches it', () => {
   const html = tab.render(solution, { ...view, selection: `${api.meta.root}|TestTable` });
-  assert.ok(html.includes('<th>Comment</th>'));
+  assert.ok(html.includes('<th data-sort="text" title="Click to sort">Comment</th>'));
   // TestTable::ID carries a comment on the fixture; TextField1 carries none.
   assert.ok(html.includes('<td>Unique identifier of each record in this table</td>'));
   const byComment = tab.render(solution, { ...view, selection: `${api.meta.root}|TestTable`, filter: 'unique identifier' });

@@ -42,7 +42,8 @@ const COLUMNS = [
   { key: 'described', label: 'Described', num: true },
   { key: 'errors', label: 'Errors', num: true, render: (r) => `<span class="${r.errors ? 'error' : ''}">${esc(r.errors)}</span>` },
   { key: 'readAt', label: 'Read at', render: (r) => `<span class="muted">${esc(r.readAt ?? '')}</span>` },
-  { key: 'reread', label: '', render: (r) => rereadCatalogButton(r.target, r.catalog) },
+  // A column of buttons under a blank header: there is nothing to sort by, so it opts out.
+  { key: 'reread', label: '', sort: false, render: (r) => rereadCatalogButton(r.target, r.catalog) },
 ];
 
 function renderFile(file) {

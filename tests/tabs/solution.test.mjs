@@ -13,7 +13,7 @@ const solution = await discover(api, api.meta.root);
 
 test('the Solution tab lists every catalog with the Entries column, titled only on the flattened three', () => {
   const html = tab.render(solution);
-  assert.ok(html.includes('<th class="num">Entries</th>'), 'the column is renamed from Listed to Entries');
+  assert.ok(html.includes('<th class="num" data-sort="num" title="Click to sort">Entries</th>'), 'the column is renamed from Listed to Entries');
   assert.ok(!html.includes('>Listed<'));
 
   const title = 'list entries including folders and separators';

@@ -18,6 +18,10 @@ const root = solution.files[api.meta.root];
 const brojDva = solution.files['fmnet://localhost/BrojDva'];
 const view = { selection: null, filter: '', multiFile: true };
 
+/** What ui/dom.js `table()` writes for a plain text header: sortable, with the
+ *  hint it hangs on a column that has no title of its own. */
+const sortableHeader = (label) => `<th data-sort="text" title="Click to sort">${label}</th>`;
+
 test('accountRows: 13 accounts on the root file, each with the fields the brief names', () => {
   const rows = accountRows(root);
   assert.equal(rows.length, 13);
@@ -112,7 +116,7 @@ test('perItemAccess renders the four override tables of MyRestrictedPrivilegeSet
   const restricted = privilegeSetRows(root).find((r) => r.name === 'MyRestrictedPrivilegeSet');
   const html = perItemAccess(restricted);
   assert.match(html, /<details open><summary>Per-item access<\/summary>/);
-  assert.match(html, /<th>Table<\/th><th>View<\/th><th>Edit<\/th><th>Create<\/th><th>Delete<\/th><th>Fields<\/th>/);
+  assert.ok(html.includes(['Table', 'View', 'Edit', 'Create', 'Delete', 'Fields'].map(sortableHeader).join('')));
   // Contacts is limited on view, edit and delete, each gated by a calculation, and
   // names 7 of its fields one by one; create is plain `no` with no calc badge.
   assert.match(html, /<td>Contacts<\/td><td>limited <span class="badge info">calc<\/span><\/td>/);
@@ -130,7 +134,7 @@ test('the privilege-set detail pane carries the per-item tables', () => {
   const restricted = privilegeSetRows(root).find((r) => r.name === 'MyRestrictedPrivilegeSet');
   const html = tab.render(solution, { ...view, selection: `${api.meta.root}|priv:${restricted.id}` });
   assert.match(html, /<summary>Per-item access<\/summary>/);
-  assert.match(html, /<th>Table<\/th>/);
+  assert.ok(html.includes(sortableHeader('Table')));
 });
 
 test('accessSummary on plain values', () => {
@@ -232,7 +236,7 @@ test('a selection in the second file reads that file, not the root', () => {
 
 test('the File column appears in multiFile view and rows carry the File cell', () => {
   const html = tab.render(solution, view);
-  assert.ok(html.includes('<th>File</th>'));
+  assert.ok(html.includes(sortableHeader('File')));
 });
 
 test('every model string is escaped', () => {

@@ -214,7 +214,7 @@ const OCCURRENCE_COLUMNS = [
   { key: 'related', label: 'Related', num: true, render: (r) => count(r.related) },
   { key: 'cascade', label: 'Cascade', render: (r) => (r.cascade ? badge('cascade', 'warn') : '') },
   { key: 'tags', label: 'Tags' },
-  { key: 'error', label: '', render: (r) => (r.error ? `<span class="error">${esc(get(r.error, 'code'))}</span>` : '') },
+  { key: 'error', label: '', sort: false, render: (r) => (r.error ? `<span class="error">${esc(get(r.error, 'code'))}</span>` : '') },
 ];
 
 const RELATION_COLUMNS = [
