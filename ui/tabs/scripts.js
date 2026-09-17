@@ -3,6 +3,14 @@
 // step by step through the toolkit's shared renderer, and the step index across every
 // file reached. A pure renderer: no document, every fm key read through access.js,
 // every string escaped. Nothing here knows how a step is spelled -- stepDisplay does.
+//
+// A step is anchored on FileMaker's own 1-based line (`#L<line>`), because that
+// is the only step coordinate every tab already carries: the Analysis rows, the
+// globals set sites and the Explorer's `lineOf` all count `body[i] + 1`. It is
+// NOT fm's `stepID`, which is the step TYPE (141 is every Set Variable, 89 every
+// comment) and repeats hundreds of times in one script. The identity that would
+// survive an edit above it is fm's per-step `uuid`, which every body step
+// carries; a later link could anchor on that once an analysis row carries it.
 import { badge, count, esc, kv, link, matches, rereadObjectButton, section, table } from '../dom.js';
 import { get, path } from '../access.js';
 import { stepDisplay } from 'fm-adt-toolkit/step-display';
@@ -55,20 +63,34 @@ export function depths(body) {
   return depth;
 }
 
+/** The step part of a selection tail, from the line the analyses hand over. One
+ *  spelling, exported, so a tab that links here writes `#${stepPart(line)}` and
+ *  this tab reads the same string back out of `selectionOf`. */
+export const stepPart = (line) => `L${line}`;
+
+/** The anchor of one step: the script's own id and the step part, so two scripts
+ *  on one page never collide and two steps of one TYPE never share an id the way
+ *  `stepID` would. `step-` is the prefix the shell scrolls to. */
+export const stepAnchor = (scriptId, line) => `step-${scriptId}-${stepPart(line)}`;
+
 /** The step list itself. `--depth` carries the indent at any nesting; the class is
- *  what a test and a stylesheet match on. */
-export function renderScript(detail) {
+ *  what a test and a stylesheet match on. `selected` is the `#L<line>` tail of the
+ *  selection, so the one step a link named is marked and the shell scrolls to it. */
+export function renderScript(detail, selected = null) {
   const body = bodyOf(detail);
   const depth = depths(body);
+  const scriptId = get(detail, 'id');
   const rows = body.map((step, i) => {
     const display = stepDisplay(step);
     const d = depth[i];
-    const cls = `depth-${d}${get(step, 'disabled') === true ? ' disabled' : ''}`;
+    const line = i + 1;
+    const mine = selected !== null && selected !== undefined && String(selected) === stepPart(line);
+    const cls = `depth-${d}${get(step, 'disabled') === true ? ' disabled' : ''}${mine ? ' selected' : ''}`;
     const indent = d > 0 ? ` style="--depth:${d}"` : '';
     const text = get(display, 'detail');
     const tail = text ? ` <span class="detail">${esc(text)}</span>` : '';
-    return `<li data-step="${esc(get(step, 'stepID'))}" class="${cls}"${indent}>`
-      + `<span class="ln">${i + 1}</span><b>${esc(get(display, 'name'))}</b>${tail}</li>`;
+    return `<li id="${esc(stepAnchor(scriptId, line))}" data-step="${esc(get(step, 'stepID'))}" class="${cls}"${indent}>`
+      + `<span class="ln">${line}</span><b>${esc(get(display, 'name'))}</b>${tail}</li>`;
   }).join('');
   return `<ol class="script">${rows}</ol>`;
 }
@@ -144,9 +166,18 @@ export function scriptStats(file) {
   };
 }
 
+/** `<target>|<script id>`, optionally `#L<line>` to land on one step. The step
+ *  rides inside the tab's own part, the way the Layouts tab carries an object
+ *  id: it is a coordinate within the script, not a second thing to select. */
 export function selectionOf(view) {
   const parsed = selectionTail(view?.selection);
-  return parsed && { target: parsed.target, id: parsed.tail };
+  if (!parsed) return null;
+  const hash = parsed.tail.indexOf('#');
+  return {
+    target: parsed.target,
+    id: hash < 0 ? parsed.tail : parsed.tail.slice(0, hash),
+    step: hash < 0 ? null : parsed.tail.slice(hash + 1),
+  };
 }
 
 function totals(solution) {
@@ -184,12 +215,17 @@ function treeRow(file, item, selection, filter) {
 }
 
 function renderTree(solution, view) {
+  // The row is marked by the SCRIPT the selection names: a `#L<line>` tail is a
+  // coordinate inside the open script, not a different row, so the tree must not
+  // lose its highlight the moment a link lands on a step.
+  const sel = selectionOf(view);
+  const open = sel ? selectionKey(sel.target, sel.id) : null;
   const body = Object.values(solution.files).map((file) => {
     const groups = scriptTree(file).map((group) => {
       // A folder whose name matches shows all of its scripts; otherwise only the
       // matching ones, and a folder left with none drops out of the tree.
       const wanted = matches(group.folder, view.filter) ? '' : view.filter;
-      const rows = group.scripts.map((item) => treeRow(file, item, view.selection, wanted)).filter(Boolean);
+      const rows = group.scripts.map((item) => treeRow(file, item, open, wanted)).filter(Boolean);
       if (!rows.length && view.filter) return '';
       const label = group.folder || '(root)';
       return `<details open><summary>${esc(label)} ${count(rows.length)}</summary>`
@@ -238,7 +274,7 @@ function renderSelected(solution, view) {
     ['Steps', count(get(detail, 'steps'))],
     ['Problems', problemText(detail)],
   ];
-  return section(title, kv(pairs) + renderScript(detail), { actions });
+  return section(title, kv(pairs) + renderScript(detail, sel.step), { actions });
 }
 
 const INDEX_COLUMNS = [

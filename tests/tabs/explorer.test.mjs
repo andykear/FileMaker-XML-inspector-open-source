@@ -209,6 +209,9 @@ test("a reference written on a script step shows FileMaker's line beside the key
   for (const r of onSteps) {
     assert.equal(r.line, Number(/^body\[(\d+)\]/.exec(r.where)[1]) + 1, r.where);
   }
+  // A line and a step link arrive together or not at all: a link labelled with
+  // a line that is not there would be an anchor with nothing in it.
+  assert.ok(rows.every((r) => (r.line === '') === (r.step === null)));
   // A reference written anywhere but a step carries no line rather than a 1.
   const layout = outgoing(solution, selectionOf(viewOf(selectionKey(ROOT, 'layout', '1'))));
   assert.ok(layout.length > 0);
@@ -218,6 +221,18 @@ test("a reference written on a script step shows FileMaker's line beside the key
   const th = /<th class="num" title="([^"]*)">Line<\/th>/.exec(html);
   assert.ok(th, 'no Line column with a title on it');
   assert.match(th[1], /line number/);
+  // And the line is the link: it lands on that step of that script.
+  const stepHrefs = hrefs(html).filter((h) => h.includes('%23L'));
+  assert.ok(stepHrefs.length > 0, 'no reference row links to its step');
+  for (const h of stepHrefs) {
+    const { tab: to, selection } = parseHash(h);
+    assert.equal(to, 'scripts');
+    assert.match(selection.slice(ROOT.length), /^\|\d+#L\d+$/, selection);
+  }
+  assert.ok(stepHrefs.some((h) => parseHash(h).selection.startsWith(`${ROOT}|55#L`)));
+  // A reference written anywhere but a step carries no step link of its own.
+  // (The layout's Referenced-by rows still do: those ARE script steps.)
+  assert.ok(layout.every((r) => r.step === null));
 });
 
 test('the call tree marks a collapsed branch with the count it stands for', () => {

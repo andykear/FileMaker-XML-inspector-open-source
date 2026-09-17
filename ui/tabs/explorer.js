@@ -15,6 +15,7 @@ import { emptyNote, fileName, kindSelection, linkOr, selectRow, selectionKey, to
 import { memoise } from '../analysis/memo.js';
 import { nameIndex, references } from '../analysis/refs.js';
 import { callGraph, callTreeOf, scriptKey, times } from '../analysis/scripts.js';
+import { stepPart } from './scripts.js';
 
 // ── Where a kind is shown ─────────────────────────────────────────────
 
@@ -48,6 +49,18 @@ const HASH_OF = {
 export function refHash(kind, target, id) {
   const make = HASH_OF[kind];
   return make && id !== undefined && id !== null && id !== '' ? make(target, id) : null;
+}
+
+/** The Scripts tab's per-step anchor: the script's own hash with FileMaker's
+ *  1-based line as a `#` tail, the way a layout carries an object id.
+ *  ui/tabs/scripts.js owns how the tail is spelled; this only says which script
+ *  it belongs to. No line is null, not the script's own hash: a caller renders
+ *  that through `linkOr`, and a link labelled with a line that is not there
+ *  would be an empty anchor. */
+export function stepHash(target, scriptId, line) {
+  if (line === undefined || line === null || line === '') return null;
+  const base = refHash('script', target, scriptId);
+  return base ? `${base}#${stepPart(line)}` : null;
 }
 
 // ── The pickable objects ──────────────────────────────────────────────
@@ -183,6 +196,8 @@ export function outgoing(solution, sel) {
     return {
       kind: ref.kind, name: ref.name, where: ref.from.where ?? '', line: lineOf(ref.from), how: ref.how, resolved: ref.resolved,
       hash: to ? refHash(ref.kind, nameTarget(to), idOf(ref.kind, to)) : null,
+      // Written on a step of the selected script: the Line cell lands on it.
+      step: stepHash(ref.from.target, ref.from.id, lineOf(ref.from)),
     };
   });
 }
@@ -197,6 +212,7 @@ export function incoming(solution, sel) {
     && ownerOf(entries, ref) === entry.entry).map((ref) => ({
     kind: ref.from.kind, name: String(ref.from.name ?? ''), where: ref.from.where ?? '', line: lineOf(ref.from), how: ref.how,
     target: ref.from.target, hash: refHash(ref.from.kind, ref.from.target, ref.from.id),
+    step: stepHash(ref.from.target, ref.from.id, lineOf(ref.from)),
   }));
 }
 
@@ -212,7 +228,13 @@ const REF_COLUMNS = [
   { key: 'kind', label: 'Kind' },
   { key: 'name', label: 'Name', render: (r) => linkOr(r.hash, r.name) },
   { key: 'where', label: 'Where', title: 'The key path the name was written under, as ui/analysis/refs.js spells it: a script step is body[<index>], counted from 0.' },
-  { key: 'line', label: 'Line', num: true, title: "FileMaker's own line number for a name written on a script step: body[<index>] + 1. Blank for a name written anywhere else." },
+  {
+    key: 'line',
+    label: 'Line',
+    num: true,
+    title: "FileMaker's own line number for a name written on a script step: body[<index>] + 1, and a link that opens the script on that step. Blank for a name written anywhere else.",
+    render: (r) => linkOr(r.step, r.line),
+  },
   { key: 'how', label: 'How', render: (r) => badge(r.how, r.how === 'named' ? 'good' : 'muted') },
   { key: 'link', label: 'Go to', render: (r) => (r.hash ? link(r.hash, r.hash.slice(0, r.hash.indexOf('/'))) : '') },
 ];

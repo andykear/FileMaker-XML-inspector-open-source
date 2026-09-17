@@ -8,12 +8,12 @@
 // Nothing here decides what a category or a check IS: the sections are built
 // from the rows the analyses hand over, so a renamed check moves a heading and
 // a new one appears on its own. The link map lives in ui/tabs/explorer.js
-// (`refHash`) and is imported rather than repeated.
+// (`refHash`, `stepHash`) and is imported rather than repeated.
 //
 // A pure renderer: no document, every model string through esc.
 import { badge, count, esc, matches, section, table } from '../dom.js';
 import { emptyNote, fileName, linkOr, plural, withFile } from './common.js';
-import { refHash } from './explorer.js';
+import { refHash, stepHash } from './explorer.js';
 import { unreferenced } from '../analysis/unreferenced.js';
 import { PROBLEM_KIND, broken } from '../analysis/broken.js';
 import { scriptIssues } from '../analysis/scripts.js';
@@ -230,11 +230,12 @@ export function psosByScript(rows) {
  *  the Scripts tab and the Gaps tab both count from 1, so this one does too. */
 const stepText = (r) => `line ${r.step.line} ${r.step.step ?? ''}`.trim();
 
-// The Scripts tab routes `#scripts/<target>|<id>` and has no per-step anchor
-// yet, so the step is text in the row rather than a link that would not land.
+// The Step cell is the link: the Scripts tab anchors every step on FileMaker's
+// own line, so `#scripts/<target>|<id>#L<line>` opens the script scrolled to the
+// step this row is about. The Script cell still opens the script at its top.
 const ISSUE_COLUMNS = [
   { key: 'script', label: 'Script', render: (r) => linkOr(refHash('script', r.target, r.script.id), r.script.name) },
-  { key: 'step', label: 'Step', render: (r) => esc(stepText(r)) },
+  { key: 'step', label: 'Step', render: (r) => linkOr(stepHash(r.target, r.script.id, r.step.line), stepText(r)) },
   { key: 'detail', label: 'Detail', render: (r) => esc(detailText(r.detail)) },
 ];
 
@@ -245,7 +246,7 @@ const PSOS_COLUMNS = [
     key: 'steps',
     label: 'Which',
     render: (r) => `<details><summary>${plural(r.rows.length, 'step')}</summary><ul class="notes">`
-      + r.rows.map((x) => `<li>${esc(stepText(x))}</li>`).join('') + '</ul></details>',
+      + r.rows.map((x) => `<li>${linkOr(stepHash(x.target, x.script.id, x.step.line), stepText(x))}</li>`).join('') + '</ul></details>',
   },
 ];
 
@@ -286,7 +287,7 @@ const globalColumns = (solution) => [
     label: 'Set where',
     render: (r) => (r.sets.length
       ? `<details><summary>${plural(r.sets.length, 'site')}</summary><ul class="notes">${r.sets
-        .map((s) => `<li>${linkOr(refHash('script', s.target, s.script.id), s.script.name)} line ${esc(s.step.line)}</li>`)
+        .map((s) => `<li>${linkOr(stepHash(s.target, s.script.id, s.step.line), `${s.script.name} line ${s.step.line}`)}</li>`)
         .join('')}</ul></details>`
       : '<span class="empty">never set</span>'),
   },

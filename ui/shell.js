@@ -42,6 +42,17 @@ export function createShell({ tabs, mount, onReread, onExport, onAction }) {
     const view = viewOf();
     renderNav(view.tab);
     mount.main.innerHTML = byId.get(view.tab).render(solution, view);
+    scrollToSelectedStep();
+  }
+
+  /** The one DOM action the shell takes beyond rendering. A link from the
+   *  Analysis tab or the Explorer lands on a step that can be the 900th `<li>`
+   *  of the script, which the browser will not scroll to on its own: the hash
+   *  is the tab's selection, not a fragment id. Every capability is optional so
+   *  a test's stub mount and an old browser are a no-op, not a blank page. */
+  function scrollToSelectedStep() {
+    const step = mount.main.querySelector?.('.selected[id^="step-"]');
+    step?.scrollIntoView?.({ block: 'center' });
   }
 
   mount.filter.addEventListener('input', () => {

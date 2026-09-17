@@ -157,7 +157,7 @@ test('the psos group renders 24 rows with a count, not 715 rows', () => {
   assert.ok(block.includes('>305<'));
 });
 
-test('a step row names FileMaker\'s line number, because the Scripts tab has no step anchor yet', () => {
+test('a step row names FileMaker\'s line number and links to that step in the Scripts tab', () => {
   const html = tab.render(solution, view);
   const at = html.indexOf('dead-set-variable');
   const block = html.slice(at, at + 4000);
@@ -165,7 +165,21 @@ test('a step row names FileMaker\'s line number, because the Scripts tab has no 
   // line FileMaker prints as 8 -- the number the Scripts tab's own gutter shows.
   assert.ok(/line 8/.test(block), 'no line number in the dead-set-variable rows');
   assert.ok(!/step 7/.test(block), 'the 0-based body index is not what a reader is shown');
-  assert.ok(!/#\d+"/.test(block.slice(0, 2000)), 'a stepID anchor was linked, which the Scripts tab cannot route');
+  // And the row is a link that lands on that line, not on the top of the script.
+  const href = hrefs(block).find((h) => h.endsWith('%23L8'));
+  assert.ok(href, 'the step row does not link to the step');
+  assert.deepEqual(parseHash(href), { tab: 'scripts', selection: `${ROOT}|20#L8` });
+  // Script 20 line 14 is the same step TYPE on another line: a second link.
+  assert.ok(hrefs(block).some((h) => parseHash(h).selection === `${ROOT}|20#L14`));
+});
+
+test('a globals set site links to the step that writes it', () => {
+  const html = tab.render(solution, view);
+  const section = html.slice(html.indexOf('<h2>Globals</h2>'));
+  const at = section.indexOf('$$var');
+  const href = hrefs(section.slice(at, at + 2000)).find((h) => h.includes('%23L'));
+  assert.ok(href, '$$var has no link to its Set Variable step');
+  assert.deepEqual(parseHash(href), { tab: 'scripts', selection: `${ROOT}|55#L118` });
 });
 
 test('Globals: the table, its counts and the note that explains the mention count', () => {
@@ -175,8 +189,8 @@ test('Globals: the table, its counts and the note that explains the mention coun
   assert.ok(section.includes('$$some_global_var'));
   assert.ok(section.includes('$$var'));
   assert.ok(section.includes(GLOBALS_NOTE.slice(0, 40)));
-  // $$var is set once, in script 55 of the root file.
-  assert.ok(hrefs(section).map(parseHash).some((l) => l.tab === 'scripts' && l.selection === `${ROOT}|55`));
+  // $$var is set once, on line 118 of script 55 of the root file.
+  assert.ok(hrefs(section).map(parseHash).some((l) => l.tab === 'scripts' && l.selection === `${ROOT}|55#L118`));
 });
 
 test('the filter narrows every table and leaves the totals alone', () => {

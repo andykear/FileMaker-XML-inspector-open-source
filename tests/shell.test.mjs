@@ -14,7 +14,7 @@ test('parseHash and buildHash round-trip a tab and a selection with reserved cha
 test('link and buildHash agree, so a click and a link land on the same selection', () => {
   // The four characters a selection really carries: the `/` of a target, the `%`
   // of something already encoded, the `|` between target and parts, and a `#`.
-  for (const selection of ['fmnet://localhost/ooe|Contacts', '100%', 'a|b', 'x#12', '/', '%', '|', '#']) {
+  for (const selection of ['fmnet://localhost/ooe|Contacts', '100%', 'a|b', 'x#12', 'fmnet://localhost/ooe|39#L83', '/', '%', '|', '#']) {
     assert.equal(link(`tables/${selection}`, 'n'), `<a href="${buildHash('tables', selection)}">n</a>`, selection);
     assert.equal(parseHash(buildHash('tables', selection)).selection, selection, selection);
   }
@@ -24,7 +24,11 @@ test('link and buildHash agree, so a click and a link land on the same selection
 /** The smallest DOM the shell actually touches: innerHTML, addEventListener and
  *  the `closest` of a click target. Each element records what it was given. */
 function fakeElement() {
-  const el = { innerHTML: '', handlers: {}, addEventListener(type, fn) { el.handlers[type] = fn; }, value: '' };
+  const el = {
+    innerHTML: '', handlers: {}, addEventListener(type, fn) { el.handlers[type] = fn; }, value: '',
+    // The shell asks main for one anchor after every route; a test says what it finds.
+    found: null, querySelector(sel) { return el.found?.[sel] ?? null; },
+  };
   return el;
 }
 
@@ -65,6 +69,28 @@ test('the shell renders the nav and the active tab, and view is what the tab was
     shell.showMessage('<p class="error">Read failed</p>');
     assert.equal(mount.main.innerHTML, '<p class="error">Read failed</p>');
     assert.match(mount.nav.innerHTML, /nav-item active/);
+  } finally { restore(); }
+});
+
+test('after every route the shell brings the selected step into view', () => {
+  const scrolled = [];
+  const { shell, mount, restore } = stubShell();
+  try {
+    const sel = '.selected[id^="step-"]';
+    mount.main.found = { [sel]: { scrollIntoView: (opts) => scrolled.push(opts) } };
+    shell.route();
+    assert.deepEqual(scrolled, [{ block: 'center' }]);
+    // Nothing selected: nothing scrolled.
+    mount.main.found = null;
+    shell.route();
+    assert.deepEqual(scrolled, [{ block: 'center' }]);
+    // An element with no scrollIntoView, and a mount with no querySelector at
+    // all, are both a no-op rather than a thrown page.
+    mount.main.found = { [sel]: {} };
+    shell.route();
+    delete mount.main.querySelector;
+    shell.route();
+    assert.deepEqual(scrolled, [{ block: 'center' }]);
   } finally { restore(); }
 });
 

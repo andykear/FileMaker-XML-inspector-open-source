@@ -346,6 +346,10 @@ ol.script .ln {
 }
 ol.script > li > b { font-weight: 600; color: var(--ink); }
 ol.script .detail { color: var(--ink-2); }
+/* The step a link from the Analysis tab or the Explorer landed on. The shell
+   scrolls it to the middle of the viewport; the rule is what makes it findable
+   once it is there. */
+ol.script > li.selected { background: var(--navy-tint); font-weight: 600; }
 ol.script > li.disabled { color: var(--ink-4); text-decoration: line-through; }
 ol.script > li.disabled > b, ol.script > li.disabled .detail { color: var(--ink-4); }
 
