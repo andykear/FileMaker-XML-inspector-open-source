@@ -207,7 +207,9 @@ function renderSelected(solution, view) {
   const css = String(get(theme, 'css') ?? '');
   const body = kv(themePairs(row))
     + `<div class="swatches">${paletteSwatches(theme)}</div>`
-    + '<h3>Named styles</h3>' + table(STYLE_COLUMNS, usage, { empty: 'No named styles' })
+    + '<h3>Named styles</h3>'
+    + '<p class="muted">Used counts the objects that wear a named style explicitly. The default style of each object kind is not a named style, so an object without one is not unstyled.</p>'
+    + table(STYLE_COLUMNS, usage, { empty: 'No named styles' })
     + '<h3>Layouts using</h3>' + `<p>${layouts}</p>${extra}`
     + `<details><summary>CSS (${count(css.length)} chars)</summary><pre>${esc(css)}</pre></details>`;
   return section(title, body, { actions });
