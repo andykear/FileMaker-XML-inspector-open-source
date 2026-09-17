@@ -195,6 +195,9 @@ function sourceFile(file, to, sources, filesByName) {
  *  across files (and `TO::Field` is not unique across occurrences of one
  *  table), so a lookup answers with every match.
  *
+ *  `relations` and `customMenus` are in it for the Explorer's sake: they are
+ *  kinds a reader picks, never kinds a name means (see the scan).
+ *
  *  `unresolvedSources` is the other half of the answer: every occurrence whose
  *  external data source could not be followed, so a caller can tell "no field of
  *  that name" from "nothing was read about that name". */
@@ -203,7 +206,8 @@ export const nameIndex = (solution) => memoise(solution, computeNameIndex);
 function computeNameIndex(solution) {
   const idx = {
     tables: new Map(), occurrences: new Map(), fields: new Map(), scripts: new Map(),
-    layouts: new Map(), valueLists: new Map(), customFunctions: new Map(), themesStyles: new Map(),
+    layouts: new Map(), relations: new Map(), valueLists: new Map(),
+    customFunctions: new Map(), customMenus: new Map(), themesStyles: new Map(),
   };
   const unresolvedSources = [];
   const files = Object.values(get(solution, 'files') ?? {});
@@ -256,6 +260,21 @@ function computeNameIndex(solution) {
           arity: get(detail, 'arity'), type: get(detail, 'type') ?? get(item, 'type'),
         });
       }
+    }
+    // `relations` and `customMenus` are index kinds and nothing else: no
+    // reference has either as its `kind`, because nothing in FileMaker writes
+    // the name of a relation or of a menu. They are here so a reader can PICK
+    // one -- the Explorer's object list is this index -- and see what it names.
+    for (const item of listOf(file, 'relation')) {
+      // A relation has no name of its own; `relationName` is the one spelling
+      // of the two occurrences it joins, and the same one `from.name` carries.
+      const id = get(item, 'id');
+      const detail = get(get(path(file, 'catalogs.relation.detailById') ?? {}, String(id)), 'result');
+      const name = relationName(detail) ?? relationName(item) ?? String(id);
+      push(idx.relations, name, { target, id, name });
+    }
+    for (const menu of listOf(file, 'customMenu')) {
+      push(idx.customMenus, get(menu, 'name'), { target, id: get(menu, 'id'), name: get(menu, 'name') });
     }
     for (const theme of listOf(file, 'theme')) {
       // An object wears a style by its display name, so that is the key; the

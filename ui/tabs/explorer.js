@@ -52,19 +52,39 @@ export function refHash(kind, target, id) {
 
 // ── The pickable objects ──────────────────────────────────────────────
 
-// The seven kinds a name can mean, in the order the list shows them. The second
-// item is the nameIndex map, the third the label.
+// The nine kinds of object a reader can pick, in the order the list shows them.
+// The second item is the nameIndex map, the third the label. Seven of them are
+// also kinds a NAME can mean; a relation and a custom menu are not -- nothing in
+// FileMaker writes either one's name -- and they are here because a reader still
+// wants to ask what they name.
 const KINDS = [
   ['table', 'tables', 'Table'],
   ['occurrence', 'occurrences', 'Table occurrence'],
   ['field', 'fields', 'Field'],
   ['script', 'scripts', 'Script'],
   ['layout', 'layouts', 'Layout'],
+  ['rel', 'relations', 'Relation'],
   ['valueList', 'valueLists', 'Value list'],
   ['customFunction', 'customFunctions', 'Custom function'],
+  ['menu', 'customMenus', 'Custom menu'],
 ];
 const LABEL_OF = Object.fromEntries(KINDS.map(([k, , label]) => [k, label]));
 const ORDER_OF = Object.fromEntries(KINDS.map(([k], i) => [k, i]));
+
+/** What a reference's `from.kind` calls a kind this list spells differently.
+ *  A selection is keyed the way the object's OWN tab keys it (`rel`, `menu`, as
+ *  HASH_OF writes them), and an occurrence is `occurrence` here and
+ *  `tableOccurrence` in a naming record: one map for all three. */
+const OWNER_KIND_OF = { occurrence: 'tableOccurrence', rel: 'relation', menu: 'customMenu' };
+const ownerKind = (kind) => OWNER_KIND_OF[kind] ?? kind;
+
+/** Nothing names a relation or a custom menu: FileMaker gives neither a name
+ *  another object could write, so an empty Referenced-by table there is the
+ *  shape of the thing, not a finding. */
+const NEVER_NAMED = new Set(['rel', 'menu']);
+const nothingNamesIt = (sel) => (NEVER_NAMED.has(sel.kind)
+  ? 'Nothing names a relation or a menu; they name things'
+  : 'Nothing names it');
 
 /** Where the NAME was written. For a field of an external occurrence that is
  *  the file holding the occurrence, not the file holding the field: `TO::Field`
@@ -132,8 +152,7 @@ function isFrom(sel, entry, ref) {
     // A table has no record of its own that names anything; its fields do.
     return from.kind === 'field' && from.target === sel.target && id.startsWith(`${sel.id}::`);
   }
-  const kind = sel.kind === 'occurrence' ? 'tableOccurrence' : sel.kind;
-  return from.kind === kind && from.target === sel.target && id === sel.id;
+  return from.kind === ownerKind(sel.kind) && from.target === sel.target && id === sel.id;
 }
 
 /** FileMaker's own line number for a reference written on a script step, or ''
@@ -202,7 +221,9 @@ const refMatches = (r, filter) => matches(r.kind, filter) || matches(r.name, fil
 
 function renderList(solution, view) {
   const rows = objectEntries(solution);
-  const shown = rows.filter((r) => matches(r.name, view.filter) || matches(r.kind, view.filter) || matches(r.detail, view.filter));
+  // The kind is matched by its label too: a reader types "relation", not `rel`.
+  const shown = rows.filter((r) => matches(r.name, view.filter) || matches(r.kind, view.filter)
+    || matches(LABEL_OF[r.kind], view.filter) || matches(r.detail, view.filter));
   const byKind = {};
   for (const r of rows) byKind[r.kind] = (byKind[r.kind] ?? 0) + 1;
   const totals = totalsLine([['Objects', rows.length], ...KINDS.map(([k, , label]) => [label, byKind[k] ?? 0])]);
@@ -253,7 +274,7 @@ function renderSelected(solution, view) {
   const allBack = incoming(solution, sel);
   const out = allOut.filter((r) => refMatches(r, view.filter));
   const back = allBack.filter((r) => refMatches(r, view.filter));
-  const own = refHash(sel.kind, sel.target, sel.id);
+  const own = refHash(ownerKind(sel.kind), sel.target, sel.id);
   const title = `${LABEL_OF[sel.kind]} ${entry.name}${view.multiFile ? ` (${entry.file})` : ''}`;
   const body = `<p class="muted">${own ? link(own, 'Open on its own tab') : 'No tab of its own.'}</p>`
     + '<h3>References</h3>'
@@ -261,7 +282,7 @@ function renderSelected(solution, view) {
     + table(REF_COLUMNS, out, { empty: emptyNote(allOut.length, 'Names nothing') })
     + '<h3>Referenced by</h3>'
     + '<p class="muted">What names this object.</p>'
-    + table(REF_COLUMNS, back, { empty: emptyNote(allBack.length, 'Nothing names it') })
+    + table(REF_COLUMNS, back, { empty: emptyNote(allBack.length, nothingNamesIt(sel)) })
     + callTreeSection(solution, sel);
   return section(title, body);
 }

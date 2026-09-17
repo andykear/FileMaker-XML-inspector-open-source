@@ -66,7 +66,7 @@ Point it at a live file (or a hosted `fmnet://` address) and it reads the soluti
 - Every `$$` global: where it is set, how often it is mentioned, and in which files
 
 **Explorer**
-- Universal search across every named object of the reached solution
+- Universal search across every named object of the reached solution, plus relations and custom menus: nothing in FileMaker writes a relation's or a menu's name, but both name plenty themselves
 - Pick any entity to see both directions at once — what it names ("References") and what names it ("Referenced by") — with a link that lands on the object's own tab
 
 **Gaps**

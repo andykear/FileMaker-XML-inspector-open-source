@@ -44,6 +44,12 @@ test('nameIndex carries every kind, keyed by name, values arrays', () => {
   assert.ok(idx.valueLists.has('YN'));
   assert.ok(idx.customFunctions.get('MyCustomFunction')[0].arity === 1);
   assert.ok(idx.themesStyles.has('MyCustomStyle_BoldItalicsLabel'));
+  // A relation has no name of its own, so the index keys it the way every
+  // other reader of a relation spells it: the two occurrences it joins.
+  assert.deepEqual(idx.relations.get('Contacts_TestTable \u2194 Contacts'), [{ target: ROOT, id: 1, name: 'Contacts_TestTable \u2194 Contacts' }]);
+  assert.deepEqual(idx.customMenus.get('MyCustomMenu'), [{ target: ROOT, id: 26, name: 'MyCustomMenu' }]);
+  // `[Format]` is a menu of both files, so the name answers with both.
+  assert.equal(idx.customMenus.get('[Format]').length, 2);
   assert.equal(nameIndex(solution), idx, 'memoised on the solution object');
 });
 
@@ -109,7 +115,13 @@ test('the name index sizes on the fixture', () => {
   assert.deepEqual(Object.fromEntries(Object.entries(idx).filter(([, m]) => m instanceof Map).map(([k, m]) => [k, m.size])), {
     tables: 15, occurrences: 24, fields: 268, scripts: 41,
     layouts: 19, valueLists: 9, customFunctions: 9, themesStyles: 60,
+    relations: 10, customMenus: 25,
   });
+  // 49 menus across the two files under 25 names: every menu but ooe's own
+  // MyCustomMenu is one of FileMaker's, and both files carry those.
+  const menus = Object.values(solution.files).reduce((n, f) => n + f.catalogs.customMenu.list.length, 0);
+  assert.equal(menus, 49);
+  assert.equal([...idx.customMenus.values()].reduce((n, v) => n + v.length, 0), menus);
   // Every external data source an occurrence uses on ooe can be followed: the
   // one external occurrence (`Invoice`) opens BrojDva, which is in the solution.
   assert.deepEqual(idx.unresolvedSources, []);

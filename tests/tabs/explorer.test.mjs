@@ -7,7 +7,7 @@ import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import { parseHash } from '../../ui/dom.js';
 import { selectionKey } from '../../ui/tabs/common.js';
-import { nameIndex } from '../../ui/analysis/refs.js';
+import { nameIndex, references } from '../../ui/analysis/refs.js';
 import {
   objectEntries, selectionOf, outgoing, incoming, refHash, tab,
 } from '../../ui/tabs/explorer.js';
@@ -21,6 +21,10 @@ const view = { selection: null, filter: '', multiFile: true };
 const hrefs = (html) => [...html.matchAll(/href="([^"]*)"/g)].map((m) => m[1]);
 const viewOf = (key, filter = '') => ({ selection: key, filter, multiFile: true });
 
+/** The kind a reference's `from` calls the object the Explorer lists under its
+ *  own spelling -- the same two-sided naming ui/tabs/explorer.js carries. */
+const OWNER_KIND = { occurrence: 'tableOccurrence', rel: 'relation', menu: 'customMenu' };
+
 /** The smallest solution the analyses accept, for the rules ooe cannot measure. */
 function handMade(catalogs) {
   const empty = { list: [], listError: null, detailById: {}, ops: [], readAt: null };
@@ -31,15 +35,15 @@ function handMade(catalogs) {
   return { root: 'file:///x.fmp12', files: { 'file:///x.fmp12': { target: 'file:///x.fmp12', name: 'x', facts: {}, catalogs: slots } }, unreachable: [] };
 }
 
-test('objectEntries: every named object of every reached file, across the seven kinds', () => {
+test('objectEntries: every named object of every reached file, across the nine kinds', () => {
   const entries = objectEntries(solution);
   const byKind = {};
   for (const e of entries) byKind[e.kind] = (byKind[e.kind] ?? 0) + 1;
   assert.deepEqual(byKind, {
     table: 17, occurrence: 27, field: 285, script: 44,
-    layout: 20, valueList: 9, customFunction: 9,
+    layout: 20, rel: 10, valueList: 9, customFunction: 9, menu: 49,
   });
-  assert.equal(entries.length, 411);
+  assert.equal(entries.length, 470);
   // Built from nameIndex, so its own totals are the ones above.
   const idx = nameIndex(solution);
   let fields = 0;
@@ -124,7 +128,7 @@ test('the object list is filtered by the box and the totals are not', () => {
   assert.ok(html.includes('TestTable::TextField1'));
   assert.ok(!html.includes('Decode base64 image'));
   assert.ok(html.length < all.length);
-  assert.ok(html.includes('>411<'), 'the totals moved with the filter');
+  assert.ok(html.includes('>470<'), 'the totals moved with the filter');
 });
 
 test('a selected script also gets its outgoing call tree, nested', () => {
@@ -225,4 +229,80 @@ test('the call tree marks a collapsed branch with the count it stands for', () =
   // tree shows one branch saying so rather than nineteen identical ones.
   assert.ok(block.includes('step &times;19') || block.includes('step ×19'), block.slice(0, 600));
   assert.equal([...block.matchAll(/>noop</g)].length, 1, 'noop appears once in the tree');
+});
+
+test('a relation is selectable and lists the occurrences and fields it joins', () => {
+  // Measured on ooe: relation 1 joins Contacts_TestTable to Contacts on two
+  // predicates and sorts the related records by one more field.
+  const entry = objectEntries(solution).find((e) => e.kind === 'rel' && e.id === '1');
+  assert.equal(entry.name, 'Contacts_TestTable \u2194 Contacts');
+  assert.equal(entry.key, `${ROOT}|rel:1`);
+  const sel = selectionOf(viewOf(entry.key));
+  assert.deepEqual(sel, { target: ROOT, kind: 'rel', id: '1' });
+  const rows = outgoing(solution, sel);
+  assert.deepEqual(rows.map((r) => `${r.kind}:${r.name}`).sort(), [
+    'field:Contacts::ID_TestTable', 'field:Contacts::Name',
+    'field:Contacts_TestTable::CalcField1_c', 'field:Contacts_TestTable::ID',
+    'field:Contacts_TestTable::TextField1',
+    'occurrence:Contacts', 'occurrence:Contacts_TestTable',
+  ]);
+  // `ID = ID_TestTable`, the first predicate, one row per side.
+  const left = rows.find((r) => r.where === 'predicates.0.leftField');
+  const right = rows.find((r) => r.where === 'predicates.0.rightField');
+  assert.equal(left.name, 'Contacts_TestTable::ID');
+  assert.equal(right.name, 'Contacts::ID_TestTable');
+  assert.ok(rows.every((r) => r.how === 'named' && r.resolved));
+});
+
+test('a custom menu is selectable and lists the scripts and calculations its items name', () => {
+  const entry = objectEntries(solution).find((e) => e.kind === 'menu' && e.name === 'MyCustomMenu');
+  assert.equal(entry.key, `${ROOT}|menu:26`);
+  const rows = outgoing(solution, selectionOf(viewOf(entry.key)));
+  assert.equal(rows.length, 8);
+  const scripts = rows.filter((r) => r.kind === 'script');
+  assert.deepEqual(scripts.map((r) => r.name).sort(), ['Hello world', 'noop']);
+  assert.equal(scripts.find((r) => r.name === 'noop').where, 'items.0.action.script');
+  assert.equal(parseHash(`#${scripts[0].hash}`).tab, 'scripts');
+  // The calculations its title, its install test and its items carry.
+  assert.ok(rows.some((r) => r.kind === 'field' && r.where === 'titleCalculation' && r.how === 'text'));
+});
+
+test('a relation and a menu each open on their own tab, and nothing names either', () => {
+  for (const [key, own] of [
+    [selectionKey(ROOT, 'rel', 1), { tab: 'graph', selection: `${ROOT}|rel:1` }],
+    [selectionKey(ROOT, 'menu', 26), { tab: 'catalogs', selection: `${ROOT}|menu:26` }],
+  ]) {
+    const sel = selectionOf(viewOf(key));
+    assert.deepEqual(incoming(solution, sel), [], `${key} has incoming references`);
+    const html = tab.render(solution, viewOf(key));
+    // The object's own tab, linked above the two tables -- the Graph tab for a
+    // relation and the Catalogs tab for a menu, each keyed the way that tab keys it.
+    assert.ok(hrefs(html).map(parseHash).some((l) => l.tab === own.tab && l.selection === own.selection),
+      `no Open-on-its-own-tab link for ${key}`);
+    assert.ok(html.includes('Nothing names a relation or a menu; they name things'), html.slice(html.indexOf('<h3>Referenced by'), html.indexOf('<h3>Referenced by') + 300));
+    assert.ok(!html.includes('Nothing names it'), 'the generic note was used for a relation or a menu');
+  }
+});
+
+test('every reference in the solution is reachable from some selectable object', () => {
+  // The Explorer's reach: each reference is owned by one object, and every one
+  // of those objects now has a row in the list. A layout owns its objects'
+  // references, and a field reference is owned by the table's field, not by the
+  // occurrence the name was written through.
+  const owners = new Set();
+  for (const e of objectEntries(solution)) {
+    if (e.kind === 'table') continue; // a table names nothing of its own
+    if (e.kind === 'field') owners.add(`field|${e.entry.target}|${e.entry.table}::${e.entry.field}`);
+    else owners.add(`${OWNER_KIND[e.kind] ?? e.kind}|${e.target}|${e.id}`);
+  }
+  const ownerOf = (r) => {
+    const id = String(r.from.id);
+    return r.from.kind === 'layoutObject'
+      ? `layout|${r.from.target}|${id.slice(0, id.indexOf('.'))}`
+      : `${r.from.kind}|${r.from.target}|${id}`;
+  };
+  const all = references(solution);
+  const covered = all.filter((r) => owners.has(ownerOf(r)));
+  assert.equal(covered.length, all.length, [...new Set(all.filter((r) => !owners.has(ownerOf(r))).map(ownerOf))].join(', '));
+  assert.equal(all.length, 2592);
 });
