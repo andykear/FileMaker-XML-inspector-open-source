@@ -27,8 +27,8 @@
 //     row inside it, and the `Entry <id>` section is asserted to draw.
 //   * Tables: the `Fields` header sorts the column it names -- ascending puts the
 //     smallest count first, a second click the largest -- and the hash never moves.
-//   * Relationships: the graph carries relation groups with a `<title>` and key
-//     labels on the lines, so the drawing says what each line joins.
+//   * Relationships: the graph carries relation groups with a `<title>`, so the
+//     drawing says what each line joins.
 //
 // What this does NOT check, so a green run is not read as more than it is:
 //
@@ -356,14 +356,12 @@ test('browser: walk every tab of the live page', { skip, timeout: 30 * MINUTE },
 
           if (id === 'graph') {
             // The drawing is the answer here: every line carries what it joins,
-            // as a tooltip on the group and as the key fields at each end.
+            // as a tooltip on its group.
             const drawn = await page.evaluate(() => ({
               groups: document.querySelectorAll('svg.graph .rel-group title').length,
-              keys: document.querySelectorAll('svg.graph text.key').length,
             }));
             assert.ok(drawn.groups > 0, `graph: the relation lines carry their predicates: ${drawn.groups}`);
-            assert.ok(drawn.keys > 0, `graph: the relation lines carry their key fields: ${drawn.keys}`);
-            console.log(`  graph: ${drawn.groups} relation group(s), ${drawn.keys} key label(s)`);
+            console.log(`  graph: ${drawn.groups} relation group(s)`);
           }
 
           if (id === 'gaps') {

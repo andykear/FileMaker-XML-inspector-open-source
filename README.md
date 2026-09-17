@@ -46,12 +46,12 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 
 Point it at a live file (or a hosted `fmnet://` address) and it reads the solution directly through `fm`, following every external data source it finds so a multi-file solution is inspected whole. Nothing is uploaded anywhere; nothing here writes to the file.
 
-Every table on every tab sorts on a header click — ascending, then descending, in the browser, without losing what you have selected.
+Every table on every tab sorts on a header click — ascending, then descending, in the browser, without losing what you have selected. A sort is a view of the rows on the page: filtering, selecting a row or re-reading draws the tab's own order again.
 
 **Schema**
 - Base tables, table occurrences, fields — counts, types, storage, validation, auto-entry
 - Relationships — full sortable list with TOs, base tables, and join keys; multi-predicate, sort specs
-- Relationship graph — interactive view rendered from the table-occurrence geometry fm reports, drawn at the box FileMaker itself draws, so occurrences sit exactly where they sit in Manage Database; every relation line carries the key fields it joins at each end and says its full predicates on hover
+- Relationship graph — interactive view rendered from the table-occurrence geometry fm reports, drawn at the box FileMaker itself draws, so occurrences sit exactly where they sit in Manage Database; click a relation line to open it, hover to see its full predicates
 
 **Layouts and Themes**
 - Layouts — count, triggers, portal usage, object counts, parts

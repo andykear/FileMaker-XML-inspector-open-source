@@ -195,6 +195,14 @@ th, td {
   white-space: nowrap;
 }
 
+/* A cell whose text is a paragraph -- a calculation, a relation's predicates, a
+   Known from sentence -- wraps inside its column instead of pushing the table
+   past the panel's right edge. Auto table layout only shrinks a column when the
+   row cannot fit, so a short cell still sits on one line; .table-wrap's
+   horizontal scroll stays for the tables that are genuinely wide. */
+td { white-space: normal; overflow-wrap: anywhere; }
+td code { white-space: pre-wrap; overflow-wrap: anywhere; }
+
 th {
   color: var(--ink-3);
   font-weight: 500;
@@ -303,11 +311,10 @@ svg.graph .to { stroke-width: 1; }
 svg.graph .to.highlight { stroke: var(--brand); stroke-width: 3; fill: var(--brand); fill-opacity: .18; }
 svg.graph .to-name { font: 600 11px -apple-system, ui-sans-serif, system-ui, sans-serif; fill: var(--ink); }
 svg.graph .rel { stroke: var(--ink-4); stroke-width: 1.5; }
-/* A relation is a group: the line, its tooltip and the key field names it joins on.
-   The whole group is the click target, so a label selects the relation too. */
+/* A relation is a group: the line and its tooltip, which says the full predicates.
+   The whole group is the click target, so the line selects the relation's row. */
 svg.graph .rel-group { cursor: pointer; }
 svg.graph .rel-group:hover line { stroke: var(--brand); stroke-width: 2.5; }
-svg.graph .key { font-size: 9px; fill: var(--ink-2); }
 svg.graph .note { stroke-width: 1; }
 svg.graph .note-text { font: 11px -apple-system, ui-sans-serif, system-ui, sans-serif; fill: var(--ink-2); }
 

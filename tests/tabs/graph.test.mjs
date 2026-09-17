@@ -333,61 +333,6 @@ test('a relation is a group that says what it joins and selects its row when cli
   for (const r of relationRows(root)) assert.ok(svg.includes(`data-select="${r.key}"`));
 });
 
-test('each predicate writes the key fields it joins on at the two boxes', () => {
-  const svg = graphSvg(root);
-  const [rel] = relationRows(root);
-  // Measured on the fixture: relation 1 joins on two pairs of fields.
-  assert.equal(rel.predicateList.length, 2);
-  assert.deepEqual(rel.predicateList.map((p) => [p.leftField, p.op, p.rightField]),
-    [['ID', '=', 'ID_TestTable'], ['CalcField1_c', '=', 'Name']]);
-  const group = relGroup(svg, rel.key);
-  // One label per field of each predicate: two per predicate, one at each end.
-  assert.equal(times(group, /<text class="key"/g), rel.predicateList.length * 2);
-  for (const name of ['ID', 'ID_TestTable', 'CalcField1_c', 'Name']) {
-    assert.match(group, new RegExp(`<text class="key"[^>]*>${name}</text>`));
-  }
-  // The two predicates stack 11 units apart at the same end of the line.
-  const ys = [...group.matchAll(/<text class="key" x="([\d.-]+)" y="([\d.-]+)" text-anchor="(\w+)"/g)];
-  assert.equal(ys.length, 4);
-  assert.equal(Number(ys[2][2]) - Number(ys[0][2]), 11, 'the left end stacks by 11');
-  assert.equal(Number(ys[3][2]) - Number(ys[1][2]), 11, 'and so does the right end');
-  assert.equal(ys[0][1], ys[2][1], 'a stacked label keeps the x of the one above it');
-  // The label sits outside the box, anchored away from it.
-  assert.deepEqual([ys[0][3], ys[1][3]].sort(), ['end', 'start']);
-});
-
-test('a cartesian relation labels the middle of its line with the operator alone', () => {
-  const svg = graphSvg(root);
-  const cartesian = relationRows(root).filter((r) => r.predicateList.every((p) => p.leftField === undefined));
-  assert.equal(cartesian.length, 2, 'ooe has two cartesian relations (9 and 10)');
-  for (const r of cartesian) {
-    const group = relGroup(svg, r.key);
-    assert.equal(times(group, /<text class="key"/g), 1);
-    assert.match(group, /<text class="key" x="[\d.-]+" y="[\d.-]+" text-anchor="middle">×<\/text>/);
-  }
-});
-
-test('a relation between two boxes fm stacks on one position draws no key labels', () => {
-  // No exit point to hang a label on when the centres coincide, so the group keeps
-  // its line, its tooltip and its click, and says nothing it cannot place.
-  const at = (id, left, top) => ({ name: `T${id}`, id, table: { name: 'T' }, graph: { bounds: { left, top, width: 100, height: 60 } } });
-  const file = {
-    target: 'x', name: 'x',
-    catalogs: {
-      tableOccurrence: { list: [at(1, 20, 20), at(2, 20, 20)], detailById: {} },
-      relation: {
-        list: [{ id: 5 }],
-        detailById: { 5: { result: { id: 5, left: { id: 1, name: 'T1' }, right: { id: 2, name: 'T2' }, predicates: [{ leftField: 'a', op: '=', rightField: 'b' }] } } },
-      },
-      graphNote: { list: [] },
-    },
-  };
-  const svg = graphSvg(file);
-  assert.equal(times(svg, /<g class="rel-group"/g), 1);
-  assert.match(svg, /<title>T1::a = T2::b<\/title>/);
-  assert.equal(times(svg, /<text class="key"/g), 0);
-});
-
 test('a cartesian relation reads as Left × Right, never ::undefined', () => {
   const rows = relationRows(root);
   const cartesian = rows.filter((r) => /×/.test(r.predicates));

@@ -13,6 +13,15 @@ import { byteSize, catalogHash, factValue, linkOr } from './common.js';
 const FLATTENED_CATALOGS = new Set(['layout', 'script', 'customFunction']);
 const ENTRIES_TITLE = 'list entries including folders and separators';
 
+// The `field` slot has no list op at all: fm describes fields one table at a
+// time, so nothing ever listed them and the count would read a flat 0 beside a
+// Described of 14. The cell says what actually happened instead, and the row
+// borrows the `table` slot's timestamp -- the read that fetched the fields is
+// the table read, so an empty Read at would be the second half of the same lie.
+const PER_TABLE_CATALOG = 'field';
+const PER_TABLE_SOURCE = 'table';
+const PER_TABLE_TITLE = 'fields are read one table at a time; Described counts the tables read';
+
 // `Get ( FileSize )` is bytes as a bare number -- everywhere else on the page
 // a reader wants "3.6 MB", so this one fact gets its own rendering, the exact
 // byte count kept on hover for whoever needs it precisely.
@@ -35,9 +44,12 @@ const COLUMNS = [
     key: 'listed',
     label: 'Entries',
     num: true,
-    render: (r) => (FLATTENED_CATALOGS.has(r.catalog)
-      ? `<span title="${esc(ENTRIES_TITLE)}">${esc(r.listed)}</span>`
-      : esc(r.listed)),
+    render: (r) => {
+      if (r.catalog === PER_TABLE_CATALOG) return `<span title="${esc(PER_TABLE_TITLE)}">per table</span>`;
+      return FLATTENED_CATALOGS.has(r.catalog)
+        ? `<span title="${esc(ENTRIES_TITLE)}">${esc(r.listed)}</span>`
+        : esc(r.listed);
+    },
   },
   { key: 'described', label: 'Described', num: true },
   { key: 'errors', label: 'Errors', num: true, render: (r) => `<span class="${r.errors ? 'error' : ''}">${esc(r.errors)}</span>` },
@@ -52,7 +64,7 @@ function renderFile(file) {
     listed: c.listed,
     described: c.described,
     errors: c.errors,
-    readAt: file.catalogs[catalog].readAt,
+    readAt: (catalog === PER_TABLE_CATALOG ? file.catalogs[PER_TABLE_SOURCE] : file.catalogs[catalog])?.readAt,
     listError: file.catalogs[catalog].listError,
     target: file.target,
   }));

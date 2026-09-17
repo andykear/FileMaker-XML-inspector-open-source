@@ -52,6 +52,25 @@ test('a null file size falls back to the general fact rendering, not a "null byt
   assert.match(html, /<dt>Get \( FileSize \)<\/dt><dd><\/dd>/);
 });
 
+test('the field row says per table and borrows the table row\'s read time', () => {
+  const html = tab.render(solution);
+  const rowOf = (catalog) => [...html.matchAll(/<tr>.*?<\/tr>/g)]
+    .map((m) => m[0])
+    .find((row) => row.includes(`data-reread-catalog="${catalog}" data-target="${api.meta.root}"`));
+  const [field, tables] = [rowOf('field'), rowOf('table')];
+  assert.ok(field && tables, 'the root file lists both slots');
+
+  // No list op describes fields, so Entries would be a flat 0 beside Described 14.
+  assert.match(field, /<span title="fields are read one table at a time; Described counts the tables read">per table<\/span>/);
+  assert.ok(!field.includes('<td class="num">0</td>'), 'no bare zero stands in for the list that never ran');
+  assert.match(field, /<td class="num">14<\/td>/, 'Described still counts the 14 tables read');
+
+  // The table read is the read that fetched the fields, so both rows date from it.
+  const timeOf = (row) => row.match(/<span class="muted">([^<]*)<\/span>/)?.[1];
+  assert.ok(timeOf(tables), 'the table row has a read time to borrow');
+  assert.equal(timeOf(field), timeOf(tables));
+});
+
 test('the Catalog column links to the tab that shows each catalog', () => {
   const html = tab.render(solution);
   assert.match(html, /<a href="#tables">table<\/a>/);
