@@ -1,5 +1,7 @@
 # SaXML inventory
 
+**2026-09-16: the legacy Save as XML inspector was retired** after the cross-check in `docs/cross-check-2026-09.md` confirmed the fm CLI inspector accounts for every difference in what it counts. This table is now history, not a checklist — nothing here still gates work. `legacy/clockwork-inspector.html` remains in git history.
+
 One row per datum the legacy inspector reads from Save as XML (parser rows) or renders from the stats object (render rows).
 Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks a datum the new inspector does not need, by owner decision; it is not a gap and is not reported to Claris. `fm` names the catalog and key that supplies it, or the register id for a gap.
 

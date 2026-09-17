@@ -1,44 +1,40 @@
 # Clockwork Inspector for FileMaker
 
-[![Stars](https://img.shields.io/github/stars/andykear/FileMaker-XML-inspector-open-source?style=social)](https://github.com/andykear/FileMaker-XML-inspector-open-source)
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-green)](https://creativecommons.org/licenses/by/4.0/)
 
-**Full-solution analysis for FileMaker. Local, in the browser, open. No install, no licence, no cloud.**
+**Full-solution analysis for FileMaker, read live through Claris ADT's `fm` CLI. Local, reads only, no server to upload your file to.**
 
-<img width="855" height="553" alt="Screenshot 2026-09-05 at 14 30 14" src="https://github.com/user-attachments/assets/1d926a42-4e71-4d9d-a777-0ee1cc220d00" />
+Screenshots of version 3 are coming.
 
-<img width="855" height="553" alt="Screenshot 2026-09-05 at 14 21 15" src="https://github.com/user-attachments/assets/a21aad56-2a73-4919-b3f7-edd533e84e11" />
+**Version 3** reads live FileMaker files directly, through the Claris ADT `fm` CLI, instead of a Save as XML export. It follows a solution's external data sources recursively, so a multi-file solution is inspected as a whole, not one export at a time. Everything it does is a read: `read:*` catalogs, plus `evaluate:calculation` and `validate:calculation` (fm's help guarantees neither ever changes the file) — nothing here writes to the file it inspects.
 
-<img width="855" height="553" alt="Screenshot 2026-09-05 at 14 23 04" src="https://github.com/user-attachments/assets/5ecd84e2-fab6-4c11-aaba-0a9b9f30bfcb" />
+Run it with `npm install`, then:
 
-<img width="855" height="553" alt="Screenshot 2026-09-05 at 14 38 11" src="https://github.com/user-attachments/assets/8307084e-961a-4e0c-a2ab-85c63140b48f" />
+```
+npm start -- --file=<target> --username=<account>
+```
 
-<img width="855" height="553" alt="Screenshot 2026-09-05 at 14 43 20" src="https://github.com/user-attachments/assets/a1e12ac2-4f12-4bcb-b094-540aebb58e9a" />
+`<target>` is a local `.fmp12` path or an `fmnet://host/file` address. fm asks for the password in its own window and offers to save it in the keychain, so no credential ever passes through this tool's own code. Add `--port=0` to let the OS pick a port, `--no-open` to skip launching a browser tab, or `--no-prompt` for a non-interactive run.
 
-<img width="855" height="553" alt="Screenshot 2026-09-05 at 14 43 29" src="https://github.com/user-attachments/assets/b493f114-9baf-4c90-8284-c4db0f471b10" />
+**Tabs**: Solution, Tables, Relationships, Scripts, Layouts, Security, Themes, Analysis, Explorer, Gaps and More (value lists, custom functions, custom menus and menu sets, external data sources, base directories, persistent data, fonts, graph notes, and file facts).
 
+- **Analysis** — the derived views: unreferenced fields, tables, table occurrences, scripts, layouts, value lists and custom functions (tiered by confidence, since a calculation is read as text, not tokens); broken references; script issue checks; every `$$` global.
+- **Explorer** — universal search across the solution's named objects, with both directions at once (what an object names, and what names it) and a link that lands on the object's own tab.
+- **Gaps** — what the shared coverage register says fm cannot read yet (and why), a live run of that register's own probes against the open file (on demand, reads only — it does not run at startup), and the gaps FileMaker's own step display leaves in how a step is worded. The register is also how gaps get reported to Claris: it is the record of what an inspector like this one still cannot see through `fm`.
 
+**Exports**: Markdown (a full report, numbers taken from the same functions the tabs render from, so a report can never disagree with the page it came from), Mermaid (the relationship graph as an `erDiagram`, the script call graph as a `flowchart`), and JSON (the solution model plus the five analyses, one document).
 
+Along the way it does things FileMaker itself does not offer: a complete visual mood board of any theme with every named style drawn as the object it styles, an interactive relationship graph laid out from the real table-occurrence geometry in the file, layout wireframes, and universal reference exploration in both directions.
 
-A modern alternative to the commercial FileMaker analysis tools that now exceeds most of them on usability, without licensing anything or sending your work to a server.
-
-**Version 3 (in progress)**: reads live FileMaker files through the Claris ADT `fm` CLI, instead of a Save as XML export. `npm install`, then `npm start -- --file=<target> --username=<account>` — fm asks for the password in its own window and offers to save it in the keychain. Reads only. The Save as XML version is kept in `legacy/`. Tabs available now: Solution, Tables, Relationships, Scripts, Layouts, Security, Themes and More (value lists, custom functions, custom menus and menu sets, external data sources, base directories, persistent data, fonts, graph notes, and file facts). The derived analyses (unreferenced, broken references, the reference explorer, the call graph), exports and the Gaps tab come in the next plan.
-
-It analyses around a million lines of XML per second on a reasonably capable computer, so even a large enterprise solution is parsed and reported about as fast as you can open the file. It reads Save as XML, FileMaker's native object export (the version kept in `legacy/`).
-
-Along the way it does things FileMaker itself does not offer: a complete visual mood board of any theme with every named style drawn as the object it styles, an interactive relationship graph laid out from the real TO geometry in the file, layout wireframes, field performance risk scoring, universal reference exploration in both directions, and two-file comparison with script and calculation diffs.
-
-Developed by Andrew Kear, owner of [Clockwork Creative Technology](https://www.clockworkct.co.uk), and shared openly with the FileMaker/Claris community.
+Originally developed as a Save as XML inspector by Andrew Kear, owner of [Clockwork Creative Technology](https://www.clockworkct.co.uk), and shared openly with the FileMaker/Claris community. That version is retired; it remains available in this repository's git history. The fm CLI rewrite is by Wim Decorte, [Soliant Consulting](https://www.soliantconsulting.com).
 
 ---
 
 ## Why open source, and why local
 
-Local, in the browser, and open is where the platform is heading, and it is a better place to do this work from.
+Local, reading the file directly, and open is where the platform is heading, and it is a better place to do this work from.
 
-There is nothing to license. It runs in any modern browser, your file is parsed on your own machine and never uploaded, and the source is readable, forkable, and built to be extended or embedded in your own workflows.
-
-It is also the tool we use ourselves. Clockwork runs the Inspector in daily production, in place of the commercial products it replaced.
+There is nothing to license. A small Node server spawns `fm` and serves the page to your own browser; your file is read directly by `fm` and never uploaded anywhere. The source is readable, forkable, and built to be extended or embedded in your own workflows.
 
 And open sharing is how the FileMaker community moves the platform forward. Publishing the analysis logic means anyone can see how it works, correct it when it is wrong, and build on it.
 
@@ -46,93 +42,55 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 
 ## What it analyses
 
-Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) and the Inspector parses it entirely in your browser (this is the version kept in `legacy/`). Nothing is uploaded anywhere. Handles UTF-16 and UTF-8 with BOM detection, FileMaker 2026 split-catalog folders, and strips (and reports) illegal XML control characters so affected files still parse.
+Point it at a live file (or a hosted `fmnet://` address) and it reads the solution directly through `fm`, following every external data source it finds so a multi-file solution is inspected whole. Nothing is uploaded anywhere; nothing here writes to the file.
 
 **Schema**
 - Base tables, table occurrences, fields — counts, types, storage, validation, auto-entry
-- Field performance risk — each field scored 1 to 10 from its storage, whether a calculation reaches across relationships, aggregate and SQL calls, how many other calculations it feeds, relationship keys, and layout exposure, so likely cost hotspots surface. A heuristic from schema shape, not a measurement
-- Relationships — full sortable list with TOs, base tables, and join keys; multi-predicate, sorted, cascade create/delete
-- Relationship graph — interactive view rendered from the TO geometry stored in the file, so occurrences sit exactly where they sit in Manage Database; zoom, pan, rightward chain tracing, Edit Relationship detail on click
-- Field dependencies and container field usage
-- Layouts — count, visibility, themes, triggers, portal usage, object counts; portals and layout controls in their own sortable tables
-- Wireframe — visual preview of any layout drawn from object bounds: part bands, colour-coded objects, clickable tab panels, portal rows, off-layout zone
-- Themes — a full mood board of any theme. Every named style is rendered as the object it styles (button, field, text, portal, part band) from its own fill, border, corners and font, so you can see a theme whole without dropping each style onto a layout. The colour palette is indexed to the styles that use each colour, with WCAG contrast checks, and unused theme styles are flagged. A theme preview FileMaker itself does not provide
+- Relationships — full sortable list with TOs, base tables, and join keys; multi-predicate, sort specs
+- Relationship graph — interactive view rendered from the table-occurrence geometry fm reports, so occurrences sit exactly where they sit in Manage Database
+
+**Layouts and Themes**
+- Layouts — count, triggers, portal usage, object counts, parts
+- Wireframe — visual preview of any layout drawn from fm's own object bounds: part bands, colour-coded objects, portal rows
+- Themes — a full mood board of any theme. Every named style is rendered as the object it styles (button, field, text, portal, part band) from its own fill, border, corners and font, so a theme can be seen whole without dropping each style onto a layout. The colour palette is indexed to the styles that use each colour, and unused theme styles are flagged
 
 **Scripts**
-- Script count and step totals
-- Script call tree — recursive parent/child call mapping with circular-reference protection, cross-file and Perform Script on Server detection
-- Unbalanced If/Loop detection
-- Orphaned enabled steps inside disabled wrappers
-- Send Mail dialog inversion (NoInteract quirk — [True] means the dialog WILL appear on this step)
-- Step Index — every distinct step used in the file with usage counts, Commit Records split by dialog on/off, per-step drill-down to the scripts using it, and a content search across rendered step text (calc bodies, dialog messages) to find a step by what it says, not just what it is
-- Script issue detection — swallowed errors, PSoS scripts containing client-only steps, dead Set Variables, Set Variable steps with no variable name, unbounded loops, unguarded Allow User Abort, hardcoded file/layout names
-- Step ID dictionary — localisation-independent, version-independent
+- Script tree as FileMaker folds it, with step-by-step rendering through the shared step display
+- Step index across every file reached, with usage counts and per-step drill-down to the scripts using it
+- Script issue checks — swallowed errors, dead Set Variables (a write with no later read), embedded credentials in a quoted literal, and more; each check names the fm key that decided it
+- Call graph between scripts
 
-**Calculations**
-- Function usage tallies across every calculation in the file
-- Unstored calcs using expensive functions; stored calcs referencing globals or related fields (semantic errors FileMaker accepts silently)
-- Calculations over readability thresholds
-- Dynamic reference detection (Evaluate, GetField, merge syntax) — used to suppress false positives in unreferenced analysis
+**Analysis** (the derived views, over the whole reached solution)
+- Unreferenced fields, tables, table occurrences, scripts, layouts, value lists and custom functions — a calculation is read as text, not FileMaker's own tokens, so the unreferenced-fields list is tiered by confidence rather than asserted flatly
+- Broken references — fm's own `problems[]` entries, `<Word Missing>` markers, and named references that resolve to nothing
+- Every `$$` global: where it is set, how often it is mentioned, and in which files
 
-**Catalogs**
-- Value lists — static and dynamic, with resolved source fields and reference counts
-- Custom functions — definitions, bodies, and accurate reference counts
-- Plugin functions — FM 26 aware, with FileMaker's own mistagged Design functions reported separately; dispatcher-style calls such as MBS(...) resolve to the actual function invoked
-- Global variables — from calculation references and Set Variable targets, names with spaces handled correctly
-- Custom menus
+**Explorer**
+- Universal search across every named object of the reached solution
+- Pick any entity to see both directions at once — what it names ("References") and what names it ("Referenced by") — with a link that lands on the object's own tab
 
-**Reference Explorer**
-- Universal search (⌘K / Ctrl+K) across fields, tables, table occurrences, scripts, layouts, value lists, custom functions, plugin functions, and global variables
-- Pick any entity to see its definition (calculation, script steps, value-list contents), everything it uses, and every reference to it — grouped by context, all clickable in both directions with a back stack
-- Every list tab links straight in, and Back returns you to the tab you came from
-- UUID-based reference matching (no name-collision risk) plus calculation-text references recovered from DDR_INFO on FileMaker 26 exports, resolved to the owning field, layout object, script step, or custom function
+**Gaps**
+- The shared coverage register's account of what fm cannot read yet, and why
+- A live run of that register's own probes against the open file, on demand — reads only, never at startup
+- The wording gaps FileMaker's own step display leaves uncovered
 
-**Quality signals**
-- Critical issues surfaced at the top of the report with click-to-jump
-- Observations panel — neutral counts across every analysis category
-- Unreferenced fields, layouts, scripts, value lists, tables, TOs
-- Unreferenced fields are tiered by confidence (zero references, calc-only dead chains, calc-only live, relationship keys, other) so you can judge what is genuinely safe to remove
-- Broken references
-- Local CSS overrides
-- Classic theme layouts (upgrade candidates)
-- Global field density
-- Unstored calculation count
+**Security and More**
+- Accounts, privilege sets, extended privileges, cross-linked in both directions
+- Value lists, custom functions, custom menus and menu sets, external data sources, base directories, persistent data, fonts, graph notes, and file facts
 
-**Comparison**
-- Diff two versions of a solution — schema, scripts, and layouts, with script step and field calculation diffs
-- Export the comparison as Markdown or JSON
-
-**File configuration**
-- Security — accounts, privilege sets, extended privileges, cross-linked in both directions
-- File options, minimum FM version
-- Developer tags, activity timestamps
-- Bit flag decoder (behind the Advanced toggle)
-
-**Reporting**
-- Markdown report export
-- Saved report snapshots — figures and tables preserved for sharing; interactive tools need the original XML
-- Mermaid export for the relationship graph and script call tree
-- Dark mode
+**Exports**
+- Markdown report, Mermaid diagrams (relationship graph, script call graph) and JSON — every number taken from the same function the matching tab renders from
 
 ---
 
 ## Quick start
 
-1. Download `clockwork-inspector.html`
-2. Open it in any modern browser
-3. Drag and drop your Save as XML file onto the drop zone (or a FileMaker 2026 split-catalog folder)
+1. `npm install`
+2. `npm start -- --file=<target> --username=<account>` — `<target>` is a local `.fmp12` path or an `fmnet://host/file` address
+3. fm opens its own password window and offers to save the credential in the keychain
+4. The inspector opens in your browser, reading the file live
 
-For comparison mode, switch to Compare and load two files.
-
-No installation. No server. Runs entirely locally.
-
----
-
-## Using with Claude
-
-The Inspector complements AI-assisted FileMaker development. Upload the HTML file to a Claude Project or as a skill, and Claude can reason about your solution's structure, cross-reference scripts and layouts, and help you identify gaps or opportunities for improvement.
-
-If the file contains API keys, passwords, or internal hostnames, run it through the XML Scrubber first.
+Reads only, the whole way: `read:*`, `evaluate:calculation` and `validate:calculation`, nothing else.
 
 ---
 
@@ -146,13 +104,13 @@ The full script step ID dictionary, plus the hidden paste-handler rules that dec
 **[Layout XML Skill](https://github.com/andykear/FileMaker-XMLsnippet-Layout-Claude-Skill)** (XML2)
 All 18 layout object types mapped, every flag decoded, element order confirmed against native output. Verified across 45+ layouts in 10 production files.
 
-**[Field, Table & Value List Definitions](https://github.com/andykear/FileMaker-XML-field-definitions)** (XMFD, XMTB, XMVL) — this repo
+**[Field, Table & Value List Definitions](https://github.com/andykear/FileMaker-XML-field-definitions)** (XMFD, XMTB, XMVL)
 Field, table and value list definition XML — auto-enter, validation, storage, calculation options, and the three value list source arms — verified down to the individual option level.
 
 **Analysis — read, audit and clean existing XML**
 
-**[XML Inspector](https://github.com/andykear/FileMaker-XML-inspector-open-source)** (SaXML)
-Full-catalog dependency analysis of a Save as XML export, entirely in the browser. Finds unreferenced fields, silent-failure risks, broken references, and diffs two versions of a solution against each other.
+**[XML Inspector](https://github.com/andykear/FileMaker-XML-inspector-open-source)** (SaXML) — the tool this repository replaced with version 3.0
+Did full-catalog dependency analysis of a Save as XML export, entirely in the browser: unreferenced fields, silent-failure risks, broken references, and a diff of two versions of a solution against each other. Retired on 2026-09-16; it remains in this repository's git history, and what replaced it is the fm CLI inspector this README describes.
 
 **[XML Scrubber](https://github.com/andykear/FileMaker-XML-scrubber)** (SaXML + others)
 Strips API keys, passwords and internal hostnames out of FileMaker XML before you hand it to an AI tool.
@@ -163,6 +121,7 @@ Strips API keys, passwords and internal hostnames out of FileMaker XML before yo
 
 | Version | Notes |
 |---|---|
+| 3.0 | Rewrite: reads live FileMaker files (or a hosted `fmnet://` address) through the Claris ADT `fm` CLI instead of a Save as XML export, following external data sources so a multi-file solution is inspected whole. Adds an Analysis tab (unreferenced, broken references, script issues, globals), a Reference Explorer, and a Gaps tab that reports what fm cannot read yet against a shared coverage register, with a live on-demand check. Markdown, Mermaid and JSON exports. The Save as XML version is retired; it remains in git history. Three things version 2 had that this one does not: **Compare mode**, deferred by the design spec (see Out of scope) rather than dropped, because a diff of two live reads is a different feature from a diff of two exports; **plug-in call-site detection**, which is a gap in what fm reports and is registered as `plugin-call-sites` in the coverage register, so a field or script name passed to a plug-in is not counted as a reference; and the **field performance risk score**, which was one number covering several different questions and is now the confidence tier on the Analysis tab, which says what it is uncertain about instead of scoring it. |
 | 2.7 | New Persistent Data tab surfaces FileMaker 2026's persistent data store. Script bodies no longer truncate long formulas or drop comment text. Unreferenced Fields/Table Occurrences now catches usage inside formulas — Hide conditions, conditional formatting, dialog text, merge fields, custom functions. Broken Refs now checks hide conditions, tooltips, conditional formatting and portal filters. |
 | 2.6 | Visual redesign; script bodies now show line numbers. Minimal functional changes otherwise. |
 | 2.5 | New Step Index tab — every step used in the file with usage counts, Commit Records split by dialog on/off, drill-down to the scripts using each step, and a content search to find a dialog by its message. Script steps now render their real content (Set Variable, Set Field, Commit, and more). New checks for broken value list sources, dead conditional formatting, and blank-name Set Variables. |

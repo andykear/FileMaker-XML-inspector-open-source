@@ -4,7 +4,7 @@
 // re-read buttons of a catalog, and the one selection-string shape. Pure
 // functions to strings and plain objects, like the rest of ui/: no document, no
 // server, every fm key through access.js and every model string through esc.
-import { count, esc, rereadCatalogButton } from '../dom.js';
+import { count, esc, link, rereadCatalogButton } from '../dom.js';
 import { get, path } from '../access.js';
 
 /** A catalog's list, or `[]` when the file has no such catalog (a hand-made
@@ -14,6 +14,23 @@ export const listOf = (file, catalog) => path(file, `catalogs.${catalog}.list`) 
 /** One described object of a catalog, by id. The key is always a string: fm's
  *  ids are numbers and the model's `detailById` keys are not. */
 export const detailOf = (file, catalog, id) => get(path(file, `catalogs.${catalog}.detailById`), String(id));
+
+/** What a file calls itself, for the File column and for any prose that names
+ *  one; the target when the read never learned a name. */
+export const fileName = (solution, target) => get(get(solution, 'files'), target)?.name ?? target;
+
+/** A link when there is a tab that shows the thing, its plain name when there
+ *  is not -- a kind no tab routes (a variable, a style with no theme) must read
+ *  as text rather than as a link that goes nowhere. */
+export const linkOr = (hash, label) => (hash ? link(hash, label) : esc(label));
+
+/** What an emptied table says. A table emptied BY THE FILTER has not found
+ *  nothing, it has been narrowed to nothing, and saying "none" there
+ *  contradicts the count in the heading above it. */
+export const emptyNote = (total, none) => (total ? 'None match the filter' : none);
+
+/** `3 steps`, `1 step`: a count and the word it counts, agreeing. */
+export const plural = (n, word) => `${count(n)} ${n === 1 ? word : `${word}s`}`;
 
 /** The File column only earns its width when more than one file was reached. */
 export const withFile = (columns, view) => (view?.multiFile ? [{ key: 'file', label: 'File' }, ...columns] : columns);

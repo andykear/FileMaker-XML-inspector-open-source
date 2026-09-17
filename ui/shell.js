@@ -13,7 +13,7 @@ export { buildHash, parseHash };
  *  enough that a burst renders once, short enough that a pause feels immediate. */
 export const FILTER_DEBOUNCE_MS = 120;
 
-export function createShell({ tabs, mount, onReread }) {
+export function createShell({ tabs, mount, onReread, onExport, onAction }) {
   let solution = null;
   let filter = '';
   let filterTimer = null;
@@ -48,6 +48,14 @@ export function createShell({ tabs, mount, onReread }) {
     clearTimeout(filterTimer);
     filterTimer = setTimeout(() => { filter = mount.filter.value.trim().toLowerCase(); route(); }, FILTER_DEBOUNCE_MS);
   });
+  // The Export menu is a menu, not a setting: it fires and returns to its own
+  // label, so the same export can be picked twice in a row. What an export IS
+  // belongs to app.js, which owns the one Blob and the one temporary <a>.
+  mount.export?.addEventListener('change', () => {
+    const kind = mount.export.value;
+    mount.export.value = '';
+    if (kind) onExport?.(kind);
+  });
   window.addEventListener('hashchange', route);
   mount.main.addEventListener('click', async (ev) => {
     const reread = ev.target.closest('button[data-reread-object], button[data-reread-catalog]');
@@ -56,6 +64,15 @@ export function createShell({ tabs, mount, onReread }) {
         ? JSON.parse(reread.dataset.rereadObject)
         : { kind: 'catalog', target: reread.dataset.target, catalog: reread.dataset.rereadCatalog };
       await onReread(slot);
+      return;
+    }
+    // The generic one: a tab names an action and the app decides what it does.
+    // Deliberately after the re-read buttons, which are the same click with a
+    // shape of their own, and before row selection, so a button inside a
+    // selectable row is the button's click and not the row's.
+    const action = ev.target.closest('[data-action]');
+    if (action) {
+      await onAction?.(action.dataset.action, action.dataset);
       return;
     }
     const row = ev.target.closest('[data-select]');

@@ -34,8 +34,10 @@ function clickOn(matchesBySelector) {
 }
 
 function stubShell({ render = () => '<p>body</p>' } = {}) {
-  const mount = { nav: fakeElement(), main: fakeElement(), filter: fakeElement() };
+  const mount = { nav: fakeElement(), main: fakeElement(), filter: fakeElement(), export: fakeElement() };
   const rereads = [];
+  const exports = [];
+  const actions = [];
   const saved = { window: globalThis.window, location: globalThis.location };
   globalThis.window = { addEventListener() {} };
   globalThis.location = { hash: '' };
@@ -43,9 +45,11 @@ function stubShell({ render = () => '<p>body</p>' } = {}) {
     tabs: [{ id: 'tables', label: 'Tables', render }, { id: 'scripts', label: 'Scripts', render }],
     mount,
     onReread: async (slot) => { rereads.push(slot); },
+    onExport: (kind) => { exports.push(kind); },
+    onAction: async (name, dataset) => { actions.push([name, dataset]); },
   });
   shell.setSolution({ files: { a: {}, b: {} }, unreachable: [] });
-  return { shell, mount, rereads, restore: () => Object.assign(globalThis, saved) };
+  return { shell, mount, rereads, exports, actions, restore: () => Object.assign(globalThis, saved) };
 }
 
 test('the shell renders the nav and the active tab, and view is what the tab was rendered with', () => {
@@ -98,10 +102,59 @@ test('a click on a re-read button calls onReread with the parsed slot and select
   } finally { restore(); }
 });
 
+test('a click on a data-action button calls onAction with the name and the dataset, and selects nothing', async () => {
+  const { mount, actions, restore } = stubShell();
+  try {
+    const button = { dataset: { action: 'gaps-check', target: 'fmnet://localhost/ooe' } };
+    await mount.main.handlers.click(clickOn({ '[data-action]': button, '[data-select]': { dataset: { select: 'a|b' } } }));
+    assert.deepEqual(actions, [['gaps-check', button.dataset]]);
+    assert.equal(globalThis.location.hash, '', 'an action is not a selection');
+  } finally { restore(); }
+});
+
+test('a shell with no onAction ignores an action click rather than throwing', async () => {
+  const saved = { window: globalThis.window, location: globalThis.location };
+  globalThis.window = { addEventListener() {} };
+  globalThis.location = { hash: '' };
+  try {
+    const mount = { nav: fakeElement(), main: fakeElement(), filter: fakeElement() };
+    const shell = createShell({ tabs: [{ id: 'tables', label: 'Tables', render: () => '<p>x</p>' }], mount, onReread: async () => {} });
+    shell.setSolution({ files: {}, unreachable: [] });
+    await mount.main.handlers.click(clickOn({ '[data-action]': { dataset: { action: 'nope' } } }));
+    assert.equal(globalThis.location.hash, '');
+  } finally { Object.assign(globalThis, saved); }
+});
+
 test('a click on neither a row nor a button changes nothing', () => {
   const { mount, restore } = stubShell();
   try {
     mount.main.handlers.click(clickOn({}));
     assert.equal(globalThis.location.hash, '');
   } finally { restore(); }
+});
+
+test('the export menu calls onExport with what was picked and goes back to its own label', () => {
+  const { mount, exports, restore } = stubShell();
+  try {
+    mount.export.value = 'markdown';
+    mount.export.handlers.change();
+    assert.deepEqual(exports, ['markdown']);
+    assert.equal(mount.export.value, '', 'the menu is a menu, not a setting: it resets so the same export can be picked twice');
+    // The placeholder option is not an export.
+    mount.export.value = '';
+    mount.export.handlers.change();
+    assert.deepEqual(exports, ['markdown']);
+  } finally { restore(); }
+});
+
+test('a shell with no export menu still works, so a page without one is not a crash', () => {
+  const saved = { window: globalThis.window, location: globalThis.location };
+  globalThis.window = { addEventListener() {} };
+  globalThis.location = { hash: '' };
+  try {
+    const mount = { nav: fakeElement(), main: fakeElement(), filter: fakeElement() };
+    const shell = createShell({ tabs: [{ id: 'tables', label: 'Tables', render: () => '<p>x</p>' }], mount, onReread: async () => {} });
+    shell.setSolution({ files: {}, unreachable: [] });
+    assert.equal(mount.main.innerHTML, '<p>x</p>');
+  } finally { Object.assign(globalThis, saved); }
 });

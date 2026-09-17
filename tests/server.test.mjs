@@ -1,11 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { request as httpRequest } from 'node:http';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { readFile, readdir, stat } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readOps, createDirectApi } from '../server/read.mjs';
 import { createServer } from '../server/server.mjs';
+import { registerPath } from '../server/gaps.mjs';
+import { isReadOnlyOp } from 'fm-adt-toolkit/read-only';
 
 const cli = { path: '/stub/fm', version: '0.6.0', contract: 3 };
 
@@ -249,5 +251,91 @@ test('the toolkit step-display module is served under /vendor', async () => {
     assert.equal(cat.status, 200);
     const escape = await fetch(base + '/vendor/fm-adt-toolkit/../../package.json');
     assert.equal(escape.status, 404);
+  });
+});
+
+test('GET /api/register serves the installed register, reduced', async () => {
+  await withServer({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps([]) }, async (base) => {
+    const res = await fetch(base + '/api/register');
+    assert.equal(res.status, 200);
+    const text = await res.text();
+    const entries = JSON.parse(text);
+    assert.equal(entries.length, 302, 'the installed register, every entry');
+    assert.ok(entries.some((e) => e.id.startsWith('theme')), 'the theme entry is there');
+    // The summary drops what a page cannot use: evidence pointers and per-attribute reasons.
+    assert.doesNotMatch(text, /"evidence"/);
+    assert.doesNotMatch(text, /"attributeReasons"/);
+    const one = entries.find((e) => e.id === 'account:amazon');
+    assert.deepEqual(Object.keys(one.lastChecked), ['version', 'build', 'date']);
+    assert.ok(one.attributes.every((a) => 'name' in a && 'path' in a && 'fmKey' in a && 'reported' in a && 'knownFrom' in a));
+  });
+});
+
+test('POST /api/gaps/check runs the register\'s probes once, read-only, and reduces the outcome', async () => {
+  const calls = [];
+  await withServer({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps(calls) }, async (base) => {
+    const res = await post(base, '/api/gaps/check', { target: 'fmnet://localhost/ooe' });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(calls.length, 1, 'one fm invocation for the whole register');
+    assert.ok(calls[0].ops.length > 50, 'every distinct probe in the one batch');
+    assert.ok(calls[0].ops.every(isReadOnlyOp), 'read-only ops only');
+    assert.equal(body.entries, 302);
+    for (const key of ['stillMissing', 'newlyReported', 'regressed', 'errored', 'erroredExpected', 'expectedResolved', 'unexplained', 'nestedUnexplained', 'attributeErrors']) {
+      assert.ok(Array.isArray(body[key]), key);
+    }
+    // Every probe of this fake answers `{kind:'x'}`. The 258 entries whose probe
+    // carries a selector find nothing in it and are not scored either way; that is
+    // the count the page shows its "not the reference solution" note from. Measured
+    // against the installed register before it was pinned.
+    assert.equal(body.probeFailures, body.errored.length + body.erroredExpected.length);
+    assert.equal(body.probeFailures, 258);
+    assert.equal(body.notFound, undefined, 'no reason-text heuristic in the outcome');
+    assert.equal(body.fmVersion, '0.6.0');
+    assert.equal(typeof body.build, 'string');
+    assert.match(body.ranAt, /^\d{4}-\d\d-\d\dT/);
+    // Nothing is echoed back whole: an entry is an id, an attribute a name.
+    assert.ok(body.errored.every((e) => typeof e.id === 'string' && !('attributes' in e)));
+    assert.ok(body.stillMissing.every((m) => typeof m.id === 'string' && typeof m.attribute === 'string'));
+  });
+});
+
+test('a live check leaves the toolkit\'s own gaps tree untouched', async () => {
+  // runChecks writes one evidence file per probe unconditionally. runLiveCheck
+  // hands it a throwaway root for exactly that reason: the inspector is a
+  // reader, and a file left in the toolkit's evidence tree would be read back
+  // by a later `fm-gaps report` as the owner's measurement of a solution the
+  // owner never saw. Snapshot the tree either side of a fake check.
+  const gapsDir = dirname(registerPath());
+  const snapshot = async () => {
+    const out = [];
+    const walk = async (dir, rel) => {
+      for (const e of (await readdir(dir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+        const full = join(dir, e.name);
+        const at = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isDirectory()) await walk(full, at);
+        else out.push(`${at} ${(await stat(full)).mtimeMs} ${(await stat(full)).size}`);
+      }
+    };
+    await walk(gapsDir, '');
+    return out;
+  };
+  const before = await snapshot();
+  assert.ok(before.length > 0, 'the installed register tree is there to be left alone');
+  await withServer({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps([]) }, async (base) => {
+    const res = await post(base, '/api/gaps/check', { target: 'fmnet://localhost/ooe' });
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).entries, 302, 'the check really ran');
+  });
+  assert.deepEqual(await snapshot(), before, 'the live check wrote into the toolkit\'s gaps tree');
+});
+
+test('POST /api/gaps/check with no target is a 400 and never spawns fm', async () => {
+  const calls = [];
+  await withServer({ cli, root: 'fmnet://localhost/ooe', username: 'admin', noPrompt: true, runOps: fakeRunOps(calls) }, async (base) => {
+    const res = await post(base, '/api/gaps/check', { target: 42 });
+    assert.equal(res.status, 400);
+    assert.match((await res.json()).error, /target/);
+    assert.equal(calls.length, 0);
   });
 });

@@ -20,5 +20,10 @@ export function createApi(baseUrl = '') {
     context: () => call('/api/context'),
     read: (target, ops) => post('/api/read', { target, ops }),
     resolveTarget: (from, path) => post('/api/resolve-target', { from, path }),
+    // The toolkit's coverage register, reduced, and one run of its own probes
+    // against a live file. The run goes through the server's read-only guard
+    // like every other read; nothing about it writes.
+    register: () => call('/api/register'),
+    gapsCheck: (target) => post('/api/gaps/check', { target }),
   };
 }

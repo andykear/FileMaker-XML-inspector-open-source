@@ -52,7 +52,10 @@ export function section(title, body, opts = {}) {
 
 export function table(columns, rows, opts = {}) {
   if (!rows.length) return `<p class="empty">${esc(opts.empty ?? 'None')}</p>`;
-  const head = columns.map((c) => `<th${c.num ? ' class="num"' : ''}>${esc(c.label)}</th>`).join('');
+  // A column may carry a `title`: the sentence that says what the column's
+  // values MEAN, hung on the header where a reader looks for it rather than
+  // repeated in prose above the table.
+  const head = columns.map((c) => `<th${c.num ? ' class="num"' : ''}${c.title ? ` title="${esc(c.title)}"` : ''}>${esc(c.label)}</th>`).join('');
   const body = rows.map((r) => {
     const cells = columns.map((c) => {
       const html = c.render ? c.render(r) : esc(r[c.key] ?? '');

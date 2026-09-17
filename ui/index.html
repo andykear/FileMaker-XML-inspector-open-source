@@ -9,6 +9,13 @@
   <span class="meta" id="context">connecting</span>
   <input id="filter" type="search" placeholder="Filter" autocomplete="off" spellcheck="false">
   <button id="reread-solution" disabled>Re-read solution</button>
+  <select id="export" title="Save this read as a file" disabled>
+    <option value="">Export</option>
+    <option value="markdown">Markdown report</option>
+    <option value="relationships">Mermaid: relationships</option>
+    <option value="calls">Mermaid: call graph</option>
+    <option value="json">JSON: the model and the analyses</option>
+  </select>
   <span id="progress"></span>
 </header>
 <div id="layout">

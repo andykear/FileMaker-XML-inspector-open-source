@@ -1,0 +1,66 @@
+[
+  {
+    "id": "account:amazon",
+    "op": "read:account",
+    "kind": "account:Amazon",
+    "probe": { "ops": [{ "op": "read:account", "id": 5 }] },
+    "attributes": [
+      {
+        "name": "account name",
+        "path": "Authentication/AccountName",
+        "fmKey": "name",
+        "reported": true,
+        "knownFrom": "SaXML AccountsCatalog Authentication/AccountName"
+      },
+      {
+        "name": "account authentication type code",
+        "path": "@kind",
+        "fmKey": null,
+        "reported": false,
+        "wontfix": "export redundancy: the numeric form of @type",
+        "knownFrom": "SaXML AccountsCatalog @kind"
+      },
+      {
+        "name": "password change on next login",
+        "path": "Authentication/@changepassword",
+        "fmKey": null,
+        "reported": false,
+        "knownFrom": "SaXML AccountsCatalog Authentication/@changepassword; Manage Security > Require password change on next sign in"
+      }
+    ],
+    "lastChecked": { "version": "0.7.0", "build": "29823677", "date": "2026-09-16" }
+  },
+  {
+    "id": "account:google",
+    "op": "read:account",
+    "kind": "account:Google",
+    "probe": { "ops": [{ "op": "read:account", "id": 9 }] },
+    "attributes": [
+      {
+        "name": "account id",
+        "path": "@id",
+        "fmKey": "id",
+        "reported": true,
+        "knownFrom": "SaXML AccountsCatalog @id"
+      }
+    ],
+    "lastChecked": { "version": "0.7.0", "build": "29823677", "date": "2026-09-16" }
+  },
+  {
+    "id": "layout-object:button",
+    "op": "read:layout",
+    "kind": "layoutObject:button",
+    "probe": { "ops": [{ "op": "read:layout", "id": 3 }], "select": "objects[type=button]" },
+    "attributes": [
+      {
+        "name": "button hide condition",
+        "path": "HideCondition/Calculation",
+        "fmKey": null,
+        "reported": false,
+        "knownFrom": "SaXML Layout Object HideCondition; Inspector > Data > Hide object when"
+      }
+    ],
+    "expectedError": "probe refused: 1200",
+    "lastChecked": { "version": "0.7.0", "build": "29823677", "date": "2026-09-16" }
+  }
+]

@@ -1,6 +1,7 @@
 /* ui/inspector.css
-   The palette is carried over verbatim from legacy/clockwork-inspector.html so the
-   rewrite looks like the tool it replaces; everything after :root is the shell only
+   The palette is carried over verbatim from legacy/clockwork-inspector.html
+   (retired 2026-09-16; in git history) so the rewrite looks like the tool it
+   replaces; everything after :root is the shell only
    (header, sidebar, panel, table, kv, badge). Tabs add nothing of their own. */
 
 :root {
@@ -99,7 +100,7 @@ header h1 { margin: 0; font-size: 15px; color: var(--heading); }
 header .meta { color: var(--ink-3); }
 #progress { color: var(--ink-3); flex: 1 1 auto; }
 
-input, button {
+input, button, select {
   font: inherit;
   color: inherit;
   border: 1px solid var(--line-strong);
@@ -107,11 +108,14 @@ input, button {
   background: var(--surface);
   padding: 3px 10px;
 }
-input:focus-visible, button:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
-button { cursor: pointer; background: var(--surface-soft); }
-button:hover:not(:disabled) { background: var(--surface-hover); }
-button:disabled { opacity: .5; cursor: default; }
+input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+button, select { cursor: pointer; background: var(--surface-soft); }
+button:hover:not(:disabled), select:hover:not(:disabled) { background: var(--surface-hover); }
+button:disabled, select:disabled { opacity: .5; cursor: default; }
 #filter { min-width: 220px; }
+/* The Export menu returns to its first option after every pick, so that option
+   is the menu's own label rather than the last export chosen. */
+#export { padding-right: 4px; }
 
 /* ── Layout: sidebar + main ───────────────────────────────────────────── */
 
@@ -291,6 +295,21 @@ svg.graph .note-text { font: 11px -apple-system, ui-sans-serif, system-ui, sans-
 }
 
 /* ── Script tree and script body ──────────────────────────────────────── */
+
+/* The Explorer's call tree: nested, one guide rule per level, so depth is
+   readable without indentation alone carrying it. */
+ul.calltree { margin: 2px 0 2px; padding-left: 14px; list-style: none; }
+ul.calltree ul.calltree { border-left: 1px solid var(--line-soft); margin-left: 3px; }
+ul.calltree > li { padding: 1px 4px; line-height: 1.7; }
+
+/* The Analysis totals: each item carries a title naming its derivation, so it
+   is a hover target and says so. */
+p.totals > span[title] { cursor: help; border-bottom: 1px dotted var(--line-strong); }
+
+/* A <details> inside a table cell (the psos step list, a global's set sites)
+   must not stretch the row. */
+td > details > summary { white-space: nowrap; }
+td > details > ul.notes { margin: 4px 0 0; }
 
 ul.tree { margin: 2px 0 6px; padding-left: 18px; list-style: none; }
 ul.tree > li { padding: 1px 4px; border-radius: 4px; cursor: pointer; }

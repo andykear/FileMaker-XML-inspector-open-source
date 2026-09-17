@@ -11,9 +11,8 @@
     "inspector": "bin/inspector.mjs"
   },
   "scripts": {
-    "test": "node --test 'tests/*.test.mjs' 'tests/tabs/*.test.mjs'",
+    "test": "node --test 'tests/*.test.mjs' 'tests/tabs/*.test.mjs' 'tests/analysis/*.test.mjs' 'tests/export/*.test.mjs'",
     "start": "node bin/inspector.mjs",
-    "inventory": "node scripts/saxml-inventory.mjs",
     "record": "node scripts/record-fixture.mjs"
   },
   "license": "CC-BY-4.0",

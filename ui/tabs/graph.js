@@ -62,7 +62,14 @@ function predicateText(d) {
   const left = nameOf(get(d, 'left'));
   const right = nameOf(get(d, 'right'));
   return (get(d, 'predicates') ?? [])
-    .map((p) => `${left}::${get(p, 'leftField')} ${get(p, 'op')} ${right}::${get(p, 'rightField')}`)
+    .map((p) => {
+      // A cartesian join is one predicate with an operator and no fields: fm
+      // reports {op: "×"} and nothing else, so it reads as `Left × Right`.
+      const lf = get(p, 'leftField');
+      const rf = get(p, 'rightField');
+      if (lf === undefined && rf === undefined) return `${left} ${get(p, 'op')} ${right}`;
+      return `${left}::${lf} ${get(p, 'op')} ${right}::${rf}`;
+    })
     .join('; ');
 }
 

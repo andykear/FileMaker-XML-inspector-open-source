@@ -6,6 +6,7 @@
 import { badge, count, esc, kv, link, matches, rereadObjectButton, section, table } from '../dom.js';
 import { get, path } from '../access.js';
 import { stepDisplay } from 'fm-adt-toolkit/step-display';
+import { memoise } from '../analysis/memo.js';
 import { catalogActions, detailOf, listOf, selectionKey, selectionTail, totalsLine } from './common.js';
 
 const scriptsOf = (file) => listOf(file, 'script');
@@ -73,19 +74,10 @@ export function renderScript(detail) {
 }
 
 /** How often each step type is used, and in how many scripts, across every file.
- *  Every step of every script of every file, so it is memoised on the solution,
- *  guarded by the identity of each file's `catalogs.script.detailById` -- what a
- *  re-read replaces at either grain (see ui/model.js). */
-const stepIndexCache = new WeakMap();
-
-export function stepIndex(solution) {
-  const details = Object.values(solution?.files ?? {}).map((f) => path(f, 'catalogs.script.detailById'));
-  const hit = stepIndexCache.get(solution ?? {});
-  if (hit && hit.details.length === details.length && hit.details.every((d, i) => d === details[i])) return hit.index;
-  const index = computeStepIndex(solution);
-  if (solution !== null && typeof solution === 'object') stepIndexCache.set(solution, { details, index });
-  return index;
-}
+ *  Every step of every script of every file, so it is memoised through
+ *  ui/analysis/memo.js, which keys on the catalog slots a re-read swaps at any
+ *  grain (`list`, `detailById`) rather than on the solution object. */
+export const stepIndex = (solution) => memoise(solution, computeStepIndex);
 
 function computeStepIndex(solution) {
   const counts = new Map();
