@@ -353,6 +353,11 @@ ol.script > li.selected { background: var(--navy-tint); font-weight: 600; }
 ol.script > li.disabled { color: var(--ink-4); text-decoration: line-through; }
 ol.script > li.disabled > b, ol.script > li.disabled .detail { color: var(--ink-4); }
 
+/* The Objects table's nesting indent, carried on --depth the same way a script
+   step's is (ol.script > li above), rather than padding characters baked into
+   the cell's text. */
+.obj-type { display: inline-block; padding-left: calc(var(--depth, 0) * 1.25em); }
+
 /* ── Layout wireframe ─────────────────────────────────────────────────── */
 /* The geometry is fm's own, in FileMaker points; the viewBox scales it to the panel.
    Each object type carries --o (its ink) and optionally --f/--fo (its fill), so the
@@ -387,6 +392,9 @@ svg.wireframe .obj { fill: var(--f, var(--o)); fill-opacity: var(--fo, .14); str
 svg.wireframe .obj.label { stroke-dasharray: 3 2; }
 svg.wireframe .obj.group { stroke-dasharray: 5 3; fill: none; }
 svg.wireframe .obj.highlight { stroke: var(--brand); stroke-width: 3; fill: var(--brand); fill-opacity: .22; }
+/* A rect carries data-select only when the tab has a row for it to select --
+   the shell's generic [data-select] delegation does the rest. */
+svg.wireframe .obj[data-select] { cursor: pointer; }
 
 ul.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 0 0; padding: 0; list-style: none; font-size: 11px; color: var(--ink-3); }
 ul.legend > li { display: flex; align-items: center; gap: 4px; }

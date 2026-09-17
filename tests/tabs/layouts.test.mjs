@@ -130,6 +130,24 @@ test('wireframeSvg marks the highlighted object and nothing else', () => {
   assert.match(wireframeSvg(MY_LAYOUT, { highlight: '21' }), /class="obj field highlight"/);
 });
 
+test('wireframeSvg makes every rect selectable when given the layout key, and none without one', () => {
+  const bare = wireframeSvg(MY_LAYOUT);
+  assert.ok(!bare.includes('data-select'), 'no key given, no data-select');
+
+  const svg = wireframeSvg(MY_LAYOUT, { key: 'fmnet://localhost/ooe|1' });
+  assert.match(svg, /<rect class="obj field" data-object="21" data-select="fmnet:\/\/localhost\/ooe\|1#21"/);
+  // One data-select per object, matching the Objects table's own row key.
+  assert.equal((svg.match(/data-select="fmnet:\/\/localhost\/ooe\|1#\d+"/g) ?? []).length, 105);
+});
+
+test('wireframeSvg escapes the id in data-select the same way it escapes data-object', () => {
+  const nasty = { geometry: { baseWidth: 100, bodyHeight: 50 }, parts: [],
+    contents: { objects: [{ id: '9"><script>', type: 'label', bounds: { left: 1, top: 1, width: 2, height: 2 } }] } };
+  const svg = wireframeSvg(nasty, { key: 'x<y|1' });
+  assert.ok(!svg.includes('<script>'));
+  assert.ok(svg.includes('data-select="x&lt;y|1#9&quot;&gt;&lt;script&gt;"'));
+});
+
 test('wireframeSvg falls back to bodyHeight and survives a layout with nothing on it', () => {
   const bare = { geometry: { baseWidth: 400, bodyHeight: 250 }, parts: [], contents: { objects: [] } };
   assert.match(wireframeSvg(bare), /viewBox="0 0 400 250"/);
@@ -189,9 +207,16 @@ test('selecting a layout renders its detail, parts, wireframe and objects', () =
   // Parts table: ten rows, the break field named.
   assert.ok(html.includes('TestTable::TextField1'));
   assert.ok(html.includes('leadingSubSummary'));
-  // One object row per object, each selectable with the # form.
-  assert.equal((html.match(/data-select="fmnet:\/\/localhost\/ooe\|1#/g) ?? []).length, 105);
+  // One object row per object, each selectable with the # form, and the matching
+  // rect in the wireframe carries the same data-select, so a click on the
+  // picture selects the same thing a click on the row does.
+  assert.equal((html.match(/<tr data-select="fmnet:\/\/localhost\/ooe\|1#\d+"/g) ?? []).length, 105);
+  assert.equal((html.match(/<rect class="obj [^"]*" data-object="\d+" data-select="fmnet:\/\/localhost\/ooe\|1#\d+"/g) ?? []).length, 105);
   assert.ok(html.includes('data-select="fmnet://localhost/ooe|1#21"'));
+  // Nesting depth rides on --depth, not on padding characters baked into the
+  // cell text -- the exact match below proves the type text carries none.
+  assert.ok(html.includes('<span class="obj-type" style="--depth:0">popover</span>'));
+  assert.ok(html.includes('<span class="obj-type" style="--depth:1">label</span>'));
 });
 
 test('selecting an object highlights it in the wireframe and its row', () => {
@@ -203,7 +228,18 @@ test('selecting an object highlights it in the wireframe and its row', () => {
 test('the object filter narrows the objects table but not the wireframe', () => {
   const html = tab.render(solution, { ...view, selection: 'fmnet://localhost/ooe|1', filter: 'webviewer' });
   assert.equal((html.match(/<rect class="obj /g) ?? []).length, 105);
-  assert.equal((html.match(/data-select="fmnet:\/\/localhost\/ooe\|1#/g) ?? []).length, 1);
+  // Every rect stays selectable even though the table below it is filtered down to one row.
+  assert.equal((html.match(/<rect class="obj [^"]*" data-object="\d+" data-select="fmnet:\/\/localhost\/ooe\|1#\d+"/g) ?? []).length, 105);
+  assert.equal((html.match(/<tr data-select="fmnet:\/\/localhost\/ooe\|1#\d+"/g) ?? []).length, 1);
+});
+
+test('an object tail still marks the layout it belongs to in the tree', () => {
+  // The bug fixed for the Scripts tree in commit a1adfc2, carried over to Layouts:
+  // an `#<object id>` tail is a coordinate inside the open layout, not a
+  // different tree row, so the layout being read must keep its highlight.
+  const html = tab.render(solution, { ...view, selection: 'fmnet://localhost/ooe|1#21' });
+  assert.ok(html.includes('<li data-select="fmnet://localhost/ooe|1" class="selected">'), 'the tree lost the open layout');
+  assert.ok(!html.includes('<li data-select="fmnet://localhost/ooe|1#21"'));
 });
 
 test('a layout whose describe failed says so instead of drawing', () => {

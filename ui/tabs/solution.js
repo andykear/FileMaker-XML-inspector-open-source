@@ -11,9 +11,22 @@ function factValue(v) {
     : `<span class="error">${esc(v.error.code)}: ${esc(v.error.message)}</span>`;
 }
 
+// fm's flattened lists (layout, script, customFunction) carry folders and
+// separators alongside the real entries, so their count in this column is not
+// "how many layouts/scripts/functions" -- the title says so on hover.
+const FLATTENED_CATALOGS = new Set(['layout', 'script', 'customFunction']);
+const ENTRIES_TITLE = 'list entries including folders and separators';
+
 const COLUMNS = [
   { key: 'catalog', label: 'Catalog', render: (r) => `${esc(r.catalog)}${r.listError ? ` <span class="error">${esc(r.listError.code)}</span>` : ''}` },
-  { key: 'listed', label: 'Listed', num: true },
+  {
+    key: 'listed',
+    label: 'Entries',
+    num: true,
+    render: (r) => (FLATTENED_CATALOGS.has(r.catalog)
+      ? `<span title="${esc(ENTRIES_TITLE)}">${esc(r.listed)}</span>`
+      : esc(r.listed)),
+  },
   { key: 'described', label: 'Described', num: true },
   { key: 'errors', label: 'Errors', num: true, render: (r) => `<span class="${r.errors ? 'error' : ''}">${esc(r.errors)}</span>` },
   { key: 'readAt', label: 'Read at', render: (r) => `<span class="muted">${esc(r.readAt ?? '')}</span>` },

@@ -191,9 +191,11 @@ test('styleUsage walks every layout once for all themes, and caches that walk pe
   // Two themes of the same file share one walk; the answers still differ.
   const other = themeRows(root).find((r) => r.id !== theme.id && r.namedStyleCount > 0);
   assert.notDeepEqual(styleUsage(root, other.theme), first);
-  // A layout re-read invalidates the walk.
+  // A layout re-read invalidates the walk: the memoised per-file walk is gone,
+  // so this is a freshly computed array, not the cached one (like the layouts
+  // tab's own memo test, tests/tabs/layouts.test.mjs).
   const slot = root.catalogs.layout;
   root.catalogs.layout = { ...slot, detailById: { ...slot.detailById } };
-  assert.deepEqual(styleUsage(root, theme.theme), first);
+  assert.notEqual(styleUsage(root, theme.theme), first);
   root.catalogs.layout = slot;
 });

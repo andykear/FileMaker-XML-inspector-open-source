@@ -132,24 +132,31 @@ function partSvg(part, width) {
     + `<text class="part-label" x="4" y="${offset + 12}">${esc(get(part, 'name') ?? type)}</text>`;
 }
 
-function objectSvg(obj, origin, highlight) {
+/** `key` is the layout's own `<target>|<id>`, the same string the Objects table
+ *  rows carry, so a rect's `data-select` names exactly the row a click on the
+ *  picture should select -- the shell's `[data-select]` delegation needs no
+ *  SVG-specific handling. Omitted (no `key`) when the caller has none to give,
+ *  the way the bare renderer is exercised in tests. */
+function objectSvg(obj, origin, highlight, key) {
   const b = boundsOf(obj);
   const id = get(obj, 'id');
   const on = highlight !== null && highlight !== undefined && String(highlight) === String(id);
-  return `<rect class="obj ${esc(get(obj, 'type') ?? 'unknown')}${on ? ' highlight' : ''}" data-object="${esc(id)}"`
+  const select = key ? ` data-select="${esc(key)}#${esc(id)}"` : '';
+  return `<rect class="obj ${esc(get(obj, 'type') ?? 'unknown')}${on ? ' highlight' : ''}" data-object="${esc(id)}"${select}`
     + ` x="${origin.left + b.left}" y="${origin.top + b.top}" width="${b.width}" height="${b.height}">`
     + `<title>${objectTitle(obj)}</title></rect>`;
 }
 
 /** The layout as fm reports it: the part bands first, then every object over them, in
- *  fm's own order so a container is painted before what it holds. */
+ *  fm's own order so a container is painted before what it holds. `opts.key`, when
+ *  given, is the layout's own selection key, so every object rect becomes clickable. */
 export function wireframeSvg(detail, opts = {}) {
   const width = num(path(detail, 'geometry.baseWidth'));
   const height = totalHeight(detail);
   const bands = (path(detail, 'parts') ?? []).map((p) => partSvg(p, width)).join('');
   let objects = '';
   walkObjects(path(detail, 'contents.objects'), (obj, depth, origin) => {
-    objects += objectSvg(obj, origin, opts.highlight);
+    objects += objectSvg(obj, origin, opts.highlight, opts.key);
   });
   return `<svg class="wireframe" viewBox="0 0 ${width} ${height}" role="img" preserveAspectRatio="xMinYMin meet">`
     + bands + objects + '</svg>';
@@ -215,12 +222,18 @@ function treeRow(row, selection, filter) {
 }
 
 function renderList(solution, view) {
+  // The row is marked by the LAYOUT the selection names: a `#<object id>` tail
+  // is a coordinate inside the open layout, not a different row, so the tree
+  // must not lose its highlight the moment a link lands on an object (the same
+  // bug fixed for the Scripts tree in commit a1adfc2).
+  const sel = selectionOf(view);
+  const open = sel ? selectionKey(sel.target, sel.id) : null;
   const body = Object.values(solution.files).map((file) => {
     const groups = folders(file).map((group) => {
       // A folder whose name matches shows all of its layouts; otherwise only the
       // matching ones, and a folder left with none drops out.
       const wanted = matches(group.folder, view.filter) ? '' : view.filter;
-      const rows = group.rows.map((r) => treeRow(r, view.selection, wanted)).filter(Boolean);
+      const rows = group.rows.map((r) => treeRow(r, open, wanted)).filter(Boolean);
       if (!rows.length && view.filter) return '';
       return `<details open><summary>${esc(group.folder || '(root)')} ${count(rows.length)}</summary>`
         + (rows.length ? `<ul class="tree">${rows.join('')}</ul>` : '<p class="empty">No layouts</p>')
@@ -248,8 +261,12 @@ function partRows(detail) {
   }));
 }
 
+/** The nesting indent rides on `--depth`, the way the script step list carries
+ *  its own block depth (ui/tabs/scripts.js), rather than padding characters
+ *  baked into the cell's text -- a stylesheet renders it, a test measures the
+ *  field directly instead of counting characters. */
 const OBJECT_COLUMNS = [
-  { key: 'type', label: 'Type' },
+  { key: 'type', label: 'Type', render: (r) => `<span class="obj-type" style="--depth:${r.depth}">${esc(r.type)}</span>` },
   { key: 'control', label: 'Control' },
   { key: 'what', label: 'Name / text' },
   { key: 'bounds', label: 'Bounds' },
@@ -265,7 +282,8 @@ function objectRows(detail, key) {
     rows.push({
       id,
       key: `${key}#${id}`,
-      type: ' '.repeat(depth * 2) + String(get(obj, 'type') ?? ''),
+      depth,
+      type: String(get(obj, 'type') ?? ''),
       control: String(get(obj, 'control') ?? ''),
       what: String(whatOf(obj)),
       bounds: `${origin.left + b.left}, ${origin.top + b.top} · ${b.width}×${b.height}`,
@@ -329,7 +347,7 @@ function renderSelected(solution, view) {
   const body = kv(detailPairs(detail, counts))
     + '<h3>Parts</h3>' + table(PART_COLUMNS, partRows(detail), { empty: 'No parts' })
     + '<h3>Wireframe</h3>'
-    + `<div class="wireframe-wrap">${wireframeSvg(detail, { highlight: sel.object })}</div>`
+    + `<div class="wireframe-wrap">${wireframeSvg(detail, { highlight: sel.object, key })}</div>`
     + legend(counts)
     + '<h3>Objects</h3>' + table(OBJECT_COLUMNS, rows, {
       empty: 'No objects',
