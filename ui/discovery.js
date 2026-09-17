@@ -1,7 +1,7 @@
 // Walks a solution: root file, then every FileMaker external data source it
 // names, recursively, once each. Re-reads at solution, catalog and object grain.
 // Browser safe; `api` is the only door to fm. Spec section 2.
-import { listOps, factOps, describeOps, describeKey, DESCRIBED_BY_ID } from './read-plan.js';
+import { listOps, factOps, describeOps, describeKey, catalogOf, DESCRIBED_BY_ID } from './read-plan.js';
 import { createSolution, createFile, applyBatch } from './model.js';
 
 function now() {
@@ -20,16 +20,56 @@ function listsOf(file) {
   return lists;
 }
 
-export async function readFile(api, target) {
-  const first = await api.read(target, listOps());
+/** What the list batch came back with: how many catalogs answered with a list
+ *  (a catalog whose list op errored has not), and how long those lists are.
+ *  Catalogs the batch never asked for (`field`, which is described per table)
+ *  have no readAt and do not count. */
+function listedCounts(file) {
+  let catalogs = 0;
+  let entries = 0;
+  for (const slot of Object.values(file.catalogs)) {
+    if (!slot.readAt || slot.listError) continue;
+    catalogs += 1;
+    entries += slot.list.length;
+  }
+  return { catalogs, entries };
+}
+
+/** The describe batch by the catalog each op reads: `read:field` counts under
+ *  `field` (one op per table), everything else under its own catalog. */
+function countByCatalog(ops) {
+  const out = {};
+  for (const op of ops) {
+    const catalog = catalogOf(op);
+    out[catalog] = (out[catalog] ?? 0) + 1;
+  }
+  return out;
+}
+
+/** `hooks.onPhase(event)` is told what this file's two batches are about to do
+ *  and how long each took, so a caller can draw a read log while fm works.
+ *  `hooks.now` overrides the clock the `ms` values are measured with. */
+export async function readFile(api, target, hooks = {}) {
+  const phase = hooks.onPhase ?? (() => {});
+  const clock = hooks.now ?? Date.now;
+  const lists = listOps();
+  phase({ type: 'list', target, ops: lists.length });
+  const listedAt = clock();
+  const first = await api.read(target, lists);
+  const listMs = clock() - listedAt;
   if (first.fatal) return { fatal: first.fatal };
   const file = createFile(target);
-  applyBatch(file, listOps(), first, now());
+  applyBatch(file, lists, first, now());
+  phase({ type: 'listed', target, ms: listMs, ...listedCounts(file) });
   const describes = describeOps(listsOf(file));
   if (describes.length) {
+    phase({ type: 'describe', target, ops: describes.length, byCatalog: countByCatalog(describes) });
+    const describedAt = clock();
     const second = await api.read(target, describes);
+    const describeMs = clock() - describedAt;
     if (second.fatal) return { fatal: second.fatal };
     applyBatch(file, describes, second, now());
+    phase({ type: 'described', target, ms: describeMs });
   }
   return { file };
 }
@@ -67,15 +107,19 @@ async function resolveFirst(api, from, paths) {
  *  reads happen in. */
 export async function discover(api, root, hooks = {}) {
   const progress = hooks.onProgress ?? (() => {});
+  const phase = hooks.onPhase ?? (() => {});
+  const clock = hooks.now ?? Date.now;
+  const startedAt = clock();
   const ctx = await api.context();
   const solution = createSolution(root, ctx.cli);
   const visited = new Set([targetKey(root)]);
 
   async function walk(target, from, via) {
     progress(`Reading ${target}`);
-    const r = await readFile(api, target);
+    const r = await readFile(api, target, hooks);
     if (r.fatal) {
       solution.unreachable.push({ target, from, via, error: r.fatal });
+      phase({ type: 'unreachable', target, from, via, code: r.fatal.code });
       return;
     }
     solution.files[target] = r.file;
@@ -87,6 +131,7 @@ export async function discover(api, root, hooks = {}) {
           target: paths.join(' | '), from: target, via: source,
           error: { code: 'unresolvable', message: reasons.join('; ') },
         });
+        phase({ type: 'unreachable', target: paths.join(' | '), from: target, via: source, code: 'unresolvable' });
         continue;
       }
       // A target that turned out to be unreachable stays in `visited` on
@@ -101,12 +146,15 @@ export async function discover(api, root, hooks = {}) {
         target: dataSource, from: target, via: occurrence,
         error: { code: 'unknown_data_source', message: `occurrence ${occurrence} names data source ${dataSource}, which the file does not list` },
       });
+      phase({ type: 'unreachable', target: dataSource, from: target, via: occurrence, code: 'unknown_data_source' });
     }
   }
 
   await walk(root, null, null);
   solution.readAt = now();
-  progress(`Read ${Object.keys(solution.files).length} file(s), ${solution.unreachable.length} unreachable`);
+  const files = Object.keys(solution.files).length;
+  progress(`Read ${files} file(s), ${solution.unreachable.length} unreachable`);
+  phase({ type: 'done', files, unreachable: solution.unreachable.length, ms: clock() - startedAt });
   return solution;
 }
 

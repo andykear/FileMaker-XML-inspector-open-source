@@ -243,6 +243,11 @@ tr[data-select].selected { background: var(--navy-tint); }
 
 .empty { margin: 4px 0; color: var(--ink-3); font-style: italic; }
 
+/* The read log: what discovery is doing, drawn in the main area while it runs. */
+.read-log ol { padding-left: 20px; }
+.read-log li { padding: 3px 0; }
+.read-log .pending { color: var(--ink-3); }
+
 ul.unreachable { margin: 0; padding-left: 18px; }
 ul.unreachable > li + li { margin-top: 8px; }
 

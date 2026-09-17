@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { discover, readFile, siblingPaths, reread } from '../ui/discovery.js';
 import { resolveTarget, targetKey } from '../server/targets.mjs';
@@ -363,4 +365,64 @@ test('an object-grain re-read of one table\'s fields sends only that op and leav
   assert.deepEqual(Object.keys(file.catalogs.field.detailById), keysBefore);
   assert.deepEqual(structuredClone(file.catalogs.field.detailById['table:B']), siblingBefore);
   assert.deepEqual(file.catalogs.field.detailById['table:A'].result.items, [{ name: 'f', table: 'A' }]);
+});
+
+/** How many describe ops (the ones carrying an id) the recording actually holds
+ *  for one target and op -- measured, so a re-recorded fixture moves the number
+ *  with it rather than failing against a number pinned by hand. */
+function recordedDescribes(target, op) {
+  return readFileSync(join(FIXTURE, 'calls.ndjson'), 'utf8').split('\n').filter(Boolean)
+    .map((l) => JSON.parse(l))
+    .filter((c) => c.kind === 'read' && c.target === target)
+    .reduce((n, c) => n + c.ops.filter((o) => o.op === op && 'id' in o).length, 0);
+}
+
+test('discovery reports every phase it goes through, in the order fm is asked', async () => {
+  const api = createReplayApi(FIXTURE);
+  let clock = 0;
+  const events = [];
+  const s = await discover(api, api.meta.root, { now: () => (clock += 100), onPhase: (e) => events.push(e) });
+
+  const name = (t) => String(t).split('/').filter(Boolean).pop();
+  assert.deepEqual(events.map((e) => `${e.type} ${name(e.target ?? 'done')}`), [
+    'list ooe', 'listed ooe', 'describe ooe', 'described ooe',
+    'list Ooe_dev', 'unreachable Ooe_dev',
+    'list BrojDva', 'listed BrojDva', 'describe BrojDva', 'described BrojDva',
+    'unreachable $$referenced_file',
+    'done done',
+  ]);
+
+  const done = events.at(-1);
+  assert.equal(done.files, 2);
+  assert.equal(done.unreachable, s.unreachable.length);
+  assert.ok(done.ms > 0, 'the done event carries the whole discovery');
+
+  const root = s.files[api.meta.root];
+  const listed = events.find((e) => e.type === 'listed' && e.target === api.meta.root);
+  assert.equal(listed.ms, 100, 'the stub clock steps 100 ms across each api.read');
+  assert.equal(listed.catalogs, 19, 'every catalog the list batch asks for answered');
+  assert.equal(
+    listed.entries,
+    Object.values(root.catalogs).reduce((n, slot) => n + (slot.readAt && !slot.listError ? slot.list.length : 0), 0),
+  );
+
+  const describe = events.find((e) => e.type === 'describe' && e.target === api.meta.root);
+  assert.equal(describe.ops, Object.values(describe.byCatalog).reduce((a, b) => a + b, 0));
+  assert.equal(describe.byCatalog.field, root.catalogs.table.list.length, 'one read:field per table');
+  assert.equal(describe.byCatalog.script, recordedDescribes(api.meta.root, 'read:script'));
+  assert.equal(describe.byCatalog.script, 41);
+
+  const unreachable = events.filter((e) => e.type === 'unreachable');
+  assert.deepEqual(unreachable.map((e) => e.code), ['open_failed', 'unresolvable']);
+  assert.deepEqual(unreachable.map((e) => e.via), ['Ooe_dev', 'by_variable']);
+  for (const e of unreachable) assert.equal(e.from, api.meta.root);
+});
+
+test('a full re-read through reread() reports its phases too', async () => {
+  const api = createReplayApi(FIXTURE);
+  const s = await discover(api, api.meta.root);
+  const events = [];
+  await reread(api, s, { kind: 'solution' }, { onPhase: (e) => events.push(e) });
+  assert.equal(events.at(-1).type, 'done');
+  assert.ok(events.some((e) => e.type === 'described' && e.target === api.meta.root));
 });
