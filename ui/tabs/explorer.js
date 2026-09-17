@@ -8,6 +8,15 @@
 // this file owns is `refHash`, the map from a reference's kind and id to the
 // tab that shows it; ui/tabs/analysis.js imports it rather than repeating it.
 //
+// The one place this tab departs from the page's list-then-detail order: when
+// something is selected its detail is rendered ABOVE the object list, not below
+// it. Every other tab lists one catalog -- a few dozen rows a reader scrolls
+// past in a second -- while this list is every named object of the whole
+// solution, thousands of rows on a real file, and the detail under it would be
+// off the bottom of the screen with no way to know it had arrived. The list
+// stays on the page underneath, because picking the next object is the next
+// thing a reader does.
+//
 // A pure renderer: no document, every fm key through access.js, every model
 // string through esc.
 import { badge, count, esc, link, matches, section, table } from '../dom.js';
@@ -15,6 +24,7 @@ import { emptyNote, fileName, kindSelection, linkOr, selectRow, selectionKey, to
 import { memoise } from '../analysis/memo.js';
 import { nameIndex, references } from '../analysis/refs.js';
 import { callGraph, callTreeOf, scriptKey, times } from '../analysis/scripts.js';
+import { stepPart } from './scripts.js';
 
 // ── Where a kind is shown ─────────────────────────────────────────────
 
@@ -50,21 +60,53 @@ export function refHash(kind, target, id) {
   return make && id !== undefined && id !== null && id !== '' ? make(target, id) : null;
 }
 
+/** The Scripts tab's per-step anchor: the script's own hash with FileMaker's
+ *  1-based line as a `#` tail, the way a layout carries an object id.
+ *  ui/tabs/scripts.js owns how the tail is spelled; this only says which script
+ *  it belongs to. No line is null, not the script's own hash: a caller renders
+ *  that through `linkOr`, and a link labelled with a line that is not there
+ *  would be an empty anchor. */
+export function stepHash(target, scriptId, line) {
+  if (line === undefined || line === null || line === '') return null;
+  const base = refHash('script', target, scriptId);
+  return base ? `${base}#${stepPart(line)}` : null;
+}
+
 // ── The pickable objects ──────────────────────────────────────────────
 
-// The seven kinds a name can mean, in the order the list shows them. The second
-// item is the nameIndex map, the third the label.
+// The nine kinds of object a reader can pick, in the order the list shows them.
+// The second item is the nameIndex map, the third the label. Seven of them are
+// also kinds a NAME can mean; a relation and a custom menu are not -- nothing in
+// FileMaker writes either one's name -- and they are here because a reader still
+// wants to ask what they name.
 const KINDS = [
   ['table', 'tables', 'Table'],
   ['occurrence', 'occurrences', 'Table occurrence'],
   ['field', 'fields', 'Field'],
   ['script', 'scripts', 'Script'],
   ['layout', 'layouts', 'Layout'],
+  ['rel', 'relations', 'Relation'],
   ['valueList', 'valueLists', 'Value list'],
   ['customFunction', 'customFunctions', 'Custom function'],
+  ['menu', 'customMenus', 'Custom menu'],
 ];
 const LABEL_OF = Object.fromEntries(KINDS.map(([k, , label]) => [k, label]));
 const ORDER_OF = Object.fromEntries(KINDS.map(([k], i) => [k, i]));
+
+/** What a reference's `from.kind` calls a kind this list spells differently.
+ *  A selection is keyed the way the object's OWN tab keys it (`rel`, `menu`, as
+ *  HASH_OF writes them), and an occurrence is `occurrence` here and
+ *  `tableOccurrence` in a naming record: one map for all three. */
+const OWNER_KIND_OF = { occurrence: 'tableOccurrence', rel: 'relation', menu: 'customMenu' };
+const ownerKind = (kind) => OWNER_KIND_OF[kind] ?? kind;
+
+/** Nothing names a relation or a custom menu: FileMaker gives neither a name
+ *  another object could write, so an empty Referenced-by table there is the
+ *  shape of the thing, not a finding. */
+const NEVER_NAMED = new Set(['rel', 'menu']);
+const nothingNamesIt = (sel) => (NEVER_NAMED.has(sel.kind)
+  ? 'Nothing names a relation or a menu; they name things'
+  : 'Nothing names it');
 
 /** Where the NAME was written. For a field of an external occurrence that is
  *  the file holding the occurrence, not the file holding the field: `TO::Field`
@@ -93,7 +135,11 @@ function computeObjectEntries(solution) {
           kind, target, id, entry,
           name: String(entry.name ?? ''),
           file: fileName(solution, target),
-          detail: String(entry.table ?? entry.folder ?? ''),
+          // The Table/folder column is whatever locates the object among its
+          // kind: a field's table, a script's or a layout's folder -- and for a
+          // custom menu, whether it is one of FileMaker's own. 24 of ooe's 25
+          // menus are, so the column is what tells the hand-made one apart.
+          detail: entry.inheritedMenu === true ? 'built-in' : String(entry.table ?? entry.folder ?? ''),
           key: selectionKey(target, kind, id),
         });
       }
@@ -132,8 +178,7 @@ function isFrom(sel, entry, ref) {
     // A table has no record of its own that names anything; its fields do.
     return from.kind === 'field' && from.target === sel.target && id.startsWith(`${sel.id}::`);
   }
-  const kind = sel.kind === 'occurrence' ? 'tableOccurrence' : sel.kind;
-  return from.kind === kind && from.target === sel.target && id === sel.id;
+  return from.kind === ownerKind(sel.kind) && from.target === sel.target && id === sel.id;
 }
 
 /** FileMaker's own line number for a reference written on a script step, or ''
@@ -164,6 +209,8 @@ export function outgoing(solution, sel) {
     return {
       kind: ref.kind, name: ref.name, where: ref.from.where ?? '', line: lineOf(ref.from), how: ref.how, resolved: ref.resolved,
       hash: to ? refHash(ref.kind, nameTarget(to), idOf(ref.kind, to)) : null,
+      // Written on a step of the selected script: the Line cell lands on it.
+      step: stepHash(ref.from.target, ref.from.id, lineOf(ref.from)),
     };
   });
 }
@@ -178,6 +225,7 @@ export function incoming(solution, sel) {
     && ownerOf(entries, ref) === entry.entry).map((ref) => ({
     kind: ref.from.kind, name: String(ref.from.name ?? ''), where: ref.from.where ?? '', line: lineOf(ref.from), how: ref.how,
     target: ref.from.target, hash: refHash(ref.from.kind, ref.from.target, ref.from.id),
+    step: stepHash(ref.from.target, ref.from.id, lineOf(ref.from)),
   }));
 }
 
@@ -193,7 +241,13 @@ const REF_COLUMNS = [
   { key: 'kind', label: 'Kind' },
   { key: 'name', label: 'Name', render: (r) => linkOr(r.hash, r.name) },
   { key: 'where', label: 'Where', title: 'The key path the name was written under, as ui/analysis/refs.js spells it: a script step is body[<index>], counted from 0.' },
-  { key: 'line', label: 'Line', num: true, title: "FileMaker's own line number for a name written on a script step: body[<index>] + 1. Blank for a name written anywhere else." },
+  {
+    key: 'line',
+    label: 'Line',
+    num: true,
+    title: "FileMaker's own line number for a name written on a script step: body[<index>] + 1, and a link that opens the script on that step. Blank for a name written anywhere else.",
+    render: (r) => linkOr(r.step, r.line),
+  },
   { key: 'how', label: 'How', render: (r) => badge(r.how, r.how === 'named' ? 'good' : 'muted') },
   { key: 'link', label: 'Go to', render: (r) => (r.hash ? link(r.hash, r.hash.slice(0, r.hash.indexOf('/'))) : '') },
 ];
@@ -202,7 +256,9 @@ const refMatches = (r, filter) => matches(r.kind, filter) || matches(r.name, fil
 
 function renderList(solution, view) {
   const rows = objectEntries(solution);
-  const shown = rows.filter((r) => matches(r.name, view.filter) || matches(r.kind, view.filter) || matches(r.detail, view.filter));
+  // The kind is matched by its label too: a reader types "relation", not `rel`.
+  const shown = rows.filter((r) => matches(r.name, view.filter) || matches(r.kind, view.filter)
+    || matches(LABEL_OF[r.kind], view.filter) || matches(r.detail, view.filter));
   const byKind = {};
   for (const r of rows) byKind[r.kind] = (byKind[r.kind] ?? 0) + 1;
   const totals = totalsLine([['Objects', rows.length], ...KINDS.map(([k, , label]) => [label, byKind[k] ?? 0])]);
@@ -253,7 +309,7 @@ function renderSelected(solution, view) {
   const allBack = incoming(solution, sel);
   const out = allOut.filter((r) => refMatches(r, view.filter));
   const back = allBack.filter((r) => refMatches(r, view.filter));
-  const own = refHash(sel.kind, sel.target, sel.id);
+  const own = refHash(ownerKind(sel.kind), sel.target, sel.id);
   const title = `${LABEL_OF[sel.kind]} ${entry.name}${view.multiFile ? ` (${entry.file})` : ''}`;
   const body = `<p class="muted">${own ? link(own, 'Open on its own tab') : 'No tab of its own.'}</p>`
     + '<h3>References</h3>'
@@ -261,7 +317,7 @@ function renderSelected(solution, view) {
     + table(REF_COLUMNS, out, { empty: emptyNote(allOut.length, 'Names nothing') })
     + '<h3>Referenced by</h3>'
     + '<p class="muted">What names this object.</p>'
-    + table(REF_COLUMNS, back, { empty: emptyNote(allBack.length, 'Nothing names it') })
+    + table(REF_COLUMNS, back, { empty: emptyNote(allBack.length, nothingNamesIt(sel)) })
     + callTreeSection(solution, sel);
   return section(title, body);
 }
@@ -269,7 +325,8 @@ function renderSelected(solution, view) {
 export const tab = {
   id: 'explorer',
   label: 'Explorer',
+  // Detail first: see the note at the top of this file.
   render(solution, view = {}) {
-    return renderList(solution, view) + renderSelected(solution, view);
+    return renderSelected(solution, view) + renderList(solution, view);
   },
 };

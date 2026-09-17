@@ -134,6 +134,7 @@ Amended 2026-09-16 (fm 0.7.0): fm respells option keys between builds (0.7.0 mov
 - Discovery is depth first. Each sibling is fully read, and its own siblings walked, before the next sibling in the list is resolved, so an unreachable sibling's failure is recorded before anything later in the list.
 - Hosted target keys are case-folded (`server/targets.mjs` `targetKey`, mirrored in `ui/discovery.js`): the FileMaker host treats file names case-insensitively, so a file naming itself, or naming a sibling in another case, must not be read twice.
 - Memos key on the catalog slots a re-read swaps, not on the solution object.
+- Step anchors are FileMaker's 1-based line (`body[<index>] + 1`, written `#L<line>`); fm's per-step `uuid` is the stable identity, and fm's `stepID` is the step TYPE id, which repeats through a body and addresses nothing.
 
 ### Feature disposition (initial; the inventory confirms it)
 

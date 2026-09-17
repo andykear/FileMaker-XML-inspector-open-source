@@ -118,7 +118,9 @@ Commit: `Script issue checks, the call graph, and global variables`.
 
 **Files:** Create `ui/tabs/analysis.js`, `ui/tabs/explorer.js`; tests `tests/tabs/analysis.test.mjs`, `tests/tabs/explorer.test.mjs`; register in `ui/app.js` after Themes (Analysis, Explorer), before More.
 
-- **Analysis**: totals line (unreferenced by category, broken by kind, issues by check, globals) each with a `title` naming the derivation; sections: Confidence (tier + reasons), Unreferenced (one `<details>` per category with a table and links to the object's tab), Broken references (table, links), Script issues (table grouped by check, links to `#scripts/<sel>` and the step via `#<stepID>`), Globals (table). Filter narrows every table.
+- **Analysis**: totals line (unreferenced by category, broken by kind, issues by check, globals) each with a `title` naming the derivation; sections: Confidence (tier + reasons), Unreferenced (one `<details>` per category with a table and links to the object's tab), Broken references (table, links), Script issues (table grouped by check, links to `#scripts/<sel>` and the step via `#<stepID>`), Globals (table).
+
+> Superseded 2026-09-17: the step anchor is FileMaker's 1-based line, `#L<line>`, not `#<stepID>`. fm's `stepID` is the step TYPE id and repeats through a body, so it cannot address a step. Filter narrows every table.
 - **Explorer**: a selection is any object key `kind:<target>|<id>` (or `TO::Field` for fields); the tab renders a search list (every named object across kinds, filtered by the box) and, for the selected object, two tables: "References" (what it names) and "Referenced by" (what names it), each row with kind, name, where (script step index, layout object id, field option), how (named/text), and a link. For a script, also the call tree (outgoing, depth 3) as nested `<ul>`.
 
 Tests: pinned counts; a selected script in the explorer lists `noop` under references; a selected field lists the layout objects that show it; links round-trip through `parseHash`.

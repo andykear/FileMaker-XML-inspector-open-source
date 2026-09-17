@@ -7,8 +7,12 @@ import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import { link } from '../../ui/dom.js';
 import {
-  tab, themeRows, styleUsage, paletteSwatches, themesTotals, selectionOf,
+  tab, themeRows, styleUsage, styleCountsByTheme, paletteSwatches, themesTotals, selectionOf, layoutsUsing,
 } from '../../ui/tabs/themes.js';
+
+// The sentence the page hangs on fm's own count, so the test pins that the
+// number is presented as fm's word rather than as the file's.
+const LAYOUTS_USING_TITLE_FRAGMENT = "title=\"fm's own count of the entries on this theme's layout list";
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -136,13 +140,39 @@ test('selecting a theme shows kv, swatches, named styles, layouts using as links
   assert.match(html, /MyCustomStyleInApexBlue/);
   // "File Open" is a real layout (id 11) that uses this theme: it must be a link.
   assert.ok(html.includes(link(`layouts/${api.meta.root}|11`, 'File Open')));
-  // The theme's own layouts array also carries folder/separator markers that are
-  // not layouts by that name: they render as plain, unlinked text.
-  assert.ok(html.includes('MyLayoutFolder'));
-  assert.ok(!/<a[^>]*>MyLayoutFolder<\/a>/.test(html));
   assert.ok(html.includes('<details>'));
   assert.match(html, /<pre>/);
   assert.ok(html.includes('background-color'));
+});
+
+test("the Layouts-using list names only layouts; the rest are counted and said to be fm's folder and separator rows", () => {
+  const apexItem = root.catalogs.theme.list.find((t) => t.displayName === 'Apex Blue');
+  // Measured on tests/fixtures/ooe: fm reports 24 entries on Apex Blue, of which
+  // 15 name a `type: layout` item of the file's layout list. The other 9 are the
+  // separators (`-`, `--`) and the folder names (MyLayoutFolder, SaXMLDelivery,
+  // ...) FileMaker's flattened layout listing carries.
+  assert.equal((apexItem.layouts ?? []).length, 24);
+  const using = layoutsUsing(root, apexItem);
+  assert.equal(using.layouts.length, 15);
+  assert.equal(using.extra, 9);
+  assert.ok(using.layouts.every((i) => i.type === 'layout'));
+
+  const html = tab.render(solution, { ...view, selection: `${api.meta.root}|${apexItem.id}` });
+  const at = html.indexOf('<h3>Layouts using</h3>');
+  const tail = html.slice(at);
+  // "SaXMLDelivery" is a layout FOLDER on this file, and "MyLayoutFolder" a
+  // folder too: neither is named in the list at all any more.
+  assert.ok(!tail.slice(0, tail.indexOf('<details>')).includes('MyLayoutFolder'));
+  assert.ok(tail.includes('9</span> more entries are folder and separator names'));
+  // fm's own number stays fm's number, with a title saying what it counts.
+  assert.ok(html.includes(LAYOUTS_USING_TITLE_FRAGMENT));
+});
+
+test('a theme whose entries are all layouts says nothing about extra entries', () => {
+  const minimalist = root.catalogs.theme.list.find((t) => t.displayName === 'Minimalist');
+  assert.equal(layoutsUsing(root, minimalist).extra, 0);
+  const html = tab.render(solution, { ...view, selection: `${api.meta.root}|${minimalist.id}` });
+  assert.ok(!html.includes('more entries are folder and separator names'));
 });
 
 test('a selection in the second file reads that file, not the root', () => {
@@ -183,17 +213,32 @@ test('every model string is escaped', () => {
   assert.match(html, /&lt;style&gt;bad&lt;\/style&gt;/);
 });
 
-test('styleUsage walks every layout once for all themes, and caches that walk per file', () => {
+test('styleUsage walks every layout once for all themes, and gives consistent answers', () => {
   const theme = themeRows(root).find((r) => r.namedStyleCount > 0);
   const first = styleUsage(root, theme.theme);
   const again = styleUsage(root, theme.theme);
+  // styleUsage itself builds a fresh `.map().sort()` array on every call --
+  // that array's identity proves nothing about the cache below it, only its
+  // values can be compared here. The cache itself is pinned separately, on
+  // styleCountsByTheme's own return identity.
   assert.deepEqual(again, first);
   // Two themes of the same file share one walk; the answers still differ.
   const other = themeRows(root).find((r) => r.id !== theme.id && r.namedStyleCount > 0);
   assert.notDeepEqual(styleUsage(root, other.theme), first);
-  // A layout re-read invalidates the walk.
+});
+
+test('styleCountsByTheme memoises the walk per file until a layout re-read replaces detailById', () => {
+  // The memo styleUsage rests on: same input, same Map back by identity, the
+  // way tests/tabs/layouts.test.mjs pins layoutRows.
+  const first = styleCountsByTheme(root);
+  assert.equal(styleCountsByTheme(root), first);
+
+  // A layout re-read invalidates the walk: model.js replaces `detailById` at
+  // either grain (see ui/model.js), which is exactly what the memo keys on.
   const slot = root.catalogs.layout;
   root.catalogs.layout = { ...slot, detailById: { ...slot.detailById } };
-  assert.deepEqual(styleUsage(root, theme.theme), first);
+  const afterReread = styleCountsByTheme(root);
+  assert.notEqual(afterReread, first, 'a layout re-read must invalidate the cached walk');
+  assert.equal(styleCountsByTheme(root), afterReread, 'the new walk is itself now cached');
   root.catalogs.layout = slot;
 });

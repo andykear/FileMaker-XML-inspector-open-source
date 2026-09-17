@@ -29,7 +29,9 @@
 //                        is a mention, so a local set twice and never read is
 //                        reported once, not twice. A name with a space in it
 //                        (`$my var`) tokenises as its first word, so it reads
-//                        as never mentioned again; see GLOBALS_NOTE.
+//                        as never mentioned again: this scan is the raw regex
+//                        below and NOT refs.js's tokeniser, which reads a spaced
+//                        name whole where a Set Variable step sets it.
 //   embedded-credential  any key whose folded name contains `password`,
 //                        `apikey`, `secret`, `privatekey` or `clientsecret`
 //                        holding a quoted literal instead of a variable or a

@@ -55,14 +55,14 @@ test('renderScript draws one li per step through stepDisplay, with line numbers 
   assert.equal(ALL.body.length, 952);
 
   // A step with options: the name in <b>, stepDisplay's detail in .detail.
-  assert.match(html, /<li data-step="141" class="depth-0"><span class="ln">6<\/span><b>Set Variable<\/b> <span class="detail">\[ \$MBS_Command_Results ;/);
+  assert.match(html, /<li id="step-39-L6" data-step="141" class="depth-0"><span class="ln">6<\/span><b>Set Variable<\/b> <span class="detail">\[ \$MBS_Command_Results ;/);
   // A comment carries its text as the detail; a step with no options has no detail span.
   assert.ok(html.includes('<b>#</b> <span class="detail">Note: This script is used to check the output of fmCheckMates Print function</span>'));
   assert.ok(html.includes('<b>End If</b></li>'));
 
   // The two disabled steps ooe carries (both Set Web Viewer, body 932 and 933).
   assert.equal((html.match(/ disabled"/g) ?? []).length, 2);
-  assert.ok(html.includes('<li data-step="146" class="depth-0 disabled"><span class="ln">933</span><b>Set Web Viewer</b>'
+  assert.ok(html.includes('<li id="step-39-L933" data-step="146" class="depth-0 disabled"><span class="ln">933</span><b>Set Web Viewer</b>'
     + ' <span class="detail">[ Object Name: &quot;wv&quot; ; Action: Reload ]</span></li>'));
 });
 
@@ -199,12 +199,51 @@ test('selecting a script shows its detail, its steps and the object re-read', ()
   assert.match(html, /data-reread-object='\{[^']*"catalog":"script"[^']*"key":"39"/);
   assert.match(html, /<dt>Folder<\/dt><dd>Script from fmSyntaxColorizer<\/dd>/);
   assert.match(html, /<ol class="script">/);
-  assert.equal((html.match(/<li data-step=/g) ?? []).length, 952);
+  assert.equal((html.match(/<li id="step-39-L\d+" data-step=/g) ?? []).length, 952);
   // fm flagged 180 of this script's steps while rendering them from its catalog.
   assert.match(html, /fm reported <span class="num">180<\/span> problem\(s\) on these steps:/);
   // An unknown selection draws no detail section.
   assert.ok(!tab.render(solution, { ...view, selection: `${ROOT}|nope` }).includes('<ol class="script">'));
   assert.ok(!tab.render(solution, { ...view, selection: 'no-such-file|39' }).includes('<ol class="script">'));
+});
+
+/** The id of the one step li the page marked selected. */
+const selectedStep = (html) => (/<li id="(step-[^"]+)"[^>]*class="[^"]*selected"/.exec(html) ?? [])[1];
+
+test('every step carries an anchor on its own line, and a step tail selects exactly that li', () => {
+  const html = renderScript(ALL);
+  // One anchor per step, and the script's id is in it, so two scripts never collide.
+  assert.equal((html.match(/ id="step-39-L\d+"/g) ?? []).length, ALL.body.length);
+  assert.ok(html.includes('<li id="step-39-L6" data-step="141" class="depth-0">'));
+  // fm's `stepID` is the step TYPE (141 is every Set Variable), so it cannot be
+  // the anchor: lines 6 and 83 of script 39 are both stepID 141.
+  assert.equal(ALL.body[5].stepID, 141);
+  assert.equal(ALL.body[82].stepID, 141);
+  assert.ok(html.includes('<li id="step-39-L83" data-step="141"'));
+
+  // The tail is read the way the Layouts tab reads an object id.
+  assert.deepEqual(selectionOf({ selection: `${ROOT}|39#L83` }), { target: ROOT, id: '39', step: 'L83' });
+  assert.deepEqual(selectionOf({ selection: `${ROOT}|39` }), { target: ROOT, id: '39', step: null });
+
+  // Two lines of the same step type select different lis.
+  const six = tab.render(solution, { ...view, selection: `${ROOT}|39#L6` });
+  const eightyThree = tab.render(solution, { ...view, selection: `${ROOT}|39#L83` });
+  assert.equal(selectedStep(six), 'step-39-L6');
+  assert.equal(selectedStep(eightyThree), 'step-39-L83');
+  assert.equal((eightyThree.match(/<li id="step-39-L\d+"[^>]*class="[^"]*selected"/g) ?? []).length, 1);
+  // No tail, no selected step.
+  assert.equal(selectedStep(tab.render(solution, { ...view, selection: `${ROOT}|39` })), undefined);
+  // A tail naming a line the script does not have selects nothing and still draws.
+  const past = tab.render(solution, { ...view, selection: `${ROOT}|39#L99999` });
+  assert.ok(past.includes('<ol class="script">'));
+  assert.equal(selectedStep(past), undefined);
+});
+
+test('a step tail still marks the script it belongs to in the tree', () => {
+  const html = tab.render(solution, { ...view, selection: `${ROOT}|39#L83` });
+  assert.ok(html.includes(`<li data-select="${ROOT}|39" class="selected">`), 'the tree lost the open script');
+  // The row still selects the script itself, so a click clears the step tail.
+  assert.ok(!html.includes(`data-select="${ROOT}|39#L83"`));
 });
 
 test('an errored describe shows the error instead of a body', () => {

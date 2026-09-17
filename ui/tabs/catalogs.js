@@ -11,7 +11,7 @@ import {
 import { get, path } from '../access.js';
 import { stepDisplay } from 'fm-adt-toolkit/step-display';
 import {
-  catalogActions, detailOf, kindSelection, listOf, selectRow, selectionKey, totalsLine, withFile,
+  catalogActions, detailOf, factValue, kindSelection, listOf, selectRow, selectionKey, totalsLine, withFile,
 } from './common.js';
 
 const rowsOf = (solution, of) => Object.values(solution.files).flatMap((f) => of(f));
@@ -222,10 +222,6 @@ function renderCatalog(solution, view, entry) {
     empty: `No ${entry.what}`, rowAttrs: entry.selectable ? selectRow(view.selection) : undefined,
   });
   return section(entry.title, body, { actions: catalogActions(solution, entry.catalog, view, entry.what) });
-}
-
-function factValue(v) {
-  return v && 'value' in v ? esc(v.value) : `<span class="error">${esc(v?.error?.code ?? 'unread')}: ${esc(v?.error?.message ?? '')}</span>`;
 }
 
 function renderFile(file, multiFile) {

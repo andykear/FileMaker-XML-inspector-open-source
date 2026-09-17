@@ -122,6 +122,14 @@ test('static files come from the ui directory and nothing above it', async () =>
   });
 });
 
+test('the page declares its own icon, so no browser asks for the 404 /favicon.ico', async () => {
+  await withServer({ cli, root: 'x', username: 'admin', noPrompt: true, runOps: fakeRunOps([]) }, async (base) => {
+    const html = await (await fetch(base + '/')).text();
+    assert.match(html, /<link rel="icon" href="data:image\/svg\+xml,/, 'the icon is inline: no second request for it either');
+    assert.equal((await fetch(base + '/favicon.ico')).status, 404, 'and there is nothing at /favicon.ico to fall back to');
+  });
+});
+
 test('a malformed URL encoding answers 4xx and does not take the server down', async () => {
   await withServer({ cli, root: 'x', username: 'admin', noPrompt: true, runOps: fakeRunOps([]) }, async (base) => {
     const bad = await fetch(base + '/%');

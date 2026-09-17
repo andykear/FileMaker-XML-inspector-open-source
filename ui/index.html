@@ -3,6 +3,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clockwork Inspector</title>
+<!-- Inline so the page asks the server for nothing but its own modules: with no
+     rel="icon" the browser goes looking for /favicon.ico, which is a 404 and a
+     console error on every load. Clockwork green, the clock. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%2349af5e'/%3E%3Cpath d='M8 4.2V8l2.6 1.7' fill='none' stroke='%23fff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="inspector.css">
 <header>
   <h1>Clockwork Inspector</h1>

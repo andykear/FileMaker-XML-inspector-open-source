@@ -37,13 +37,35 @@ test('globals is memoised, frozen and recomputes for another solution', () => {
   assert.throws(() => globals(a).push({}), TypeError);
 });
 
-test('the note names the register entry, and the names the tokeniser cannot read whole', () => {
+test('the note names the register entry, and what a spaced name costs', () => {
   assert.match(GLOBALS_NOTE, /calculation-tokens/);
   // A `$$` name with a space in it -- FileMaker allows `$$SMTP Server`, and the
-  // register's own probe for `calculation-tokens` uses exactly that -- tokenises
-  // as its first word, so such a global is listed twice. The note says so.
+  // register's own probe for `calculation-tokens` uses exactly that -- is read
+  // whole only where a Set Variable step of the solution writes that spelling,
+  // because nothing else in the text says where the name ends. The note says so.
   assert.match(GLOBALS_NOTE, /space/);
   assert.match(GLOBALS_NOTE, /\$\$SMTP Server/);
+  assert.match(GLOBALS_NOTE, /sets it/);
+});
+
+test('a $$ name with a space is one global when some script sets it', () => {
+  // Set in one script, read in another script's formula: one row, two mentions
+  // (the set site's own target is one of them), not two rows under two names.
+  const sol = handMade({
+    script: {
+      list: [{ id: 1, name: 'setter', type: 'script' }, { id: 2, name: 'reader', type: 'script' }],
+      detailById: {
+        ...detail(1, { id: 1, name: 'setter', body: [step(SET_VARIABLE, 'Set Variable', { name: '$$SMTP Server', value: '"mail.example.com"' })] }),
+        ...detail(2, { id: 2, name: 'reader', body: [step(SET_VARIABLE, 'Set Variable', { name: '$url', value: '"https://" & $$SMTP Server & "/send"' })] }),
+      },
+    },
+  });
+  assert.deepEqual(globals(sol).map((r) => [r.name, r.sets.length, r.mentions]), [['$$SMTP Server', 1, 2]]);
+});
+
+test('a spaced $$ name nothing sets is still read as its first word', () => {
+  const sol = oneScript([step(SET_VARIABLE, 'Set Variable', { name: '$x', value: '$$x y & "!"' })]);
+  assert.deepEqual(globals(sol).map((r) => [r.name, r.mentions]), [['$$x', 1]]);
 });
 
 test('a global set by a Set Variable carries the set site; a local is not a global', () => {

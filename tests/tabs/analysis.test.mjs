@@ -12,7 +12,7 @@ import { parseHash } from '../../ui/dom.js';
 import { scriptIssues } from '../../ui/analysis/scripts.js';
 import { GLOBALS_NOTE } from '../../ui/analysis/globals.js';
 import { PROBLEM_KIND } from '../../ui/analysis/broken.js';
-import { analysisTotals, brokenReferenceCount, issueGroups, psosByScript, tab } from '../../ui/tabs/analysis.js';
+import { analysisTotals, brokenReferenceCount, checkHeading, issueGroups, psosByScript, tab } from '../../ui/tabs/analysis.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -157,7 +157,7 @@ test('the psos group renders 24 rows with a count, not 715 rows', () => {
   assert.ok(block.includes('>305<'));
 });
 
-test('a step row names FileMaker\'s line number, because the Scripts tab has no step anchor yet', () => {
+test('a step row names FileMaker\'s line number and links to that step in the Scripts tab', () => {
   const html = tab.render(solution, view);
   const at = html.indexOf('dead-set-variable');
   const block = html.slice(at, at + 4000);
@@ -165,7 +165,21 @@ test('a step row names FileMaker\'s line number, because the Scripts tab has no 
   // line FileMaker prints as 8 -- the number the Scripts tab's own gutter shows.
   assert.ok(/line 8/.test(block), 'no line number in the dead-set-variable rows');
   assert.ok(!/step 7/.test(block), 'the 0-based body index is not what a reader is shown');
-  assert.ok(!/#\d+"/.test(block.slice(0, 2000)), 'a stepID anchor was linked, which the Scripts tab cannot route');
+  // And the row is a link that lands on that line, not on the top of the script.
+  const href = hrefs(block).find((h) => h.endsWith('%23L8'));
+  assert.ok(href, 'the step row does not link to the step');
+  assert.deepEqual(parseHash(href), { tab: 'scripts', selection: `${ROOT}|20#L8` });
+  // Script 20 line 14 is the same step TYPE on another line: a second link.
+  assert.ok(hrefs(block).some((h) => parseHash(h).selection === `${ROOT}|20#L14`));
+});
+
+test('a globals set site links to the step that writes it', () => {
+  const html = tab.render(solution, view);
+  const section = html.slice(html.indexOf('<h2>Globals</h2>'));
+  const at = section.indexOf('$$var');
+  const href = hrefs(section.slice(at, at + 2000)).find((h) => h.includes('%23L'));
+  assert.ok(href, '$$var has no link to its Set Variable step');
+  assert.deepEqual(parseHash(href), { tab: 'scripts', selection: `${ROOT}|55#L118` });
 });
 
 test('Globals: the table, its counts and the note that explains the mention count', () => {
@@ -175,8 +189,8 @@ test('Globals: the table, its counts and the note that explains the mention coun
   assert.ok(section.includes('$$some_global_var'));
   assert.ok(section.includes('$$var'));
   assert.ok(section.includes(GLOBALS_NOTE.slice(0, 40)));
-  // $$var is set once, in script 55 of the root file.
-  assert.ok(hrefs(section).map(parseHash).some((l) => l.tab === 'scripts' && l.selection === `${ROOT}|55`));
+  // $$var is set once, on line 118 of script 55 of the root file.
+  assert.ok(hrefs(section).map(parseHash).some((l) => l.tab === 'scripts' && l.selection === `${ROOT}|55#L118`));
 });
 
 test('the filter narrows every table and leaves the totals alone', () => {
@@ -265,4 +279,21 @@ test("the Broken table's Where header says fm's /N paths are fm's own JSON point
   // to the sentence: fm's pointer on a problem row, our key path on the rest.
   assert.ok(section.includes('<td>/4</td>'), "fm's own pointer rides through unread");
   assert.ok(section.includes('<td>body[84].value</td>'), 'and a marker carries the key path');
+});
+
+test('a check heading is its id de-kebabbed, with the id itself in the title', () => {
+  assert.equal(checkHeading('dead-set-variable'), 'Dead set variable');
+  assert.equal(checkHeading('swallowed-error'), 'Swallowed error');
+  // Mechanical, so an acronym reads as a word. That is the price of having no
+  // label map to keep in step with the checks; the id is on the title.
+  assert.equal(checkHeading('psos-only-step'), 'Psos only step');
+  assert.equal(checkHeading(''), '');
+
+  const html = tab.render(solution, view);
+  // Every group of this read gets a heading built the same way, and every one
+  // carries its raw id.
+  for (const g of issueGroups(solution)) {
+    assert.ok(html.includes(`<summary title="${g.check}">${checkHeading(g.check)} `), g.check);
+  }
+  assert.ok(html.includes('<summary title="psos-only-step">Psos only step '));
 });

@@ -7,9 +7,11 @@ import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import {
-  catalogActions, detailOf, kindSelection, listOf, parseSelection, selectRow,
-  selectionKey, selectionTail, totalsLine, withFile,
+  catalogActions, detailOf, FACT_FOLD, factValue, kindSelection, listOf, parseSelection, selectRow,
+  selectionKey, selectionTail, selectionWithTail, totalsLine, withFile,
 } from '../../ui/tabs/common.js';
+import { selectionOf as scriptSelectionOf, stepAnchor } from '../../ui/tabs/scripts.js';
+import { selectionOf as layoutSelectionOf } from '../../ui/tabs/layouts.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -82,6 +84,42 @@ test('selectionTail hands back the whole tail, colons and all', () => {
   assert.equal(selectionTail('nope'), null);
 });
 
+test('selectionWithTail splits the coordinate inside an object off the object', () => {
+  assert.deepEqual(selectionWithTail(`${ROOT}|39#L83`, 'step'), { target: ROOT, id: '39', step: 'L83' });
+  assert.deepEqual(selectionWithTail(`${ROOT}|39`, 'step'), { target: ROOT, id: '39', step: null });
+  assert.deepEqual(selectionWithTail(`${ROOT}|1#21`, 'object'), { target: ROOT, id: '1', object: '21' });
+  // A name with a colon in it is still one id.
+  assert.deepEqual(selectionWithTail(`${ROOT}|My:Layout#7`, 'object'), { target: ROOT, id: 'My:Layout', object: '7' });
+  assert.equal(selectionWithTail('nope', 'step'), null);
+  assert.equal(selectionWithTail(undefined, 'step'), null);
+});
+
+test('the Scripts and Layouts tabs read that one shape, under their own two names', () => {
+  assert.deepEqual(scriptSelectionOf({ selection: `${ROOT}|39#L83` }), { target: ROOT, id: '39', step: 'L83' });
+  assert.deepEqual(layoutSelectionOf({ selection: `${ROOT}|1#21` }), { target: ROOT, id: '1', object: '21' });
+  assert.equal(scriptSelectionOf({}), null);
+  assert.equal(layoutSelectionOf({}), null);
+});
+
+test('stepAnchor drops the script id rather than spelling it undefined', () => {
+  assert.equal(stepAnchor(39, 83), 'step-39-L83');
+  assert.equal(stepAnchor(undefined, 1), 'step-L1');
+  assert.equal(stepAnchor(null, 1), 'step-L1');
+  assert.equal(stepAnchor('', 1), 'step-L1');
+  // The shell scrolls to `[id^="step-"]`, so every shape still answers to it.
+  assert.ok([stepAnchor(39, 83), stepAnchor(undefined, 1)].every((a) => a.startsWith('step-')));
+  assert.ok(!stepAnchor(undefined, 1).includes('undefined'));
+});
+
+test('factValue reads fm\'s keys through access.js, so a folded spelling still answers', () => {
+  // `get` folds case and separators, which is how every other fm key is read.
+  assert.equal(factValue({ Value: 'ooe' }), 'ooe');
+  // A value fm reports as null is an answer, not an error: the error branch is
+  // for a fact that has no value key at all.
+  assert.equal(factValue({ value: null }), '');
+  assert.match(factValue({}), /class="error">unread: </);
+});
+
 test('kindSelection accepts only the kinds the tab knows', () => {
   assert.deepEqual(kindSelection(`${ROOT}|acc:2`, ['acc', 'priv']), { target: ROOT, kind: 'acc', id: '2' });
   assert.deepEqual(kindSelection(`${ROOT}|priv:4`, ['acc', 'priv']), { target: ROOT, kind: 'priv', id: '4' });
@@ -90,4 +128,21 @@ test('kindSelection accepts only the kinds the tab knows', () => {
   assert.equal(kindSelection(null, ['acc']), null);
   // An id that carries its own colon comes back whole.
   assert.deepEqual(kindSelection(`${ROOT}|cf:a:b`, ['cf']), { target: ROOT, kind: 'cf', id: 'a:b' });
+});
+
+test('factValue prints a short fact, folds a document, and says what fm could not read', () => {
+  assert.equal(factValue({ value: 'ooe' }), 'ooe');
+  assert.equal(factValue({ value: '<b>' }), '&lt;b&gt;');
+  assert.match(factValue({ error: { code: 'refused', message: 'no' } }), /class="error">refused: no</);
+  assert.match(factValue(undefined), /class="error">unread: </);
+
+  // fm answers Get ( FileLocaleElements ) with a JSON document: unfolded it is
+  // twenty lines of one key/value line, and the facts around it are unreadable.
+  const long = root.facts['Get ( FileLocaleElements )'];
+  assert.ok(long.value.length > FACT_FOLD, 'the fixture carries the long fact');
+  const html = factValue(long);
+  assert.match(html, /^<details><summary>/);
+  assert.match(html, /chars\)<\/span><\/summary><pre>/, 'the whole answer is in a pre, where it can be read and selected');
+  assert.match(html.slice(0, 200), /APIVers/, 'the summary opens with the answer itself, escaped');
+  assert.equal(factValue({ value: 'x'.repeat(FACT_FOLD) }), 'x'.repeat(FACT_FOLD), 'exactly at the limit does not fold');
 });

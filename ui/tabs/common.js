@@ -29,6 +29,26 @@ export const linkOr = (hash, label) => (hash ? link(hash, label) : esc(label));
  *  contradicts the count in the heading above it. */
 export const emptyNote = (total, none) => (total ? 'None match the filter' : none);
 
+/** A Get() answer longer than this is a document, not a value, and is folded. fm
+ *  returns Get ( FileLocaleElements ) as ~1.5k of JSON: as one key/value line it
+ *  buries the twenty facts around it. */
+export const FACT_FOLD = 160;
+
+/** One of a file's facts: fm's answer, or fm's error where the answer should be.
+ *  A long answer folds into a <details> and is shown for what it is -- text the
+ *  file gave us -- inside a <pre>, which is also where a reader can select it. */
+export function factValue(v) {
+  const value = get(v, 'value');
+  if (value === undefined) {
+    const error = get(v, 'error');
+    return `<span class="error">${esc(get(error, 'code') ?? 'unread')}: ${esc(get(error, 'message') ?? '')}</span>`;
+  }
+  const text = String(value ?? '');
+  if (text.length <= FACT_FOLD) return esc(text);
+  return `<details><summary>${esc(text.slice(0, FACT_FOLD))}\u2026 <span class="muted">(${count(text.length)} chars)</span></summary>`
+    + `<pre>${esc(text)}</pre></details>`;
+}
+
 /** `3 steps`, `1 step`: a count and the word it counts, agreeing. */
 export const plural = (n, word) => `${count(n)} ${n === 1 ? word : `${word}s`}`;
 
@@ -75,6 +95,23 @@ export function parseSelection(sel) {
 export function selectionTail(sel) {
   const parsed = parseSelection(sel);
   return parsed && { target: parsed.target, tail: parsed.parts.join(':') };
+}
+
+/** `<target>|<id>`, optionally `#<something>` naming a coordinate INSIDE that
+ *  object -- a step of a script, an object of a layout. The coordinate rides in
+ *  the tab's own part rather than as a second selected thing, because it is not
+ *  one: a reader picks the script and lands on a line of it. Two tabs wanted the
+ *  same shape under two names, so the caller says which (`step`, `object`) and
+ *  gets `{ target, id, [field] }` with the field `null` when there is no `#`. */
+export function selectionWithTail(sel, field) {
+  const parsed = selectionTail(sel);
+  if (!parsed) return null;
+  const hash = parsed.tail.indexOf('#');
+  return {
+    target: parsed.target,
+    id: hash < 0 ? parsed.tail : parsed.tail.slice(0, hash),
+    [field]: hash < 0 ? null : parsed.tail.slice(hash + 1),
+  };
 }
 
 /** The `{kind}:{id}` selections: the kind must be one the tab knows, or the

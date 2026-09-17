@@ -19,9 +19,16 @@
 //     calculation writes and what the index is keyed on;
 //   * a `variable` reference is always `resolved: false`. There is no catalog of
 //     variables to resolve against, so the index cannot say; whether a `$$`
-//     global is ever set is globals.js's question, not this one's;
-//   * `from.stepID` is present exactly when the naming object is a script step,
-//     which is the anchor the Scripts tab links to (`#<stepID>`);
+//     global is ever set is globals.js's question, not this one's. The one thing
+//     this file reads the `Set Variable` steps for is SPELLING -- see
+//     `setVariableNames` and the tokeniser -- which is not resolving;
+//   * `from.stepID` is present exactly when the naming object is a script step.
+//     It is fm's step TYPE id -- 141 is EVERY `Set Variable` -- so it identifies
+//     what the step is, never which step it is, and it is NOT the anchor the
+//     Scripts tab links to: that is FileMaker's 1-based line, `#L<line>`, built
+//     from `from.where` (`body[<index>]` + 1) by ui/tabs/explorer.js. It is kept
+//     because a caller asking what KIND of step wrote a name would otherwise
+//     have to find the step again;
 //   * an occurrence's fields are the SOURCE file's: `nameIndex` follows
 //     `table.dataSource` to the file that source opens, so a field entry's
 //     `target` is where the field lives and `occurrenceTarget` where the name
@@ -57,6 +64,7 @@
 import { foldKey } from 'fm-adt-toolkit/step-display';
 import { get, path } from '../access.js';
 import { memoise } from './memo.js';
+import { detailOf } from '../tabs/common.js';
 import { walkObjects } from '../tabs/layouts.js';
 import { fieldsOf } from '../tabs/tables.js';
 
@@ -85,6 +93,57 @@ const NAME_CHARS = '[^:;()\\[\\]{}"\\s,+\\-*/&=<>≤≥≠^]+';
 const FIELD_RE = new RegExp(`${NAME_CHARS}::${NAME_CHARS}`, 'g');
 const VAR_RE = /\$\$?[\p{L}\p{N}_][\p{L}\p{N}_.]*/gu;
 const CALL_RE = /([\p{L}_][\p{L}\p{N}_]*)\s*\(/gu;
+
+// A variable name may carry a space -- FileMaker allows `$$SMTP Server` -- and
+// nothing in the text says where such a name ends: `$$a b` is one variable, or
+// a variable and a word, and the two are written identically. What tells them
+// apart is the solution itself. A name some `Set Variable` step writes is a
+// name; any other run of words after a `$` token is not. So a caller passes the
+// names it knows (`references` reads them off the scripts, see
+// `setVariableNames`) and only those are matched across a space -- a spaced name
+// nothing sets is still read as its first word, which is what this file did for
+// every name before. `NAME_TAIL` is the character class that makes the match end
+// where the name ends: `$$SMTP Servers` is not `$$SMTP Server` and a plus.
+const NAME_TAIL = /[\p{L}\p{N}_.]/u;
+const SPACED_NAME = /^\$\$?[\p{L}\p{N}_]/u;
+const SPACED = new WeakMap();
+
+/** The known names that carry whitespace, lowercased (FileMaker does not care
+ *  about a variable's case) and longest first, so the first match found is the
+ *  longest one. Kept on the collection's identity: `references` passes one list
+ *  for a whole solution, and this is derived once for it rather than once per
+ *  string walked. */
+function spacedNames(variables) {
+  if (variables === null || typeof variables !== 'object') return [];
+  const hit = SPACED.get(variables);
+  if (hit) return hit;
+  const out = [...variables]
+    .filter((v) => typeof v === 'string' && SPACED_NAME.test(v) && /\s/.test(v))
+    .map((v) => v.toLowerCase())
+    .sort((a, b) => b.length - a.length || a.localeCompare(b));
+  SPACED.set(variables, out);
+  return out;
+}
+
+/** The variable tokens of an already-blanked line. With no spaced name known
+ *  this is exactly `rest.match(VAR_RE)`; with some known, every token is offered
+ *  the longest known name that also stands at that position, and the token that
+ *  wins is the text as WRITTEN, not the known spelling -- the tokeniser reports
+ *  what the text says. */
+function variablesIn(rest, spaced) {
+  if (!spaced.length) return rest.match(VAR_RE) ?? [];
+  const lower = rest.toLowerCase();
+  const out = [];
+  VAR_RE.lastIndex = 0;
+  for (let m = VAR_RE.exec(rest); m !== null; m = VAR_RE.exec(rest)) {
+    const hit = spaced.find((name) => lower.startsWith(name, m.index)
+      && !NAME_TAIL.test(rest[m.index + name.length] ?? ''));
+    const token = hit ? rest.slice(m.index, m.index + hit.length) : m[0];
+    out.push(token);
+    VAR_RE.lastIndex = m.index + token.length;
+  }
+  return out;
+}
 
 /** Blank out "…" literals, // line comments and /* *\/ blocks in place, so what
  *  is left is only the code -- the one pass that decides what is data and what
@@ -128,8 +187,13 @@ const uniq = (list) => [...new Set(list)];
 
 /** The names a FileMaker calculation mentions. `quoted` is how many string
  *  literals were skipped -- the count a caller needs to tell "no references"
- *  from "everything was data". */
-export function tokenise(text) {
+ *  from "everything was data".
+ *
+ *  `options.variables` is the variable names the caller knows the solution sets,
+ *  which is the only thing that can read a spaced `$$` name whole; without it,
+ *  and for a name nothing sets, a `$` token ends at the first character the name
+ *  class excludes, as it always has. */
+export function tokenise(text, options) {
   if (typeof text !== 'string' || text === '') return { fields: [], variables: [], functions: [], quoted: 0 };
   const { text: bare, quoted } = code(text);
   const fields = bare.match(FIELD_RE) ?? [];
@@ -137,7 +201,7 @@ export function tokenise(text) {
   // as a call, and before the variable scan for the same reason.
   let rest = bare;
   for (const f of fields) rest = rest.split(f).join(' '.repeat(f.length));
-  const variables = rest.match(VAR_RE) ?? [];
+  const variables = variablesIn(rest, spacedNames(options?.variables));
   const functions = [...rest.matchAll(CALL_RE)].map((m) => m[1]);
   return { fields: uniq(fields), variables: uniq(variables), functions: uniq(functions), quoted };
 }
@@ -195,6 +259,9 @@ function sourceFile(file, to, sources, filesByName) {
  *  across files (and `TO::Field` is not unique across occurrences of one
  *  table), so a lookup answers with every match.
  *
+ *  `relations` and `customMenus` are in it for the Explorer's sake: they are
+ *  kinds a reader picks, never kinds a name means (see the scan).
+ *
  *  `unresolvedSources` is the other half of the answer: every occurrence whose
  *  external data source could not be followed, so a caller can tell "no field of
  *  that name" from "nothing was read about that name". */
@@ -203,7 +270,8 @@ export const nameIndex = (solution) => memoise(solution, computeNameIndex);
 function computeNameIndex(solution) {
   const idx = {
     tables: new Map(), occurrences: new Map(), fields: new Map(), scripts: new Map(),
-    layouts: new Map(), valueLists: new Map(), customFunctions: new Map(), themesStyles: new Map(),
+    layouts: new Map(), relations: new Map(), valueLists: new Map(),
+    customFunctions: new Map(), customMenus: new Map(), themesStyles: new Map(),
   };
   const unresolvedSources = [];
   const files = Object.values(get(solution, 'files') ?? {});
@@ -256,6 +324,30 @@ function computeNameIndex(solution) {
           arity: get(detail, 'arity'), type: get(detail, 'type') ?? get(item, 'type'),
         });
       }
+    }
+    // `relations` and `customMenus` are index kinds and nothing else: no
+    // reference has either as its `kind`, because nothing in FileMaker writes
+    // the name of a relation or of a menu. They are here so a reader can PICK
+    // one -- the Explorer's object list is this index -- and see what it names.
+    for (const item of listOf(file, 'relation')) {
+      // A relation has no name of its own; `relationName` is the one spelling
+      // of the two occurrences it joins, and the same one `from.name` carries.
+      const id = get(item, 'id');
+      const detail = get(get(path(file, 'catalogs.relation.detailById') ?? {}, String(id)), 'result');
+      const name = relationName(detail) ?? relationName(item) ?? String(id);
+      push(idx.relations, name, { target, id, name });
+    }
+    for (const menu of listOf(file, 'customMenu')) {
+      // Most of a file's custom menus are FileMaker's own, inherited whole:
+      // ooe's list is 25 menus of which 24 are `[Format]`, `[Scripts]` and the
+      // rest of the built-ins. Only the describe says which, so it is read here
+      // -- a reader scanning the Explorer's list needs the one hand-made menu to
+      // stand out from the two dozen that come with the product.
+      const detail = detailOf(file, 'customMenu', get(menu, 'id'));
+      push(idx.customMenus, get(menu, 'name'), {
+        target, id: get(menu, 'id'), name: get(menu, 'name'),
+        inheritedMenu: get(get(detail, 'result'), 'inheritedMenu') === true,
+      });
     }
     for (const theme of listOf(file, 'theme')) {
       // An object wears a style by its display name, so that is the key; the
@@ -328,7 +420,7 @@ function resolver(idx) {
 
 /** One described object -- a field, a script step, a layout object, a custom
  *  function -- scanned for every name it carries. `src` says who is naming. */
-function scanRecord(record, src, out, resolve, idx) {
+function scanRecord(record, src, out, resolve, idx, options) {
   const emit = (kind, name, at, how) => {
     if (typeof name !== 'string' || name.trim() === '') return;
     const where = src.prefix ? `${src.prefix}${at ? `.${at}` : ''}` : at;
@@ -397,7 +489,7 @@ function scanRecord(record, src, out, resolve, idx) {
     if (key === 'prototype') return;
 
     // 2. Otherwise it is a formula until the tokeniser says otherwise.
-    const t = tokenise(value);
+    const t = tokenise(value, options);
     for (const f of t.fields) emit('field', f, at, 'text');
     for (const v of t.variables) emit('variable', v, at, 'text');
     // A built-in function is not a reference; only a custom function is.
@@ -439,7 +531,9 @@ function* sources(solution) {
       const src = { target, kind: 'script', id: get(detail, 'id'), name: get(detail, 'name') };
       const body = get(detail, 'body') ?? [];
       // A step has no name of its own -- `name` on a step is an operand -- so
-      // `hasOwnName` stays false here. `stepID` is what the Scripts tab anchors.
+      // `hasOwnName` stays false here. `stepID` is fm's step TYPE id, which says
+      // what the step is; WHICH step it is, is the `body[<index>]` in `where`,
+      // and the Scripts tab's anchor is that index + 1 (`#L<line>`).
       for (let i = 0; i < body.length; i += 1) yield { ...src, record: body[i], prefix: `body[${i}]`, stepID: get(body[i], 'stepID') };
       // `problems` is fm's own list of what it could not resolve: Task 3's
       // input, not a reference, so it is not scanned here.
@@ -502,6 +596,37 @@ function predicateRefs(solution, out, resolve) {
   }
 }
 
+// ── The names Set Variable writes ─────────────────────────────────────
+
+// fm's own step id for Set Variable. It lives here rather than in globals.js --
+// which reads the same steps for their set sites -- because the tokeniser needs
+// it first and the number should have one home; globals.js imports it from here.
+// The provenance of the id list is in ui/analysis/scripts.js (PSOS_ONLY_STEPS).
+export const SET_VARIABLE = 141;
+
+/** Every variable name the solution's `Set Variable` steps write, `$` and `$$`,
+ *  verbatim and sorted: the names a `$` token in calculation text may be read
+ *  whole against. A DISABLED step counts too -- the question is how a name is
+ *  SPELLED, not whether it is written at run time, and a name spelled in a
+ *  disabled step is spelled. Frozen and memoised through ui/analysis/memo.js,
+ *  which is what lets the tokeniser derive its spaced-name list once per read
+ *  rather than once per string. */
+export const setVariableNames = (solution) => memoise(solution, computeSetVariableNames);
+
+function computeSetVariableNames(solution) {
+  const names = new Set();
+  for (const file of Object.values(get(solution, 'files') ?? {})) {
+    for (const detail of detailsOf(file, 'script')) {
+      for (const step of get(detail, 'body') ?? []) {
+        if (get(step, 'stepID') !== SET_VARIABLE) continue;
+        const name = get(step, 'name');
+        if (typeof name === 'string' && name.startsWith('$')) names.add(name);
+      }
+    }
+  }
+  return Object.freeze([...names].sort());
+}
+
 /** Every reference in the solution, in one list. Memoised through
  *  ui/analysis/memo.js, which keys on the catalog slots a re-read swaps rather
  *  than on the solution object, so a catalog or object re-read recomputes it. */
@@ -510,8 +635,11 @@ export const references = (solution) => memoise(solution, computeReferences);
 function computeReferences(solution) {
   const idx = nameIndex(solution);
   const resolve = resolver(idx);
+  // The names this solution's Set Variable steps write, so a `$` token followed
+  // by a space is read whole where the solution itself says it is one name.
+  const options = { variables: setVariableNames(solution) };
   const out = [];
-  for (const src of sources(solution)) scanRecord(src.record, src, out, resolve, idx);
+  for (const src of sources(solution)) scanRecord(src.record, src, out, resolve, idx, options);
   predicateRefs(solution, out, resolve);
   Object.freeze(out);
   return out;

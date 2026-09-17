@@ -280,7 +280,10 @@ ul.notes { margin: 8px 0 0; padding-left: 18px; color: var(--ink-2); }
   padding: 6px;
 }
 
-svg.graph { display: block; width: 100%; height: auto; max-height: 72vh; }
+/* The graph is drawn at FileMaker's own scale (the svg carries its width in
+   units); max-width shrinks one too wide for the panel and never grows a
+   small one. */
+svg.graph { display: block; width: auto; max-width: 100%; height: auto; max-height: 72vh; }
 
 svg.graph .to { stroke-width: 1; }
 svg.graph .to.highlight { stroke: var(--brand); stroke-width: 3; fill: var(--brand); fill-opacity: .18; }
@@ -318,6 +321,22 @@ ul.tree > li.selected { background: var(--navy-tint); font-weight: 600; }
 
 .panel details > summary { cursor: pointer; padding: 2px 0; color: var(--ink-2); font-weight: 600; }
 
+/* Where a long answer is shown whole -- a theme's CSS, a fact fm returns as a JSON
+   document. It wraps: Get ( FileLocaleElements ) is 1.5k characters on one line, and
+   a <pre> that does not wrap pushes the whole page sideways. */
+.panel pre {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  max-height: 40vh;
+  overflow: auto;
+  background: var(--surface-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* One li per script step. The indent is fm's own block nesting, carried on --depth so
    any nesting depth indents; the depth-n class is what a stylesheet or a test matches. */
 ol.script {
@@ -346,8 +365,17 @@ ol.script .ln {
 }
 ol.script > li > b { font-weight: 600; color: var(--ink); }
 ol.script .detail { color: var(--ink-2); }
+/* The step a link from the Analysis tab or the Explorer landed on. The shell
+   scrolls it to the middle of the viewport; the rule is what makes it findable
+   once it is there. */
+ol.script > li.selected { background: var(--navy-tint); font-weight: 600; }
 ol.script > li.disabled { color: var(--ink-4); text-decoration: line-through; }
 ol.script > li.disabled > b, ol.script > li.disabled .detail { color: var(--ink-4); }
+
+/* The Objects table's nesting indent, carried on --depth the same way a script
+   step's is (ol.script > li above), rather than padding characters baked into
+   the cell's text. */
+.obj-type { display: inline-block; padding-left: calc(var(--depth, 0) * 1.25em); }
 
 /* ── Layout wireframe ─────────────────────────────────────────────────── */
 /* The geometry is fm's own, in FileMaker points; the viewBox scales it to the panel.
@@ -383,6 +411,9 @@ svg.wireframe .obj { fill: var(--f, var(--o)); fill-opacity: var(--fo, .14); str
 svg.wireframe .obj.label { stroke-dasharray: 3 2; }
 svg.wireframe .obj.group { stroke-dasharray: 5 3; fill: none; }
 svg.wireframe .obj.highlight { stroke: var(--brand); stroke-width: 3; fill: var(--brand); fill-opacity: .22; }
+/* A rect carries data-select only when the tab has a row for it to select --
+   the shell's generic [data-select] delegation does the rest. */
+svg.wireframe .obj[data-select] { cursor: pointer; }
 
 ul.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 0 0; padding: 0; list-style: none; font-size: 11px; color: var(--ink-3); }
 ul.legend > li { display: flex; align-items: center; gap: 4px; }

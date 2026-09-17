@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import { parseHash } from '../../ui/shell.js';
-import { tab, occurrenceRows, relationRows, graphSvg } from '../../ui/tabs/graph.js';
+import { tab, occurrenceRows, relationRows, graphSvg, overlapping } from '../../ui/tabs/graph.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -114,10 +114,23 @@ test('graphSvg draws a rect per occurrence, a line per relation and the notes', 
   assert.ok(!svg.includes('class="to highlight"'));
 });
 
+test('graphSvg carries its own size, so a small file\'s graph is not blown up to fit', () => {
+  const svg = graphSvg(root);
+  const attrs = svg.match(/^<svg viewBox="0 0 (\d+) (\d+)" width="(\d+)" height="(\d+)"/);
+  assert.ok(attrs, 'width and height follow the viewBox');
+  assert.equal(attrs[3], attrs[1], 'the width is the viewBox width: one unit is one pixel');
+  assert.equal(attrs[4], attrs[2], 'and so is the height');
+  // BrojDva is three boxes in a corner. Stretched to a 1200px panel its labels were
+  // four times life size; at its own width it is the size FileMaker draws it.
+  const small = graphSvg(solution.files[Object.keys(solution.files).find((t) => t !== ROOT)]);
+  const smallWidth = Number(small.match(/ width="(\d+)"/)[1]);
+  assert.ok(smallWidth > 0 && smallWidth < 700, `BrojDva's graph asks for its own ${smallWidth}px, not the panel's`);
+});
+
 test('graphSvg highlights the occurrence it is given, and only that one', () => {
   const svg = graphSvg(root, { highlight: 1065089 });
   assert.equal(times(svg, /class="to highlight"/g), 1);
-  assert.match(svg, /data-to="1065089" class="to highlight"/);
+  assert.match(svg, /data-to="1065089" data-select="[^"]+\|to:1065089" class="to highlight"/);
   assert.equal(graphSvg(root, { highlight: 999999 }).includes('highlight'), false);
 });
 
@@ -166,6 +179,38 @@ test('the graph section carries one svg per file and lists the notes', () => {
   assert.match(html, /occurrence\(s\) fm reports without geometry/);
 });
 
+test('every occurrence rect carries the Occurrences row key, so a click on the picture selects the row', () => {
+  const svg = graphSvg(root);
+  // One data-select per drawn box, and it is the row key the table's own rows carry.
+  assert.equal(times(svg, /data-select="/g), times(svg, /data-to="/g));
+  assert.ok(svg.includes(`data-select="${ROOT}|to:1065089"`));
+  const rows = occurrenceRows(root).filter((r) => r.placed);
+  assert.ok(rows.every((r) => svg.includes(`data-select="${r.key}"`)));
+});
+
+test('the graph names the occurrences fm stacks on one position rather than moving them', () => {
+  // Measured on tests/fixtures/ooe: fm puts TestTable and SaXMLDelivery both at
+  // 20, 20 on the root file, and blank and SaXMLDelivery both at 20, 20 on BrojDva.
+  assert.deepEqual(overlapping(root), ['TestTable', 'SaXMLDelivery']);
+  const other = solution.files[Object.keys(solution.files).find((t) => t !== ROOT)];
+  assert.deepEqual(overlapping(other), ['blank', 'SaXMLDelivery']);
+
+  const html = tab.render(solution, view);
+  assert.match(html, /occurrence\(s\) fm reports at the same position as another, so their boxes overlap: TestTable, SaXMLDelivery/);
+  assert.match(html, /overlap: blank, SaXMLDelivery/);
+  // No stagger: both boxes are drawn exactly where fm says, one over the other.
+  const svg = graphSvg(root);
+  assert.equal(times(svg, / x="20" y="20" /g), 2);
+});
+
+test('an occurrence fm reports no geometry for says so, rather than sitting at 0, 0', () => {
+  const containers = occurrenceRows(root).find((r) => r.name === 'containers');
+  assert.equal(containers.placed, false);
+  const html = tab.render(solution, { ...view, selection: `${ROOT}|to:${containers.id}` });
+  assert.match(html, /<dt>Graph<\/dt><dd>no geometry reported /);
+  assert.ok(!html.includes('0 \u00d7 0 at 0, 0'));
+});
+
 test('a selected occurrence adds its detail, its re-read and the highlight', () => {
   const html = tab.render(solution, { ...view, selection: `${ROOT}|to:1065089` });
   assert.match(html, /TestTable/);
@@ -173,6 +218,10 @@ test('a selected occurrence adds its detail, its re-read and the highlight', () 
   assert.match(html, /TestTable_Contacts/);
   assert.match(html, /data-reread-object='\{[^']*"catalog":"tableOccurrence"[^']*"key":"1065089"/);
   assert.equal(times(html, /class="to highlight"/g), 1);
+  // Where the box is, said the way a reader says it: the wire's own JSON in a
+  // key/value line is the model leaking into prose.
+  assert.match(html, /<dt>Graph<\/dt><dd>131 \u00d7 116 at 20, 20 /);
+  assert.ok(!html.includes('{&quot;left&quot;'), 'the bounds are not printed as JSON');
 });
 
 test('a selected relation adds its detail and its re-read', () => {

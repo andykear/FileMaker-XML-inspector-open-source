@@ -28,6 +28,30 @@ test('a <Field Missing> marker is not a field token', () => {
   assert.deepEqual(tokenise('/*<Function Missing>( 2 ) + 4*/').functions, []);
 });
 
+test('a $$ name with a space is one token only when it is a name a script sets', () => {
+  // FileMaker allows a space in a variable name (`$$SMTP Server`), and nothing
+  // in the text says where such a name ends: `$$a b` is one variable, or a
+  // variable and a word, and only the Set Variable steps of the solution can
+  // tell the two apart. So the caller passes the names it knows.
+  const variables = new Set(['$$SMTP Server', '$$a', '$$a b c', '$long name']);
+  assert.deepEqual(tokenise('$$SMTP Server & "x"', { variables }).variables, ['$$SMTP Server']);
+  // Never set: split as it always was, with or without the set.
+  assert.deepEqual(tokenise('$$x y').variables, ['$$x']);
+  assert.deepEqual(tokenise('$$x y', { variables }).variables, ['$$x']);
+  // Longest wins where two known names both match at the position.
+  assert.deepEqual(tokenise('$$a b c + 1', { variables }).variables, ['$$a b c']);
+  assert.deepEqual(tokenise('$$a b + 1', { variables }).variables, ['$$a']);
+  // A local is a name the same way, and the rest of the line is still read.
+  assert.deepEqual(tokenise('Length ( $long name ) & $$a', { variables }).variables, ['$long name', '$$a']);
+  // A known name that merely PREFIXES what is written is not a match:
+  // `$$SMTP Servers` is not `$$SMTP Server` followed by nothing.
+  assert.deepEqual(tokenise('$$SMTP Servers', { variables }).variables, ['$$SMTP']);
+  // Variable names are FileMaker's, so case is not part of the match.
+  assert.deepEqual(tokenise('$$smtp server', { variables }).variables, ['$$smtp server']);
+  // A quoted literal is data, whatever names are known.
+  assert.deepEqual(tokenise('"$$SMTP Server"', { variables }).variables, []);
+});
+
 test('strings visits every string value once, with its key path', () => {
   const seen = [];
   strings({ a: 'one', b: { c: 'two', d: 4 }, e: ['three', { f: 'four' }] }, (v, p) => seen.push([v, p]));
@@ -44,6 +68,19 @@ test('nameIndex carries every kind, keyed by name, values arrays', () => {
   assert.ok(idx.valueLists.has('YN'));
   assert.ok(idx.customFunctions.get('MyCustomFunction')[0].arity === 1);
   assert.ok(idx.themesStyles.has('MyCustomStyle_BoldItalicsLabel'));
+  // A relation has no name of its own, so the index keys it the way every
+  // other reader of a relation spells it: the two occurrences it joins.
+  assert.deepEqual(idx.relations.get('Contacts_TestTable \u2194 Contacts'), [{ target: ROOT, id: 1, name: 'Contacts_TestTable \u2194 Contacts' }]);
+  // A menu entry carries fm's `inheritedMenu` off the describe: most of a file's
+  // menus are FileMaker's own. Measured on ooe: 24 of its 25 are inherited, and
+  // MyCustomMenu is the one that is not.
+  assert.deepEqual(idx.customMenus.get('MyCustomMenu'), [{ target: ROOT, id: 26, name: 'MyCustomMenu', inheritedMenu: false }]);
+  // `[Format]` is a menu of both files, so the name answers with both.
+  assert.equal(idx.customMenus.get('[Format]').length, 2);
+  assert.ok(idx.customMenus.get('[Format]').every((m) => m.inheritedMenu === true));
+  const ooeMenus = [...idx.customMenus.values()].flat().filter((m) => m.target === ROOT);
+  assert.equal(ooeMenus.length, 25);
+  assert.equal(ooeMenus.filter((m) => m.inheritedMenu).length, 24);
   assert.equal(nameIndex(solution), idx, 'memoised on the solution object');
 });
 
@@ -109,7 +146,13 @@ test('the name index sizes on the fixture', () => {
   assert.deepEqual(Object.fromEntries(Object.entries(idx).filter(([, m]) => m instanceof Map).map(([k, m]) => [k, m.size])), {
     tables: 15, occurrences: 24, fields: 268, scripts: 41,
     layouts: 19, valueLists: 9, customFunctions: 9, themesStyles: 60,
+    relations: 10, customMenus: 25,
   });
+  // 49 menus across the two files under 25 names: every menu but ooe's own
+  // MyCustomMenu is one of FileMaker's, and both files carry those.
+  const menus = Object.values(solution.files).reduce((n, f) => n + f.catalogs.customMenu.list.length, 0);
+  assert.equal(menus, 49);
+  assert.equal([...idx.customMenus.values()].reduce((n, v) => n + v.length, 0), menus);
   // Every external data source an occurrence uses on ooe can be followed: the
   // one external occurrence (`Invoice`) opens BrojDva, which is in the solution.
   assert.deepEqual(idx.unresolvedSources, []);
@@ -314,12 +357,16 @@ test('a step `from` is an occurrence only when the index has that name', () => {
   assert.ok(rows.every((r) => r.kind === 'occurrence' && r.how === 'named' && r.resolved));
 });
 
-test('every reference whose owner is a script step carries the stepID the Scripts tab anchors', () => {
+test("every reference whose owner is a script step carries fm's step TYPE id", () => {
   const rows = references(solution);
   const fromSteps = rows.filter((r) => r.from.kind === 'script');
   assert.ok(fromSteps.length > 0);
   assert.ok(fromSteps.every((r) => Number.isInteger(r.from.stepID)));
   assert.ok(rows.filter((r) => r.from.kind !== 'script').every((r) => r.from.stepID === undefined));
+  // It is the TYPE, not the step: one id repeats across a body, so it can never
+  // be an anchor. The anchor is the `body[<index>]` of `where`, + 1.
+  const ids = fromSteps.map((r) => r.from.stepID);
+  assert.ok(new Set(ids).size < ids.length);
 });
 
 test('the memoised list and the index entry arrays are frozen', () => {
