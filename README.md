@@ -11,8 +11,10 @@ Screenshots of version 3 are coming.
 Run it with `npm install`, then:
 
 ```
-npm start -- --file=<target> --username=<account>
+node bin/inspector.mjs --file=<target> --username=<account>
 ```
+
+(`npm start -- --file=…` does the same; the `--` is npm's own separator, everything after it reaches the inspector instead of npm.)
 
 `<target>` is a local `.fmp12` path or an `fmnet://host/file` address. fm asks for the password in its own window and offers to save it in the keychain, so no credential ever passes through this tool's own code. Add `--port=0` to let the OS pick a port, `--no-open` to skip launching a browser tab, or `--no-prompt` for a non-interactive run.
 
@@ -24,7 +26,7 @@ npm start -- --file=<target> --username=<account>
 
 **Exports**: Markdown (a full report, numbers taken from the same functions the tabs render from, so a report can never disagree with the page it came from), Mermaid (the relationship graph as an `erDiagram`, the script call graph as a `flowchart`), and JSON (the solution model plus the five analyses, one document).
 
-Along the way it does things FileMaker itself does not offer: a complete visual mood board of any theme with every named style drawn as the object it styles, an interactive relationship graph laid out from the real table-occurrence geometry in the file, layout wireframes, and universal reference exploration in both directions.
+Along the way it does things FileMaker itself does not offer: a relationship graph drawn from the real table-occurrence geometry in the file, layout wireframes from the real parts and object bounds, a theme's colour palette and named styles with how often each is worn, and universal reference exploration in both directions.
 
 Originally developed as a Save as XML inspector by Andrew Kear, owner of [Clockwork Creative Technology](https://www.clockworkct.co.uk), and shared openly with the FileMaker/Claris community. That version is retired; it remains available in this repository's git history. The fm CLI rewrite is by Wim Decorte, [Soliant Consulting](https://www.soliantconsulting.com).
 
@@ -52,7 +54,7 @@ Point it at a live file (or a hosted `fmnet://` address) and it reads the soluti
 **Layouts and Themes**
 - Layouts — count, triggers, portal usage, object counts, parts
 - Wireframe — visual preview of any layout drawn from fm's own object bounds: part bands, colour-coded objects, portal rows
-- Themes — a full mood board of any theme. Every named style is rendered as the object it styles (button, field, text, portal, part band) from its own fill, border, corners and font, so a theme can be seen whole without dropping each style onto a layout. The colour palette is indexed to the styles that use each colour, and unused theme styles are flagged
+- Themes — every theme fm reports with its colour palette, its named styles and how many objects wear each one explicitly (an object without a named style wears its kind's default, which is not in fm's list), the layouts on the theme, and the theme's own CSS; named styles nothing wears are listed on the Analysis tab
 
 **Scripts**
 - Script tree as FileMaker folds it, with step-by-step rendering through the shared step display
@@ -75,7 +77,7 @@ Point it at a live file (or a hosted `fmnet://` address) and it reads the soluti
 - The wording gaps FileMaker's own step display leaves uncovered
 
 **Security and More**
-- Accounts, privilege sets, extended privileges, cross-linked in both directions
+- Accounts with their privilege set and password state, privilege sets with their per-area overrides and extended privileges, authorizations
 - Value lists, custom functions, custom menus and menu sets, external data sources, base directories, persistent data, fonts, graph notes, and file facts
 
 **Exports**
@@ -86,34 +88,11 @@ Point it at a live file (or a hosted `fmnet://` address) and it reads the soluti
 ## Quick start
 
 1. `npm install`
-2. `npm start -- --file=<target> --username=<account>` — `<target>` is a local `.fmp12` path or an `fmnet://host/file` address
+2. `node bin/inspector.mjs --file=<target> --username=<account>` — `<target>` is a local `.fmp12` path or an `fmnet://host/file` address
 3. fm opens its own password window and offers to save the credential in the keychain
 4. The inspector opens in your browser, reading the file live
 
 Reads only, the whole way: `read:*`, `evaluate:calculation` and `validate:calculation`, nothing else.
-
----
-
-## The FileMaker XML suite
-
-One of a set that reverse-engineers FileMaker's clipboard format family end to end — the private type codes FileMaker uses to carry schema and objects through the clipboard. The three generation specs cover all seven codes between them; two tools support the workflow.
-
-**[Script XML Skill](https://github.com/andykear/FileMaker-XMLsnippet-Claude-Skill)** (XMSS, XMSC, XMFN)
-The full script step ID dictionary, plus the hidden paste-handler rules that decide whether your XML survives the trip into FileMaker.
-
-**[Layout XML Skill](https://github.com/andykear/FileMaker-XMLsnippet-Layout-Claude-Skill)** (XML2)
-All 18 layout object types mapped, every flag decoded, element order confirmed against native output. Verified across 45+ layouts in 10 production files.
-
-**[Field, Table & Value List Definitions](https://github.com/andykear/FileMaker-XML-field-definitions)** (XMFD, XMTB, XMVL)
-Field, table and value list definition XML — auto-enter, validation, storage, calculation options, and the three value list source arms — verified down to the individual option level.
-
-**Analysis — read, audit and clean existing XML**
-
-**[XML Inspector](https://github.com/andykear/FileMaker-XML-inspector-open-source)** (SaXML) — the tool this repository replaced with version 3.0
-Did full-catalog dependency analysis of a Save as XML export, entirely in the browser: unreferenced fields, silent-failure risks, broken references, and a diff of two versions of a solution against each other. Retired on 2026-09-16; it remains in this repository's git history, and what replaced it is the fm CLI inspector this README describes.
-
-**[XML Scrubber](https://github.com/andykear/FileMaker-XML-scrubber)** (SaXML + others)
-Strips API keys, passwords and internal hostnames out of FileMaker XML before you hand it to an AI tool.
 
 ---
 
