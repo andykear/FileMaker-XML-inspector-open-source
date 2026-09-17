@@ -28,6 +28,30 @@ test('a <Field Missing> marker is not a field token', () => {
   assert.deepEqual(tokenise('/*<Function Missing>( 2 ) + 4*/').functions, []);
 });
 
+test('a $$ name with a space is one token only when it is a name a script sets', () => {
+  // FileMaker allows a space in a variable name (`$$SMTP Server`), and nothing
+  // in the text says where such a name ends: `$$a b` is one variable, or a
+  // variable and a word, and only the Set Variable steps of the solution can
+  // tell the two apart. So the caller passes the names it knows.
+  const variables = new Set(['$$SMTP Server', '$$a', '$$a b c', '$long name']);
+  assert.deepEqual(tokenise('$$SMTP Server & "x"', { variables }).variables, ['$$SMTP Server']);
+  // Never set: split as it always was, with or without the set.
+  assert.deepEqual(tokenise('$$x y').variables, ['$$x']);
+  assert.deepEqual(tokenise('$$x y', { variables }).variables, ['$$x']);
+  // Longest wins where two known names both match at the position.
+  assert.deepEqual(tokenise('$$a b c + 1', { variables }).variables, ['$$a b c']);
+  assert.deepEqual(tokenise('$$a b + 1', { variables }).variables, ['$$a']);
+  // A local is a name the same way, and the rest of the line is still read.
+  assert.deepEqual(tokenise('Length ( $long name ) & $$a', { variables }).variables, ['$long name', '$$a']);
+  // A known name that merely PREFIXES what is written is not a match:
+  // `$$SMTP Servers` is not `$$SMTP Server` followed by nothing.
+  assert.deepEqual(tokenise('$$SMTP Servers', { variables }).variables, ['$$SMTP']);
+  // Variable names are FileMaker's, so case is not part of the match.
+  assert.deepEqual(tokenise('$$smtp server', { variables }).variables, ['$$smtp server']);
+  // A quoted literal is data, whatever names are known.
+  assert.deepEqual(tokenise('"$$SMTP Server"', { variables }).variables, []);
+});
+
 test('strings visits every string value once, with its key path', () => {
   const seen = [];
   strings({ a: 'one', b: { c: 'two', d: 4 }, e: ['three', { f: 'four' }] }, (v, p) => seen.push([v, p]));

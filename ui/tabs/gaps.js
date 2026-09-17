@@ -22,6 +22,7 @@ import { badge, count, esc, kv, matches, section, table } from '../dom.js';
 import { CATALOG, catalogEntry, renderStepFromCatalog, stepConventions } from 'fm-adt-toolkit/step-display';
 import { get, path } from '../access.js';
 import { memoise } from '../analysis/memo.js';
+import { GAP_LISTS as NEUTRAL_LISTS } from '../analysis/gaps-lists.js';
 import { emptyNote, plural, totalsLine } from './common.js';
 
 // ── What fm cannot read yet ───────────────────────────────────────────
@@ -132,36 +133,28 @@ const ID_ATTRIBUTE = [{ key: 'id', label: 'Entry' }, { key: 'attribute', label: 
 const ID_KEYS = [{ key: 'id', label: 'Entry' },
   { key: 'keys', label: 'Keys', render: (r) => esc((r.keys ?? []).join(', ')) }];
 
-/** Every list a live check's outcome carries, in the order a reader wants them:
- *  what broke, what moved, what closed, what is still open. Each one's `note`
- *  says what the list MEANS, because the name of a list is never enough to act
- *  on, and each one's `title` is the heading both surfaces print.
- *
- *  Exported because ui/export/markdown.js's Gaps section reads the same
- *  outcome: one list of lists, so the page and the report cannot show different
- *  halves of the same answer. A list the toolkit adds appears in both the day
- *  server/gaps.mjs forwards it and its row is added here. */
-export const GAP_LISTS = [
-  { key: 'errored', title: 'Errored', columns: ID_REASON,
-    note: 'The probe failed and no expectedError accepts the failure.' },
-  { key: 'erroredExpected', title: 'Errored, and expected to', columns: ID_REASON,
-    note: 'The probe failed in the way the register already records.' },
-  { key: 'regressed', title: 'Regressed', columns: ID_ATTRIBUTE,
-    note: 'The register says fm reports this and it did not report it here.' },
-  { key: 'newlyReported', title: 'Newly reported', columns: ID_ATTRIBUTE,
-    note: 'An attribute reported live but still marked missing in the register.' },
-  { key: 'expectedResolved', title: 'Expected failure resolved',
-    columns: [{ key: 'id', label: 'Entry' }, { key: 'expectedError', label: 'Expected error' }],
-    note: 'The probe the register expects to fail succeeded: the gap closed.' },
-  { key: 'attributeErrors', title: 'Attribute not verified', columns: [...ID_ATTRIBUTE, { key: 'reason', label: 'Reason' }],
-    note: 'The attribute\'s own probe or selector failed, so it was scored neither way.' },
-  { key: 'unexplained', title: 'Keys no attribute claims', columns: ID_KEYS,
-    note: 'fm answered with a key the register does not account for.' },
-  { key: 'nestedUnexplained', title: 'Nested keys no attribute claims', columns: ID_KEYS,
-    note: 'The same question one level down, and the only list a gap closed by a nested key shows up in.' },
-  { key: 'stillMissing', title: 'Still missing', columns: ID_ATTRIBUTE,
-    note: 'The register says fm does not report this, and it still did not: the gap is where it was.' },
-];
+/** The columns each list is drawn with, by key. The lists themselves -- which
+ *  ones there are, what each is called and what each MEANS -- are
+ *  ui/analysis/gaps-lists.js's, because ui/export/markdown.js prints the same
+ *  answer and must not import a tab to get at it. Columns are the one half that
+ *  draws, so they stay here. */
+const COLUMNS = {
+  errored: ID_REASON,
+  erroredExpected: ID_REASON,
+  regressed: ID_ATTRIBUTE,
+  newlyReported: ID_ATTRIBUTE,
+  expectedResolved: [{ key: 'id', label: 'Entry' }, { key: 'expectedError', label: 'Expected error' }],
+  attributeErrors: [...ID_ATTRIBUTE, { key: 'reason', label: 'Reason' }],
+  unexplained: ID_KEYS,
+  nestedUnexplained: ID_KEYS,
+  stillMissing: ID_ATTRIBUTE,
+};
+
+/** The neutral lists with this tab's columns attached, in the neutral module's
+ *  order. A list added there with no columns here falls back to entry-and-reason,
+ *  which is the shape of the outcome rows fm's own errors arrive in: a new list
+ *  is then drawn plainly rather than not at all. */
+export const GAP_LISTS = Object.freeze(NEUTRAL_LISTS.map((l) => Object.freeze({ ...l, columns: COLUMNS[l.key] ?? ID_REASON })));
 
 const CHECK_BUTTON = '<button data-action="gaps-check">Run the register\'s probes</button>';
 

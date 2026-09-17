@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import { GAP_LISTS, registerFacts, registerGroups, renderingGaps, tab } from '../../ui/tabs/gaps.js';
+import { GAP_LISTS as NEUTRAL_LISTS } from '../../ui/analysis/gaps-lists.js';
 
 const REGISTER = JSON.parse(await readFile(new URL('../fixtures/register-summary.json', import.meta.url), 'utf8'));
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
@@ -147,6 +148,15 @@ test('GAP_LISTS covers every list the reduced outcome carries', () => {
   for (const l of GAP_LISTS) {
     assert.ok(l.title && l.note && l.columns?.length, l.key);
   }
+});
+
+test('the tab\'s lists are the neutral module\'s, with columns attached by key', () => {
+  // The names and the prose live in ui/analysis/gaps-lists.js, which the
+  // Markdown export reads too; the columns are the only half that draws, and
+  // they are this tab's. Same rows, same order, one added key.
+  assert.deepEqual(GAP_LISTS.map(({ key, title, note }) => ({ key, title, note })), NEUTRAL_LISTS.map((l) => ({ ...l })));
+  for (const l of GAP_LISTS) assert.ok(Array.isArray(l.columns) && l.columns.length, l.key);
+  assert.ok(Object.isFrozen(GAP_LISTS));
 });
 
 test('a nested key no attribute claims is on the page', () => {

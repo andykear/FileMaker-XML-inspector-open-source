@@ -35,7 +35,7 @@
 // object.
 import { get, path } from '../access.js';
 import { memoise } from './memo.js';
-import { references } from './refs.js';
+import { SET_VARIABLE, references } from './refs.js';
 
 /** Why a mention count is a reading of the text and not a fact about the file.
  *  Named here once so a tab can print it next to the number. */
@@ -43,13 +43,13 @@ export const GLOBALS_NOTE = 'Mentions are counted by tokenising calculation text
   + ' text and names none of the references it makes (gap register `calculation-tokens`), so this is what the'
   + ' text says, not what FileMaker resolves. A name built at run time -- Evaluate, a constructed'
   + ' ExecuteSQL, Get ( ScriptParameter ) -- is mentioned nowhere and counted nowhere. And a $$ name'
-  + ' containing a space (FileMaker allows `$$SMTP Server`) tokenises as its first word, so such a global is'
-  + ' listed twice: once under the full name the Set Variable target gives it, with no mentions, and once'
-  + ' under the first word, with them.';
+  + ' containing a space (FileMaker allows `$$SMTP Server`) is read whole only where some script sets it:'
+  + ' nothing in calculation text says where such a name ends, so the tokeniser matches the names this'
+  + ' solution\'s Set Variable steps write. A spaced name no step sets is read as its first word, and is'
+  + ' listed twice -- once under the full name, with no mentions, and once under the first word, with them.';
 
-// fm's own step id for Set Variable, the same numbering ui/analysis/scripts.js
-// documents (its PSOS_ONLY_STEPS carries the provenance of the id list).
-const SET_VARIABLE = 141;
+// fm's own step id for Set Variable is refs.js's `SET_VARIABLE`: the tokeniser
+// reads the same steps for the names they spell, so the number has one home.
 
 const isGlobal = (name) => typeof name === 'string' && name.startsWith('$$');
 

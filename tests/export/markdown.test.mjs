@@ -14,7 +14,7 @@ import { accountRows, securityTotals } from '../../ui/tabs/security.js';
 import { unreferenced } from '../../ui/analysis/unreferenced.js';
 import { scriptIssues } from '../../ui/analysis/scripts.js';
 import { broken } from '../../ui/analysis/broken.js';
-import { GAP_LISTS } from '../../ui/tabs/gaps.js';
+import { GAP_LISTS } from '../../ui/analysis/gaps-lists.js';
 import { markdownReport, SECTIONS } from '../../ui/export/markdown.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
