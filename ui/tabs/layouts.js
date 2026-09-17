@@ -11,7 +11,7 @@
 // group) has children starting near 0,0. So the walk carries an origin and adds it.
 import { badge, count, esc, kv, link, matches, rereadObjectButton, section, table } from '../dom.js';
 import { get, path } from '../access.js';
-import { catalogActions, detailOf, listOf, selectionKey, selectionTail, totalsLine } from './common.js';
+import { catalogActions, detailOf, listOf, selectionKey, selectionWithTail, totalsLine } from './common.js';
 
 const layoutsOf = (file) => listOf(file, 'layout');
 const entryOf = (file, id) => detailOf(file, 'layout', id);
@@ -165,16 +165,7 @@ export function wireframeSvg(detail, opts = {}) {
 /** `<target>|<layout id>`, optionally `#<object id>` to highlight one object.
  *  The object rides inside the tab's own part, because it is a coordinate within
  *  the layout rather than a second thing to select. */
-export function selectionOf(view) {
-  const parsed = selectionTail(view?.selection);
-  if (!parsed) return null;
-  const hash = parsed.tail.indexOf('#');
-  return {
-    target: parsed.target,
-    id: hash < 0 ? parsed.tail : parsed.tail.slice(0, hash),
-    object: hash < 0 ? null : parsed.tail.slice(hash + 1),
-  };
-}
+export const selectionOf = (view) => selectionWithTail(view?.selection, 'object');
 
 function totals(solution) {
   const rows = Object.values(solution.files).flatMap(layoutRows);

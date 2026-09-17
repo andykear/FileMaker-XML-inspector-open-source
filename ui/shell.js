@@ -37,12 +37,23 @@ export function createShell({ tabs, mount, onReread, onExport, onAction }) {
     return { tab, selection, filter, multiFile: Object.keys(solution?.files ?? {}).length > 1 };
   }
 
+  /** The hash the page was last drawn from. `null` until the first render, so
+   *  the hash a reader arrived on counts as a change: a link pasted into the
+   *  address bar must land on its step like any other. */
+  let routedFrom = null;
+
   function route() {
     if (!solution) return;
     const view = viewOf();
+    // Did the HASH bring us here? Only then is there a step to land on. A
+    // filter keystroke re-renders the same selection, and scrolling on it would
+    // drag the page back to the step on every letter typed -- the one thing a
+    // reader filtering a long script is not doing is looking at that step.
+    const landed = routedFrom !== location.hash;
+    routedFrom = location.hash;
     renderNav(view.tab);
     mount.main.innerHTML = byId.get(view.tab).render(solution, view);
-    scrollToSelectedStep();
+    if (landed) scrollToSelectedStep();
   }
 
   /** The one DOM action the shell takes beyond rendering. A link from the

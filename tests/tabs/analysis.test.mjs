@@ -12,7 +12,7 @@ import { parseHash } from '../../ui/dom.js';
 import { scriptIssues } from '../../ui/analysis/scripts.js';
 import { GLOBALS_NOTE } from '../../ui/analysis/globals.js';
 import { PROBLEM_KIND } from '../../ui/analysis/broken.js';
-import { analysisTotals, brokenReferenceCount, issueGroups, psosByScript, tab } from '../../ui/tabs/analysis.js';
+import { analysisTotals, brokenReferenceCount, checkHeading, issueGroups, psosByScript, tab } from '../../ui/tabs/analysis.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -279,4 +279,21 @@ test("the Broken table's Where header says fm's /N paths are fm's own JSON point
   // to the sentence: fm's pointer on a problem row, our key path on the rest.
   assert.ok(section.includes('<td>/4</td>'), "fm's own pointer rides through unread");
   assert.ok(section.includes('<td>body[84].value</td>'), 'and a marker carries the key path');
+});
+
+test('a check heading is its id de-kebabbed, with the id itself in the title', () => {
+  assert.equal(checkHeading('dead-set-variable'), 'Dead set variable');
+  assert.equal(checkHeading('swallowed-error'), 'Swallowed error');
+  // Mechanical, so an acronym reads as a word. That is the price of having no
+  // label map to keep in step with the checks; the id is on the title.
+  assert.equal(checkHeading('psos-only-step'), 'Psos only step');
+  assert.equal(checkHeading(''), '');
+
+  const html = tab.render(solution, view);
+  // Every group of this read gets a heading built the same way, and every one
+  // carries its raw id.
+  for (const g of issueGroups(solution)) {
+    assert.ok(html.includes(`<summary title="${g.check}">${checkHeading(g.check)} `), g.check);
+  }
+  assert.ok(html.includes('<summary title="psos-only-step">Psos only step '));
 });

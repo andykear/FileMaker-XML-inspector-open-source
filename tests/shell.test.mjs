@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseHash, buildHash, createShell } from '../ui/shell.js';
+import { parseHash, buildHash, createShell, FILTER_DEBOUNCE_MS } from '../ui/shell.js';
 import { link } from '../ui/dom.js';
 
 test('parseHash and buildHash round-trip a tab and a selection with reserved characters', () => {
@@ -43,7 +43,10 @@ function stubShell({ render = () => '<p>body</p>' } = {}) {
   const exports = [];
   const actions = [];
   const saved = { window: globalThis.window, location: globalThis.location };
-  globalThis.window = { addEventListener() {} };
+  // The window handlers are kept so a test can fire `hashchange` the way the
+  // browser does, which is what tells a landing apart from a re-render.
+  const windowHandlers = {};
+  globalThis.window = { addEventListener(type, fn) { windowHandlers[type] = fn; } };
   globalThis.location = { hash: '' };
   const shell = createShell({
     tabs: [{ id: 'tables', label: 'Tables', render }, { id: 'scripts', label: 'Scripts', render }],
@@ -53,7 +56,7 @@ function stubShell({ render = () => '<p>body</p>' } = {}) {
     onAction: async (name, dataset) => { actions.push([name, dataset]); },
   });
   shell.setSolution({ files: { a: {}, b: {} }, unreachable: [] });
-  return { shell, mount, rereads, exports, actions, restore: () => Object.assign(globalThis, saved) };
+  return { shell, mount, rereads, exports, actions, windowHandlers, restore: () => Object.assign(globalThis, saved) };
 }
 
 test('the shell renders the nav and the active tab, and view is what the tab was rendered with', () => {
@@ -72,25 +75,56 @@ test('the shell renders the nav and the active tab, and view is what the tab was
   } finally { restore(); }
 });
 
-test('after every route the shell brings the selected step into view', () => {
+test('the shell brings the selected step into view when the HASH brought it here', () => {
   const scrolled = [];
-  const { shell, mount, restore } = stubShell();
+  const { shell, mount, windowHandlers, restore } = stubShell();
   try {
     const sel = '.selected[id^="step-"]';
     mount.main.found = { [sel]: { scrollIntoView: (opts) => scrolled.push(opts) } };
-    shell.route();
+    // A link lands: the hash changed, so the step is scrolled to.
+    globalThis.location.hash = '#scripts/a%7C39%23L83';
+    windowHandlers.hashchange();
     assert.deepEqual(scrolled, [{ block: 'center' }]);
     // Nothing selected: nothing scrolled.
     mount.main.found = null;
-    shell.route();
+    globalThis.location.hash = '#scripts';
+    windowHandlers.hashchange();
     assert.deepEqual(scrolled, [{ block: 'center' }]);
     // An element with no scrollIntoView, and a mount with no querySelector at
     // all, are both a no-op rather than a thrown page.
     mount.main.found = { [sel]: {} };
-    shell.route();
+    globalThis.location.hash = '#scripts/a%7C39%23L1';
+    windowHandlers.hashchange();
     delete mount.main.querySelector;
-    shell.route();
+    globalThis.location.hash = '#scripts/a%7C39%23L2';
+    windowHandlers.hashchange();
     assert.deepEqual(scrolled, [{ block: 'center' }]);
+  } finally { restore(); }
+});
+
+test('a filter keystroke re-renders without dragging the page back to the step', async () => {
+  const scrolled = [];
+  const { mount, windowHandlers, restore } = stubShell();
+  try {
+    const sel = '.selected[id^="step-"]';
+    mount.main.found = { [sel]: { scrollIntoView: (opts) => scrolled.push(opts) } };
+    globalThis.location.hash = '#scripts/a%7C39%23L83';
+    windowHandlers.hashchange();
+    assert.equal(scrolled.length, 1, 'the link landed');
+
+    // Three letters typed into the filter box: the hash never moves, so the
+    // step is never scrolled to again.
+    for (const text of ['s', 'se', 'set']) {
+      mount.filter.value = text;
+      mount.filter.handlers.input();
+      await new Promise((r) => { setTimeout(r, FILTER_DEBOUNCE_MS + 20); });
+    }
+    assert.equal(scrolled.length, 1, 'no keystroke scrolled');
+    assert.equal(mount.main.innerHTML, '<p>body</p>', 'but every keystroke re-rendered');
+
+    // A re-read is the same: the page is redrawn where the reader left it.
+    windowHandlers.hashchange();
+    assert.equal(scrolled.length, 1);
   } finally { restore(); }
 });
 
@@ -140,7 +174,10 @@ test('a click on a data-action button calls onAction with the name and the datas
 
 test('a shell with no onAction ignores an action click rather than throwing', async () => {
   const saved = { window: globalThis.window, location: globalThis.location };
-  globalThis.window = { addEventListener() {} };
+  // The window handlers are kept so a test can fire `hashchange` the way the
+  // browser does, which is what tells a landing apart from a re-render.
+  const windowHandlers = {};
+  globalThis.window = { addEventListener(type, fn) { windowHandlers[type] = fn; } };
   globalThis.location = { hash: '' };
   try {
     const mount = { nav: fakeElement(), main: fakeElement(), filter: fakeElement() };
@@ -175,7 +212,10 @@ test('the export menu calls onExport with what was picked and goes back to its o
 
 test('a shell with no export menu still works, so a page without one is not a crash', () => {
   const saved = { window: globalThis.window, location: globalThis.location };
-  globalThis.window = { addEventListener() {} };
+  // The window handlers are kept so a test can fire `hashchange` the way the
+  // browser does, which is what tells a landing apart from a re-render.
+  const windowHandlers = {};
+  globalThis.window = { addEventListener(type, fn) { windowHandlers[type] = fn; } };
   globalThis.location = { hash: '' };
   try {
     const mount = { nav: fakeElement(), main: fakeElement(), filter: fakeElement() };

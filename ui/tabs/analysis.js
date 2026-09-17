@@ -252,10 +252,22 @@ const PSOS_COLUMNS = [
 
 const issueMatches = (r, filter) => matches(r.script.name, filter) || matches(stepText(r), filter) || matches(detailText(r.detail), filter);
 
+/** A check's id as a heading: `dead-set-variable` reads `Dead set variable`.
+ *  Mechanical on purpose -- a map of ids to prettier labels would be a second
+ *  list of the checks to keep in step with ui/analysis/scripts.js, and a check
+ *  added there would arrive on the page with no heading at all. The cost is an
+ *  acronym read as a word (`psos-only-step` becomes `Psos only step`), which is
+ *  why the raw id rides in the summary's `title`: it is also what a reader
+ *  greps the source for. */
+export function checkHeading(check) {
+  const words = String(check ?? '').split('-').filter(Boolean).join(' ');
+  return words ? words[0].toUpperCase() + words.slice(1) : String(check ?? '');
+}
+
 function renderIssueGroup(solution, group, view) {
   const rows = group.rows.map((r) => ({ ...r, file: fileName(solution, r.target) }));
   const shown = rows.filter((r) => issueMatches(r, view.filter));
-  const head = `<details><summary>${esc(group.check)} ${count(rows.length)}</summary>`;
+  const head = `<details><summary title="${esc(group.check)}">${esc(checkHeading(group.check))} ${count(rows.length)}</summary>`;
   if (group.check !== 'psos-only-step') {
     return head + table(withFile(ISSUE_COLUMNS, view), shown, { empty: emptyNote(rows.length, 'No row for this check') }) + '</details>';
   }

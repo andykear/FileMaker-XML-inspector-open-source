@@ -15,7 +15,7 @@ import { badge, count, esc, kv, link, matches, rereadObjectButton, section, tabl
 import { get, path } from '../access.js';
 import { stepDisplay } from 'fm-adt-toolkit/step-display';
 import { memoise } from '../analysis/memo.js';
-import { catalogActions, detailOf, listOf, selectionKey, selectionTail, totalsLine } from './common.js';
+import { catalogActions, detailOf, listOf, selectionKey, selectionWithTail, totalsLine } from './common.js';
 
 const scriptsOf = (file) => listOf(file, 'script');
 const entryOf = (file, id) => detailOf(file, 'script', id);
@@ -70,8 +70,16 @@ export const stepPart = (line) => `L${line}`;
 
 /** The anchor of one step: the script's own id and the step part, so two scripts
  *  on one page never collide and two steps of one TYPE never share an id the way
- *  `stepID` would. `step-` is the prefix the shell scrolls to. */
-export const stepAnchor = (scriptId, line) => `step-${scriptId}-${stepPart(line)}`;
+ *  `stepID` would. `step-` is the prefix the shell scrolls to.
+ *
+ *  A describe that carried no id (a hand-made record in a test, a read fm
+ *  answered without one) drops that half rather than spelling it `undefined`:
+ *  one script is on the page at a time, so `step-L83` still names the step, and
+ *  an id that reads as a word no script has is worse than no id at all. */
+export const stepAnchor = (scriptId, line) => {
+  const owner = scriptId === undefined || scriptId === null || scriptId === '' ? '' : `${scriptId}-`;
+  return `step-${owner}${stepPart(line)}`;
+};
 
 /** The step list itself. `--depth` carries the indent at any nesting; the class is
  *  what a test and a stylesheet match on. `selected` is the `#L<line>` tail of the
@@ -169,16 +177,7 @@ export function scriptStats(file) {
 /** `<target>|<script id>`, optionally `#L<line>` to land on one step. The step
  *  rides inside the tab's own part, the way the Layouts tab carries an object
  *  id: it is a coordinate within the script, not a second thing to select. */
-export function selectionOf(view) {
-  const parsed = selectionTail(view?.selection);
-  if (!parsed) return null;
-  const hash = parsed.tail.indexOf('#');
-  return {
-    target: parsed.target,
-    id: hash < 0 ? parsed.tail : parsed.tail.slice(0, hash),
-    step: hash < 0 ? null : parsed.tail.slice(hash + 1),
-  };
-}
+export const selectionOf = (view) => selectionWithTail(view?.selection, 'step');
 
 function totals(solution) {
   const all = Object.values(solution.files).map(scriptStats);

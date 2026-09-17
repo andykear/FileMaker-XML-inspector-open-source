@@ -8,8 +8,10 @@ import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import {
   catalogActions, detailOf, FACT_FOLD, factValue, kindSelection, listOf, parseSelection, selectRow,
-  selectionKey, selectionTail, totalsLine, withFile,
+  selectionKey, selectionTail, selectionWithTail, totalsLine, withFile,
 } from '../../ui/tabs/common.js';
+import { selectionOf as scriptSelectionOf, stepAnchor } from '../../ui/tabs/scripts.js';
+import { selectionOf as layoutSelectionOf } from '../../ui/tabs/layouts.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -80,6 +82,42 @@ test('selectionTail hands back the whole tail, colons and all', () => {
   assert.deepEqual(selectionTail(`${ROOT}|My:Table`), { target: ROOT, tail: 'My:Table' });
   assert.deepEqual(selectionTail(`${ROOT}|39#12`), { target: ROOT, tail: '39#12' });
   assert.equal(selectionTail('nope'), null);
+});
+
+test('selectionWithTail splits the coordinate inside an object off the object', () => {
+  assert.deepEqual(selectionWithTail(`${ROOT}|39#L83`, 'step'), { target: ROOT, id: '39', step: 'L83' });
+  assert.deepEqual(selectionWithTail(`${ROOT}|39`, 'step'), { target: ROOT, id: '39', step: null });
+  assert.deepEqual(selectionWithTail(`${ROOT}|1#21`, 'object'), { target: ROOT, id: '1', object: '21' });
+  // A name with a colon in it is still one id.
+  assert.deepEqual(selectionWithTail(`${ROOT}|My:Layout#7`, 'object'), { target: ROOT, id: 'My:Layout', object: '7' });
+  assert.equal(selectionWithTail('nope', 'step'), null);
+  assert.equal(selectionWithTail(undefined, 'step'), null);
+});
+
+test('the Scripts and Layouts tabs read that one shape, under their own two names', () => {
+  assert.deepEqual(scriptSelectionOf({ selection: `${ROOT}|39#L83` }), { target: ROOT, id: '39', step: 'L83' });
+  assert.deepEqual(layoutSelectionOf({ selection: `${ROOT}|1#21` }), { target: ROOT, id: '1', object: '21' });
+  assert.equal(scriptSelectionOf({}), null);
+  assert.equal(layoutSelectionOf({}), null);
+});
+
+test('stepAnchor drops the script id rather than spelling it undefined', () => {
+  assert.equal(stepAnchor(39, 83), 'step-39-L83');
+  assert.equal(stepAnchor(undefined, 1), 'step-L1');
+  assert.equal(stepAnchor(null, 1), 'step-L1');
+  assert.equal(stepAnchor('', 1), 'step-L1');
+  // The shell scrolls to `[id^="step-"]`, so every shape still answers to it.
+  assert.ok([stepAnchor(39, 83), stepAnchor(undefined, 1)].every((a) => a.startsWith('step-')));
+  assert.ok(!stepAnchor(undefined, 1).includes('undefined'));
+});
+
+test('factValue reads fm\'s keys through access.js, so a folded spelling still answers', () => {
+  // `get` folds case and separators, which is how every other fm key is read.
+  assert.equal(factValue({ Value: 'ooe' }), 'ooe');
+  // A value fm reports as null is an answer, not an error: the error branch is
+  // for a fact that has no value key at all.
+  assert.equal(factValue({ value: null }), '');
+  assert.match(factValue({}), /class="error">unread: </);
 });
 
 test('kindSelection accepts only the kinds the tab knows', () => {
