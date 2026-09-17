@@ -110,6 +110,14 @@ test('a selected table shows its fields, sublists and an object re-read control'
   assert.match(html, /List \( TestTable_Contacts::Name \)/);
 });
 
+test('the fields detail renders above the base tables list', () => {
+  const html = tab.render(solution, { ...view, selection: `${api.meta.root}|TestTable` });
+  const detail = html.indexOf('<h2>Fields of TestTable');
+  const list = html.indexOf('<h2>Base tables</h2>');
+  assert.ok(detail >= 0 && list >= 0);
+  assert.ok(detail < list, 'a click\'s result renders where the eye is, above the list');
+});
+
 test('a selected table in the second file reads that file, not the root', () => {
   const html = tab.render(solution, { ...view, selection: 'fmnet://localhost/BrojDva|Invoice' });
   assert.match(html, /Fields of Invoice/);

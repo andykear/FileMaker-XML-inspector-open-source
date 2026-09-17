@@ -206,6 +206,6 @@ export const tab = {
   id: 'tables',
   label: 'Tables',
   render(solution, view = {}) {
-    return renderTables(solution, view) + renderFields(solution, view);
+    return renderFields(solution, view) + renderTables(solution, view);
   },
 };

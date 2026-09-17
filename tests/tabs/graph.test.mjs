@@ -225,6 +225,14 @@ test('a selected occurrence adds its detail, its re-read and the highlight', () 
   assert.ok(!html.includes('{&quot;left&quot;'), 'the bounds are not printed as JSON');
 });
 
+test('the occurrence detail renders above the Occurrences list', () => {
+  const html = tab.render(solution, { ...view, selection: `${ROOT}|to:1065089` });
+  const detail = html.indexOf('<h2>Occurrence TestTable');
+  const list = html.indexOf('<h2>Occurrences</h2>');
+  assert.ok(detail >= 0 && list >= 0);
+  assert.ok(detail < list, 'a click\'s result renders where the eye is, above the list');
+});
+
 test('a selected relation adds its detail and its re-read', () => {
   const html = tab.render(solution, { ...view, selection: `${ROOT}|rel:1` });
   assert.match(html, /<dt>Predicates<\/dt>/);

@@ -137,7 +137,7 @@ test('the step index links each row to its own drill-down', () => {
   assert.equal((selected.match(/<tr data-select="[^"]*" class="selected">/g) ?? []).length, 1);
 });
 
-/** The step section the tab draws between the tree and the index. */
+/** The step section the tab draws above the tree and the index. */
 const stepSection = (html, name) => {
   const at = html.indexOf(`<h2>Step ${name}</h2>`);
   if (at < 0) return '';
@@ -329,6 +329,14 @@ test('selecting a script shows its detail, its steps and the object re-read', ()
   // An unknown selection draws no detail section.
   assert.ok(!tab.render(solution, { ...view, selection: `${ROOT}|nope` }).includes('<ol class="script">'));
   assert.ok(!tab.render(solution, { ...view, selection: 'no-such-file|39' }).includes('<ol class="script">'));
+});
+
+test('the script detail renders above the tree', () => {
+  const html = tab.render(solution, { ...view, selection: `${ROOT}|39` });
+  const detail = html.indexOf('<h2>Script All script steps and all options');
+  const list = html.indexOf('<h2>Scripts</h2>');
+  assert.ok(detail >= 0 && list >= 0);
+  assert.ok(detail < list, 'a click\'s result renders where the eye is, above the list');
 });
 
 /** The id of the one step li the page marked selected. */

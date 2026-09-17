@@ -219,6 +219,14 @@ test('selecting a layout renders its detail, parts, wireframe and objects', () =
   assert.ok(html.includes('<span class="obj-type" style="--depth:1">label</span>'));
 });
 
+test('the layout detail renders above the Layouts list', () => {
+  const html = tab.render(solution, { ...view, selection: 'fmnet://localhost/ooe|1' });
+  const detail = html.indexOf('<h2>Layout My Layout for TestTable');
+  const list = html.indexOf('<h2>Layouts</h2>');
+  assert.ok(detail >= 0 && list >= 0);
+  assert.ok(detail < list, 'a click\'s result renders where the eye is, above the list');
+});
+
 test('selecting an object highlights it in the wireframe and its row', () => {
   const html = tab.render(solution, { ...view, selection: 'fmnet://localhost/ooe|1#21' });
   assert.match(html, /<rect class="obj field highlight" data-object="21"/);

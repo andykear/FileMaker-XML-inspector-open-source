@@ -351,6 +351,6 @@ export const tab = {
   id: 'layouts',
   label: 'Layouts',
   render(solution, view = {}) {
-    return renderList(solution, view) + renderSelected(solution, view);
+    return renderSelected(solution, view) + renderList(solution, view);
   },
 };

@@ -430,9 +430,9 @@ export const tab = {
   render(solution, view = {}) {
     const occurrences = rowsOf(solution, occurrenceRows);
     const relations = rowsOf(solution, relationRows);
-    return renderOccurrences(solution, view, occurrences, relations)
+    return renderDetail(solution, view, occurrences, relations)
+      + renderOccurrences(solution, view, occurrences, relations)
       + renderRelations(solution, view, relations)
-      + renderDetail(solution, view, occurrences, relations)
       + renderGraph(solution, view);
   },
 };

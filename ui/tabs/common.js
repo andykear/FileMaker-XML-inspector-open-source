@@ -4,6 +4,12 @@
 // re-read buttons of a catalog, and the one selection-string shape. Pure
 // functions to strings and plain objects, like the rest of ui/: no document, no
 // server, every fm key through access.js and every model string through esc.
+//
+// Every tab renders its selected-detail section before its lists, in the order
+// the lists have today. A click's result renders where the eye is, at the top
+// of the page a reader is already looking at; a list below it can be a
+// thousand rows, and a detail rendered after one would land off the bottom of
+// the screen with no sign it had arrived.
 import { count, esc, link, rereadCatalogButton } from '../dom.js';
 import { get, path } from '../access.js';
 

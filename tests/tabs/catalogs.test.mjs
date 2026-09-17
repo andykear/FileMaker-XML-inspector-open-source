@@ -242,6 +242,15 @@ test('selecting a value list shows its kv detail, the values and a re-read contr
   assert.ok(html.includes('"catalog":"valueList"'));
 });
 
+test('the value list detail renders above the Value lists list', () => {
+  const yn = valueListRows(root).find((r) => r.name === 'YN');
+  const html = tab.render(solution, { ...view, selection: `${api.meta.root}|vl:${yn.id}` });
+  const detail = html.indexOf('<h2>Value list YN');
+  const list = html.indexOf('<h2>Value lists</h2>');
+  assert.ok(detail >= 0 && list >= 0);
+  assert.ok(detail < list, 'a click\'s result renders where the eye is, above the list');
+});
+
 test('selecting a custom function shows its escaped body in a <pre> and a re-read control', () => {
   const fn = customFunctionRows(root).find((r) => r.name === 'MyCustomFunction');
   const html = tab.render(solution, { ...view, selection: `${api.meta.root}|cf:${fn.id}` });

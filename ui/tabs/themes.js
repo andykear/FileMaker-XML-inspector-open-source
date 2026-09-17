@@ -219,6 +219,6 @@ export const tab = {
   id: 'themes',
   label: 'Themes',
   render(solution, view = {}) {
-    return renderThemes(solution, view) + renderSelected(solution, view);
+    return renderSelected(solution, view) + renderThemes(solution, view);
   },
 };

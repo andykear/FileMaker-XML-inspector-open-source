@@ -145,6 +145,15 @@ test('selecting a theme shows kv, swatches, named styles, layouts using as links
   assert.ok(html.includes('background-color'));
 });
 
+test('the theme detail renders above the Themes list', () => {
+  const apex = root.catalogs.theme.list.find((t) => t.displayName === 'Apex Blue');
+  const html = tab.render(solution, { ...view, selection: `${api.meta.root}|${apex.id}` });
+  const detail = html.indexOf('<h2>Theme Apex Blue');
+  const list = html.indexOf('<h2>Themes</h2>');
+  assert.ok(detail >= 0 && list >= 0);
+  assert.ok(detail < list, 'a click\'s result renders where the eye is, above the list');
+});
+
 test("the Layouts-using list names only layouts; the rest are counted and said to be fm's folder and separator rows", () => {
   const apexItem = root.catalogs.theme.list.find((t) => t.displayName === 'Apex Blue');
   // Measured on tests/fixtures/ooe: fm reports 24 entries on Apex Blue, of which

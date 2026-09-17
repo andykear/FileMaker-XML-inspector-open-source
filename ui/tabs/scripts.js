@@ -373,6 +373,6 @@ export const tab = {
   id: 'scripts',
   label: 'Scripts',
   render(solution, view = {}) {
-    return renderTree(solution, view) + renderSelected(solution, view) + renderIndex(solution, view);
+    return renderSelected(solution, view) + renderTree(solution, view) + renderIndex(solution, view);
   },
 };

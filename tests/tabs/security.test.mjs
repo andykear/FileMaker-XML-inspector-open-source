@@ -137,6 +137,15 @@ test('the privilege-set detail pane carries the per-item tables', () => {
   assert.ok(html.includes(sortableHeader('Table')));
 });
 
+test('the privilege-set detail renders above the Privilege sets list', () => {
+  const restricted = privilegeSetRows(root).find((r) => r.name === 'MyRestrictedPrivilegeSet');
+  const html = tab.render(solution, { ...view, selection: `${api.meta.root}|priv:${restricted.id}` });
+  const detail = html.indexOf('<h2>Privilege set MyRestrictedPrivilegeSet');
+  const list = html.indexOf('<h2>Privilege sets</h2>');
+  assert.ok(detail >= 0 && list >= 0);
+  assert.ok(detail < list, 'a click\'s result renders where the eye is, above the list');
+});
+
 test('accessSummary on plain values', () => {
   assert.equal(accessSummary('allViewOnly'), 'allViewOnly');
   assert.equal(accessSummary(null), '');
