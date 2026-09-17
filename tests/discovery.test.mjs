@@ -7,7 +7,7 @@ import { discover, readFile, siblingPaths, reread } from '../ui/discovery.js';
 import { resolveTarget, targetKey } from '../server/targets.mjs';
 import { createReplayApi } from './replay-api.mjs';
 import { catalogCounts } from '../ui/model.js';
-import { FILE_FACTS } from '../ui/read-plan.js';
+import { FILE_FACTS, LIST_CATALOGS } from '../ui/read-plan.js';
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/ooe/', import.meta.url));
 
@@ -400,14 +400,15 @@ test('discovery reports every phase it goes through, in the order fm is asked', 
   const root = s.files[api.meta.root];
   const listed = events.find((e) => e.type === 'listed' && e.target === api.meta.root);
   assert.equal(listed.ms, 100, 'the stub clock steps 100 ms across each api.read');
-  assert.equal(listed.catalogs, 19, 'every catalog the list batch asks for answered');
-  assert.equal(
-    listed.entries,
-    Object.values(root.catalogs).reduce((n, slot) => n + (slot.readAt && !slot.listError ? slot.list.length : 0), 0),
-  );
+  assert.equal(listed.catalogs, LIST_CATALOGS.length, 'every catalog the list batch asks for answered');
+  // Measured off the fixture's own lists, then pinned: computing the expectation
+  // the way the event computes it would agree with any number at all.
+  const counted = Object.values(root.catalogs)
+    .reduce((n, slot) => n + (slot.readAt && !slot.listError ? slot.list.length : 0), 0);
+  assert.equal(counted, 241, `measured on the fixture: ${counted} entries across its lists`);
+  assert.equal(listed.entries, 241);
 
   const describe = events.find((e) => e.type === 'describe' && e.target === api.meta.root);
-  assert.equal(describe.ops, Object.values(describe.byCatalog).reduce((a, b) => a + b, 0));
   assert.equal(describe.byCatalog.field, root.catalogs.table.list.length, 'one read:field per table');
   assert.equal(describe.byCatalog.script, recordedDescribes(api.meta.root, 'read:script'));
   assert.equal(describe.byCatalog.script, 41);

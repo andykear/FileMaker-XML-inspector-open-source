@@ -245,6 +245,9 @@ const PSOS_COLUMNS = [
   {
     key: 'steps',
     label: 'Which',
+    // The cell is a whole disclosure, not a value: sorting on its summary text
+    // would sort on the step count the column beside it already sorts on.
+    sort: false,
     render: (r) => `<details><summary>${plural(r.rows.length, 'step')}</summary><ul class="notes">`
       + r.rows.map((x) => `<li>${linkOr(stepHash(x.target, x.script.id, x.step.line), stepText(x))}</li>`).join('') + '</ul></details>',
   },
@@ -297,6 +300,8 @@ const globalColumns = (solution) => [
   {
     key: 'where',
     label: 'Set where',
+    // As above: the cell is a disclosure, and Set already sorts on its count.
+    sort: false,
     render: (r) => (r.sets.length
       ? `<details><summary>${plural(r.sets.length, 'site')}</summary><ul class="notes">${r.sets
         .map((s) => `<li>${linkOr(stepHash(s.target, s.script.id, s.step.line), `${s.script.name} line ${s.step.line}`)}</li>`)

@@ -4,11 +4,18 @@ import { createReadLog } from '../ui/read-log.js';
 
 const num = (n) => `<span class="num">${n}</span>`;
 
+/** The numbered lines: one per file, and never the done line, which is a `<p>`
+ *  under the list rather than one more step in it. */
 function items(html) {
   assert.ok(html.startsWith('<section class="panel read-log"><header><h2>Reading</h2></header><ol>'), html);
-  assert.ok(html.endsWith('</ol></section>'), html);
-  const inner = html.slice(html.indexOf('<ol>') + 4, -'</ol></section>'.length);
+  assert.ok(html.endsWith('</section>'), html);
+  const inner = html.slice(html.indexOf('<ol>') + 4, html.indexOf('</ol>'));
   return inner ? inner.split('</li>').filter(Boolean).map((s) => s.replace(/^<li>/, '')) : [];
+}
+
+/** The total under the list, or '' while the walk is still running. */
+function total(html) {
+  return html.slice(html.indexOf('</ol>') + '</ol>'.length, -'</section>'.length);
 }
 
 const OOE = {
@@ -75,7 +82,8 @@ test('two files, an unreachable one and the done line, in the order the events a
   log.push({ type: 'done', files: 2, unreachable: 2, ms: 10300 });
 
   const lines = items(log.html());
-  assert.equal(lines.length, 5);
+  // Four files walked; the done line is under the list, not numbered inside it.
+  assert.equal(lines.length, 4);
   assert.equal(lines[1], '<b>Ooe_dev</b> unreachable: open_failed (via Ooe_dev from ooe)');
   assert.equal(
     lines[2],
@@ -83,7 +91,7 @@ test('two files, an unreachable one and the done line, in the order the events a
       + `describing ${num(5)} objects: ${num(3)} tables, ${num(1)} script, ${num(1)} value list (0.5 s)`,
   );
   assert.equal(lines[3], '<b>$$referenced_file</b> unreachable: unresolvable (via Referenced from ooe)');
-  assert.ok(log.html().includes(`<li>Read ${num(2)} files, ${num(2)} unreachable (10.3 s)</li>`));
+  assert.equal(total(log.html()), `<p>Read ${num(2)} files, ${num(2)} unreachable, in 10.3 s overall</p>`);
 });
 
 test('a root that fatals has no referrer to name, and one entry is not plural', () => {
@@ -91,15 +99,15 @@ test('a root that fatals has no referrer to name, and one entry is not plural', 
   log.push({ type: 'list', target: 'fmnet://localhost/ooe', ops: 27 });
   log.push({ type: 'unreachable', target: 'fmnet://localhost/ooe', from: null, via: null, code: 'open_failed' });
   log.push({ type: 'done', files: 0, unreachable: 1, ms: 300 });
-  assert.deepEqual(items(log.html()), [
-    '<b>ooe</b> unreachable: open_failed',
-    `Read ${num(0)} files, ${num(1)} unreachable (0.3 s)`,
-  ]);
+  assert.deepEqual(items(log.html()), ['<b>ooe</b> unreachable: open_failed']);
+  assert.equal(total(log.html()), `<p>Read ${num(0)} files, ${num(1)} unreachable, in 0.3 s overall</p>`);
 
   const one = createReadLog();
   one.push({ type: 'list', target: 'fmnet://localhost/one', ops: 27 });
   one.push({ type: 'listed', target: 'fmnet://localhost/one', ms: 100, catalogs: 1, entries: 1 });
   assert.deepEqual(items(one.html()), [`<b>one</b> listed ${num(1)} catalog, ${num(1)} entry (0.1 s)`]);
+  // Nothing is written under the list until the walk is done.
+  assert.equal(total(one.html()), '');
 });
 
 test('every string the log draws goes through esc', () => {

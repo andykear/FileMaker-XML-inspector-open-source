@@ -33,9 +33,8 @@ export const linkOr = (hash, label) => (hash ? link(hash, label) : esc(label));
 /** Which tab shows a catalog's rows, as a bare tab id (`'tables'`, not
  *  `'#tables'`) -- the tabs already scope by file when there is more than one,
  *  so a selection per catalog on top of that would be a second scheme for the
- *  same thing. `target` is unused today; it names the file the question is
- *  about, kept in the signature for whatever needs it next. Unknown catalog
- *  -> `null`, which `linkOr` renders as plain text rather than a dead link. */
+ *  same thing. Unknown catalog -> `null`, which `linkOr` renders as plain text
+ *  rather than a dead link. */
 const CATALOG_TABS = {
   table: 'tables',
   field: 'tables',
@@ -59,7 +58,7 @@ const CATALOG_TABS = {
   font: 'catalogs',
 };
 
-export function catalogHash(catalog, target) {
+export function catalogHash(catalog) {
   return CATALOG_TABS[catalog] ?? null;
 }
 

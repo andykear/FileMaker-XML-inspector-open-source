@@ -77,6 +77,10 @@ export function table(columns, rows, opts = {}) {
   return `<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
+/** Case- and accent-insensitive, and built once: a new Intl.Collator per
+ *  comparison is the expensive half of sorting a thousand-row table. */
+const COLLATOR = new Intl.Collator(undefined, { sensitivity: 'base' });
+
 /** Sorts rendered rows, not model rows: `rows` is `[{ cells: [text…] }]`, the
  *  textContent of each `<td>`, `index` the column, `kind` the header's
  *  `data-sort` (`num` or `text`) and `direction` `asc` or `desc`. Pure: a new
@@ -90,16 +94,21 @@ export function sortRows(rows, index, kind, direction) {
   // `<span class="num">12</span>`, whose textContent is `12`, and a size cell
   // reads `82.5 MB`. A cell with no digit at all is not a number -- empty, `-`,
   // `n/a` -- and NaN is how that travels to the comparison below.
-  const numberOf = (r) => {
-    const digits = textOf(r).replace(/[^\d.-]/g, '');
+  const numberOf = (text) => {
+    const digits = text.replace(/[^\d.-]/g, '');
     return /\d/.test(digits) ? Number(digits) : NaN;
   };
+  // Decorate, sort, undecorate: each row's key is read out of the cell once
+  // rather than once per comparison, which for n rows is n reads instead of
+  // n log n. Same order, same comparisons -- only the key lookup moves.
   return rows
-    .map((row, i) => ({ row, i }))
+    .map((row, i) => {
+      const text = textOf(row);
+      return { row, i, text, num: kind === 'num' ? numberOf(text) : 0 };
+    })
     .sort((a, b) => {
       if (kind === 'num') {
-        const x = numberOf(a.row);
-        const y = numberOf(b.row);
+        const [x, y] = [a.num, b.num];
         const xBad = Number.isNaN(x);
         const yBad = Number.isNaN(y);
         // Not a number is MISSING, not small: it sits at the bottom whichever
@@ -108,7 +117,7 @@ export function sortRows(rows, index, kind, direction) {
         if (xBad || yBad) return xBad && yBad ? a.i - b.i : (xBad ? 1 : -1);
         return (x < y ? -1 : x > y ? 1 : 0) * dir || a.i - b.i;
       }
-      return textOf(a.row).localeCompare(textOf(b.row), undefined, { sensitivity: 'base' }) * dir || a.i - b.i;
+      return COLLATOR.compare(a.text, b.text) * dir || a.i - b.i;
     })
     .map((d) => d.row);
 }

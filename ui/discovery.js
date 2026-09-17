@@ -104,7 +104,10 @@ async function resolveFirst(api, from, paths) {
  *  the next sibling in the list is even resolved. This is what makes an
  *  unreachable sibling's own failure appear before a later sibling's
  *  unresolvable/unknown-data-source entries, matching the order fm's own
- *  reads happen in. */
+ *  reads happen in.
+ *
+ *  `done.ms` is the whole walk, context fetch and sibling resolution included,
+ *  so it is larger than the per-file phases add up to. */
 export async function discover(api, root, hooks = {}) {
   const progress = hooks.onProgress ?? (() => {});
   const phase = hooks.onPhase ?? (() => {});

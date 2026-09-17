@@ -4,7 +4,11 @@
 // line per file and renders them, so the main area says what fm is reading right
 // now. Pure functions to strings, like the rest of ui/: no document, no server.
 import { count, esc } from './dom.js';
-import { plural } from './tabs/common.js';
+
+/** `3 catalogs`, `1 catalog`: a count and the word it counts, agreeing. The tabs
+ *  have their own copy in ui/tabs/common.js; two lines are cheaper than a
+ *  top-level ui module reaching down into the tabs for them. */
+const plural = (n, word) => `${count(n)} ${n === 1 ? word : `${word}s`}`;
 
 /** The singular label of a describe catalog; `plural` adds the `s`. The key is
  *  the catalog the op reads, so a table's fields arrive under `field` and read
@@ -26,8 +30,11 @@ function fileName(target) {
   return String(target ?? '').split('/').filter(Boolean).pop() ?? '';
 }
 
+const secondsText = (ms) => `${((Number(ms) || 0) / 1000).toFixed(1)} s`;
+
+/** A phase's own time, in brackets after what it did. */
 function seconds(ms) {
-  return `(${((Number(ms) || 0) / 1000).toFixed(1)} s)`;
+  return `(${secondsText(ms)})`;
 }
 
 /** A phase still running ends with an ellipsis; a finished one carries its
@@ -96,13 +103,16 @@ export function createReadLog() {
       else if (e.type === 'described') line.described = { ms: e.ms };
     },
     html() {
-      const body = lines.map((line) => {
-        const html = line.kind === 'done'
-          ? `Read ${plural(line.files, 'file')}, ${count(line.unreachable)} unreachable ${seconds(line.ms)}`
-          : fileLine(line);
-        return `<li>${html}</li>`;
-      }).join('');
-      return `<section class="panel read-log"><header><h2>Reading</h2></header><ol>${body}</ol></section>`;
+      // The done line is not another file: it is the walk's own total, so it
+      // goes under the list as a sentence rather than as a numbered step that
+      // would read as one more file being read.
+      const files = lines.filter((line) => line.kind !== 'done');
+      const done = lines.find((line) => line.kind === 'done');
+      const body = files.map((line) => `<li>${fileLine(line)}</li>`).join('');
+      const total = done
+        ? `<p>Read ${plural(done.files, 'file')}, ${count(done.unreachable)} unreachable, in ${esc(secondsText(done.ms))} overall</p>`
+        : '';
+      return `<section class="panel read-log"><header><h2>Reading</h2></header><ol>${body}</ol>${total}</section>`;
     },
   };
 }

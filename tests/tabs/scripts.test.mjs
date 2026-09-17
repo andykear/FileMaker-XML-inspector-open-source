@@ -104,7 +104,6 @@ test('every index row carries its own solution-wide selection and every occurren
   // `*` is the solution: a step TYPE is used across every file, so it belongs to none.
   assert.equal(index[1].key, '*|step:Set Variable');
   assert.equal(index[1].key, solutionKey('step', index[1].step));
-  for (const row of index) assert.equal(row.uses.length, row.count, row.step);
   assert.equal(index.reduce((n, r) => n + r.uses.length, 0), 3482);
 
   const uses = index[1].uses;

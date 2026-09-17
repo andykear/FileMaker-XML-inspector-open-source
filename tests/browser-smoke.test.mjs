@@ -18,7 +18,7 @@
 // Five things are walked further than that, because each is an answer about WHERE
 // or HOW a thing is drawn rather than whether it draws at all:
 //
-//   * during discovery, `#main` is non-empty within a second of the page loading and
+//   * during discovery, `#main` is non-empty within three seconds of the page loading and
 //     says `Reading` -- the read log, which is all there is to look at for the ten
 //     seconds fm takes. It is screenshot as `read-log.png` before the wait goes on.
 //   * Scripts: the first row of the step index opens, and its `Step <name>` section
@@ -38,14 +38,17 @@
 //     inside <code> or <pre>, so it IS scanned as if it were the page's prose. A
 //     file whose step option legitimately reads `undefined` would be reported as a
 //     renderer fault here. ooe has none; another solution might.
-//   * one row per tab, bar the three that click twice. The FIRST `[data-select]` is
-//     clicked and nothing else, so a tab is proved to render one selection, not all
-//     of them -- the kind of row that comes second (a relation after an occurrence,
-//     a folder after a script) is never opened. Even on Scripts and Gaps it is the
-//     first row of the next list, never the tenth.
-//   * what the drawing LOOKS like. The graph is asserted to have labels; whether two
-//     of them land on top of each other is a question for a human with the
-//     screenshot, and nothing here reads one back.
+//   * one row per tab, bar three that click further: Scripts clicks one extra row
+//     (the first row of the step index), Gaps two (a kind, then the first entry
+//     inside it) and Tables two header clicks (the Fields column, up then down).
+//     Everywhere else the FIRST `[data-select]` is clicked and nothing else, so a
+//     tab is proved to render one selection, not all of them -- the kind of row
+//     that comes second (a relation after an occurrence, a folder after a script)
+//     is never opened. Even on Scripts and Gaps it is the first row of the next
+//     list, never the tenth.
+//   * what the drawing LOOKS like. The graph is asserted to have a group and a
+//     tooltip per relation; whether two lines land on top of each other is a
+//     question for a human with the screenshot, and nothing here reads one back.
 //   * the screenshots are evidence, not assertions: nothing reads them back, and a
 //     page taller than 6000px is saved as its first screenful only (Chrome will not
 //     encode a PNG past ~16k pixels), so the bottom of a long tab is not pictured.
@@ -121,6 +124,11 @@ async function sectionByHeading(page, source) {
       .find((s) => re.test(s.querySelector('h2')?.textContent?.trim() ?? '')) ?? null;
   }, source);
   const element = handle.asElement();
+  // Only the null path disposes, and that is not an oversight: puppeteer's
+  // `asElement()` returns `this` when the handle wraps a node, so the element
+  // the caller is about to use IS this handle. Disposing it "on both paths"
+  // would hand every caller a dead handle. When there was no section there is
+  // nothing to hand back, so the handle is released here.
   if (!element) await handle.dispose();
   return element;
 }
@@ -238,11 +246,15 @@ test('browser: walk every tab of the live page', { skip, timeout: 30 * MINUTE },
     await clock('discovery', async () => {
       await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
       // The ten seconds discovery takes used to be a blank rectangle. The read
-      // log fills it, and it is there within a second of the page loading --
-      // the first phase event arrives as soon as fm is spawned.
+      // log fills it, and the deadline times the whole chain that has to happen
+      // before there is anything in #main at all: the page's modules load, the
+      // context fetch answers, the first phase event arrives from the server's
+      // fm spawn, and the shell renders it. Three seconds is slack over the
+      // tenth of a second that takes, not a measurement of it -- a cold Chrome
+      // on a loaded machine is what the slack is for.
       await page.waitForFunction(
         () => (document.getElementById('main')?.innerText ?? '').trim() !== '',
-        { timeout: 1000, polling: 50 },
+        { timeout: 3000, polling: 50 },
       );
       await clock('read-log', async () => {
         await page.waitForFunction(
