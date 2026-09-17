@@ -182,7 +182,8 @@ test('the graph section carries one svg per file and lists the notes', () => {
 test('every occurrence rect carries the Occurrences row key, so a click on the picture selects the row', () => {
   const svg = graphSvg(root);
   // One data-select per drawn box, and it is the row key the table's own rows carry.
-  assert.equal(times(svg, /data-select="/g), times(svg, /data-to="/g));
+  // (The relation groups carry a data-select of their own, so the count is of rects.)
+  assert.equal(times(svg, /<rect [^>]*data-select="/g), times(svg, /data-to="/g));
   assert.ok(svg.includes(`data-select="${ROOT}|to:1065089"`));
   const rows = occurrenceRows(root).filter((r) => r.placed);
   assert.ok(rows.every((r) => svg.includes(`data-select="${r.key}"`)));
@@ -245,7 +246,9 @@ test('the filter narrows the occurrence and relation rows', () => {
   assert.match(some, /FM26Test_Source__cartesian/);
   // The graph still draws (and names) every occurrence; the tables are what narrows.
   assert.ok(!some.includes('>Contacts_TestTable</a>'), 'an occurrence matching neither name nor table is filtered out');
-  assert.ok(!some.includes('Contacts_TestTable::ID'), 'a relation matching neither side nor predicate is filtered out');
+  // The relation table's own cell, not the graph's tooltip: the graph draws (and
+  // now names the keys of) every relation whatever the filter says.
+  assert.ok(!some.includes('<code>Contacts_TestTable::ID'), 'a relation matching neither side nor predicate is filtered out');
   assert.equal(times(some, /<svg /g), Object.keys(solution.files).length, 'the graph is never filtered');
 });
 
@@ -266,6 +269,115 @@ test('every model string is escaped', () => {
   assert.ok(!html.includes('<script>'));
   assert.ok(!html.includes('onload="x'));
   assert.match(html, /&lt;b&gt;&amp;&quot;/);
+});
+
+/** The markup of one relation's group, sliced out by the row key it carries.
+ *  Groups do not nest, so the first `</g>` after the opening tag closes it. */
+function relGroup(svg, key) {
+  const re = new RegExp(`<g class="rel-group" data-select="${key.replace(/[^\w]/g, (c) => `\\${c}`)}">.*?</g>`);
+  const [found] = svg.match(re) ?? [];
+  assert.ok(found, `expected a relation group for ${key}`);
+  return found;
+}
+
+test('the graph draws the box FileMaker draws, not the one the occurrence fills open', () => {
+  // Measured on the fixture: fm reports both rectangles. BrojDva's two collapsed
+  // occurrences are drawn 18 tall and measure 116; drawing `bounds` put an empty
+  // box under each of them.
+  const brojDva = solution.files['fmnet://localhost/BrojDva'];
+  const invoice = occurrenceRows(brojDva).find((r) => r.name === 'Invoice');
+  assert.deepEqual(invoice.bounds, { left: 21, top: 72, width: 131, height: 18 });
+  assert.deepEqual(invoice.expanded, { left: 21, top: 72, width: 131, height: 116 });
+  assert.equal(invoice.view, 'collapsed');
+  assert.equal(invoice.placed, true);
+  assert.match(graphSvg(brojDva), new RegExp(`data-to="${invoice.id}"[^>]*x="21" y="72" width="131" height="18"`));
+
+  // ooe's six related-view boxes are drawn 38 tall and measure 118.
+  const cartesian = occurrenceRows(root).find((r) => r.name === 'FM26Test_Source__cartesian');
+  assert.equal(cartesian.bounds.height, 38);
+  assert.equal(cartesian.expanded.height, 118);
+  assert.match(graphSvg(root), new RegExp(`data-to="${cartesian.id}"[^>]*height="38"`));
+});
+
+test('the occurrence detail says both rectangles when they differ, and one when they do not', () => {
+  const brojDva = solution.files['fmnet://localhost/BrojDva'];
+  const invoice = occurrenceRows(brojDva).find((r) => r.name === 'Invoice');
+  const html = tab.render(solution, { ...view, selection: invoice.key });
+  assert.match(html, /<dt>Graph<\/dt><dd>drawn 131 × 18 at 21, 72 \(collapsed; expands to 131 × 116\)/);
+  // Said once: the view is inside the sentence, so the tail does not repeat it.
+  assert.equal(times(html, /collapsed/g), 1);
+
+  // TestTable is drawn at its full size, so the pair stays the one measurement.
+  const full = tab.render(solution, { ...view, selection: `${ROOT}|to:1065089` });
+  assert.match(full, /<dt>Graph<\/dt><dd>131 × 116 at 20, 20 /);
+  assert.ok(!full.includes('expands to'));
+  assert.match(full, /, view full/);
+});
+
+test('a relation is a group that says what it joins and selects its row when clicked', () => {
+  const svg = graphSvg(root);
+  const [rel] = relationRows(root);
+  assert.equal(rel.key, `${ROOT}|rel:1`);
+  const group = relGroup(svg, rel.key);
+  assert.match(group, new RegExp(`^<g class="rel-group" data-select="[^"]*\\|rel:1"><title>${rel.predicates.replace(/[^\w ]/g, (c) => `\\${c}`)}</title><line data-rel="1"`));
+  // One group per drawn relation, and every relation row's key is on one of them.
+  assert.equal(times(svg, /<g class="rel-group"/g), times(svg, /data-rel="/g));
+  for (const r of relationRows(root)) assert.ok(svg.includes(`data-select="${r.key}"`));
+});
+
+test('each predicate writes the key fields it joins on at the two boxes', () => {
+  const svg = graphSvg(root);
+  const [rel] = relationRows(root);
+  // Measured on the fixture: relation 1 joins on two pairs of fields.
+  assert.equal(rel.predicateList.length, 2);
+  assert.deepEqual(rel.predicateList.map((p) => [p.leftField, p.op, p.rightField]),
+    [['ID', '=', 'ID_TestTable'], ['CalcField1_c', '=', 'Name']]);
+  const group = relGroup(svg, rel.key);
+  // One label per field of each predicate: two per predicate, one at each end.
+  assert.equal(times(group, /<text class="key"/g), rel.predicateList.length * 2);
+  for (const name of ['ID', 'ID_TestTable', 'CalcField1_c', 'Name']) {
+    assert.match(group, new RegExp(`<text class="key"[^>]*>${name}</text>`));
+  }
+  // The two predicates stack 11 units apart at the same end of the line.
+  const ys = [...group.matchAll(/<text class="key" x="([\d.-]+)" y="([\d.-]+)" text-anchor="(\w+)"/g)];
+  assert.equal(ys.length, 4);
+  assert.equal(Number(ys[2][2]) - Number(ys[0][2]), 11, 'the left end stacks by 11');
+  assert.equal(Number(ys[3][2]) - Number(ys[1][2]), 11, 'and so does the right end');
+  assert.equal(ys[0][1], ys[2][1], 'a stacked label keeps the x of the one above it');
+  // The label sits outside the box, anchored away from it.
+  assert.deepEqual([ys[0][3], ys[1][3]].sort(), ['end', 'start']);
+});
+
+test('a cartesian relation labels the middle of its line with the operator alone', () => {
+  const svg = graphSvg(root);
+  const cartesian = relationRows(root).filter((r) => r.predicateList.every((p) => p.leftField === undefined));
+  assert.equal(cartesian.length, 2, 'ooe has two cartesian relations (9 and 10)');
+  for (const r of cartesian) {
+    const group = relGroup(svg, r.key);
+    assert.equal(times(group, /<text class="key"/g), 1);
+    assert.match(group, /<text class="key" x="[\d.-]+" y="[\d.-]+" text-anchor="middle">×<\/text>/);
+  }
+});
+
+test('a relation between two boxes fm stacks on one position draws no key labels', () => {
+  // No exit point to hang a label on when the centres coincide, so the group keeps
+  // its line, its tooltip and its click, and says nothing it cannot place.
+  const at = (id, left, top) => ({ name: `T${id}`, id, table: { name: 'T' }, graph: { bounds: { left, top, width: 100, height: 60 } } });
+  const file = {
+    target: 'x', name: 'x',
+    catalogs: {
+      tableOccurrence: { list: [at(1, 20, 20), at(2, 20, 20)], detailById: {} },
+      relation: {
+        list: [{ id: 5 }],
+        detailById: { 5: { result: { id: 5, left: { id: 1, name: 'T1' }, right: { id: 2, name: 'T2' }, predicates: [{ leftField: 'a', op: '=', rightField: 'b' }] } } },
+      },
+      graphNote: { list: [] },
+    },
+  };
+  const svg = graphSvg(file);
+  assert.equal(times(svg, /<g class="rel-group"/g), 1);
+  assert.match(svg, /<title>T1::a = T2::b<\/title>/);
+  assert.equal(times(svg, /<text class="key"/g), 0);
 });
 
 test('a cartesian relation reads as Left × Right, never ::undefined', () => {

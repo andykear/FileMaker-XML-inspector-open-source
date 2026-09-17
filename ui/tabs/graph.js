@@ -38,6 +38,11 @@ export function occurrenceRows(file) {
     const source = get(base, 'dataSource');
     const graph = get(d, 'graph');
     const id = get(d, 'id');
+    // What FileMaker draws, not what the occurrence would measure open: a collapsed
+    // or related-view box reports the full height under `bounds` and the height on
+    // the graph under `drawnBounds`. Drawing `bounds` put an empty box under every
+    // collapsed occurrence.
+    const drawn = get(graph, 'drawnBounds') ?? get(graph, 'bounds') ?? null;
     return {
       target: file.target,
       file: file.name ?? file.target,
@@ -50,26 +55,38 @@ export function occurrenceRows(file) {
       cascade: get(d, 'hasCascade') === true,
       tags: (get(d, 'tags') ?? []).join(', '),
       color: safeColor(get(graph, 'color')),
-      bounds: get(graph, 'bounds') ?? null,
-      placed: isPlaced(get(graph, 'bounds')),
+      bounds: drawn,
+      // The other rectangle, so the detail can say what the box opens to.
+      expanded: get(graph, 'bounds') ?? null,
+      view: get(graph, 'view') ?? null,
+      placed: isPlaced(drawn),
       detail: result ?? null,
       error: get(entry, 'error') ?? null,
     };
   });
 }
 
+/** The predicates as a list, one entry per join condition, read through `get` once
+ *  so the sentence and the graph's key labels cannot disagree about them. A
+ *  cartesian join is one predicate with an operator and no fields: fm reports
+ *  {op: "×"} and nothing else, so both field names stay `undefined`. */
+function predicateList(d) {
+  return (get(d, 'predicates') ?? []).map((p) => ({
+    leftField: get(p, 'leftField'),
+    rightField: get(p, 'rightField'),
+    op: get(p, 'op'),
+  }));
+}
+
+const isCartesian = (p) => p.leftField === undefined && p.rightField === undefined;
+
 function predicateText(d) {
   const left = nameOf(get(d, 'left'));
   const right = nameOf(get(d, 'right'));
-  return (get(d, 'predicates') ?? [])
-    .map((p) => {
-      // A cartesian join is one predicate with an operator and no fields: fm
-      // reports {op: "×"} and nothing else, so it reads as `Left × Right`.
-      const lf = get(p, 'leftField');
-      const rf = get(p, 'rightField');
-      if (lf === undefined && rf === undefined) return `${left} ${get(p, 'op')} ${right}`;
-      return `${left}::${lf} ${get(p, 'op')} ${right}::${rf}`;
-    })
+  return predicateList(d)
+    .map((p) => (isCartesian(p)
+      ? `${left} ${p.op} ${right}`
+      : `${left}::${p.leftField} ${p.op} ${right}::${p.rightField}`))
     .join('; ');
 }
 
@@ -96,6 +113,7 @@ export function relationRows(file) {
       leftId: path(d, 'left.id'),
       rightId: path(d, 'right.id'),
       predicates: predicateText(d),
+      predicateList: predicateList(d),
       createL: get(l2r, 'createRelated') === true,
       createR: get(r2l, 'createRelated') === true,
       cascadeDeleteL: get(l2r, 'cascadeDelete') === true,
@@ -117,6 +135,71 @@ const box = (b) => ({
 });
 
 const centre = (b) => ({ x: b.left + b.width / 2, y: b.top + b.height / 2 });
+
+/** Coordinates go into the markup at a tenth of a unit: enough to sit on the line,
+ *  short enough that the attribute stays readable. */
+const round = (n) => Math.round(n * 10) / 10;
+
+// How far outside its box a key label sits, and how far apart two predicates of
+// one relation stack, both in graph units.
+const EDGE_GAP = 4;
+const STACK = 11;
+
+/** Where the centre-to-centre line leaves box `b` on its way to `towards`, plus the
+ *  EDGE_GAP step that puts the label clear of the border, and the anchor that keeps
+ *  the text on the outside (a line leaving rightwards reads left-to-right away from
+ *  the box). The slab test: from the centre, which of the four edges the direction
+ *  reaches first. `null` when there is no such point -- the two centres coincide, or
+ *  the other centre is inside this box, both of which happen when fm stacks boxes on
+ *  one position, and neither of which has an honest place for a label. */
+function exitPoint(b, towards) {
+  const c = centre(b);
+  const [dx, dy] = [towards.x - c.x, towards.y - c.y];
+  const tx = dx > 0 ? (b.left + b.width - c.x) / dx : dx < 0 ? (b.left - c.x) / dx : Infinity;
+  const ty = dy > 0 ? (b.top + b.height - c.y) / dy : dy < 0 ? (b.top - c.y) / dy : Infinity;
+  const t = Math.min(tx, ty);
+  if (!Number.isFinite(t) || t <= 0 || t >= 1) return null;
+  const len = Math.hypot(dx, dy);
+  return {
+    x: c.x + dx * t + (dx / len) * EDGE_GAP,
+    y: c.y + dy * t + (dy / len) * EDGE_GAP,
+    anchor: dx > 0 ? 'start' : 'end',
+  };
+}
+
+const keyText = (x, y, anchor, label) => (label === undefined || label === null || label === ''
+  ? ''
+  : `<text class="key" x="${round(x)}" y="${round(y)}" text-anchor="${anchor}">${esc(label)}</text>`);
+
+/** What the line joins, written where it joins it: each predicate's left field at
+ *  the left occurrence's edge and its right field at the right occurrence's edge,
+ *  so the graph answers "on which key?" without a click. Several predicates stack
+ *  down the y axis. A cartesian predicate has no fields to name, so its operator
+ *  goes alone in the middle of the line. */
+function keyLabels(row, a, b) {
+  const [ca, cb] = [centre(a), centre(b)];
+  const [ea, eb] = [exitPoint(a, cb), exitPoint(b, ca)];
+  if (!ea || !eb) return '';
+  const mid = { x: (ca.x + cb.x) / 2, y: (ca.y + cb.y) / 2 };
+  return row.predicateList.map((p, i) => {
+    const drop = i * STACK;
+    if (isCartesian(p)) return keyText(mid.x, mid.y + drop, 'middle', p.op);
+    return keyText(ea.x, ea.y + drop, ea.anchor, p.leftField)
+      + keyText(eb.x, eb.y + drop, eb.anchor, p.rightField);
+  }).join('');
+}
+
+/** A relation is a group, not a bare line: SVG `<line>` is not a container every
+ *  browser will hang a `<title>` tooltip off, and the group also carries the
+ *  Relationships row key, so a click on the line -- or on one of its key labels --
+ *  selects the relation exactly as a click on the row does. */
+function relationSvg(row, a, b) {
+  const [p, q] = [centre(a), centre(b)];
+  return `<g class="rel-group" data-select="${esc(row.key)}"><title>${esc(row.predicates)}</title>`
+    + `<line data-rel="${esc(row.id)}" class="rel" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}"/>`
+    + keyLabels(row, a, b)
+    + '</g>';
+}
 
 /** The occurrences fm puts at a position another occurrence already has. It
  *  happens on the reference solution -- ooe's TestTable and SaXMLDelivery both
@@ -184,8 +267,7 @@ export function graphSvg(file, opts = {}) {
   const lines = relationRows(file).map((r) => {
     const [a, b] = [byId.get(String(r.leftId)), byId.get(String(r.rightId))];
     if (!a || !b) return '';
-    const [p, q] = [centre(a), centre(b)];
-    return `<line data-rel="${esc(r.id)}" class="rel" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}"/>`;
+    return relationSvg(r, a, b);
   }).join('');
   const vb = viewBoxOf([...placed.map((r) => box(r.bounds)), ...notes.map((n) => box(get(n, 'bounds')))]);
   // The width and height are the graph's own, in FileMaker's units: one unit is one
@@ -264,6 +346,26 @@ function boundsText(bounds) {
   return `${b.width} \u00d7 ${b.height} at ${b.left}, ${b.top}`;
 }
 
+/** True when fm draws the occurrence smaller than it measures -- a collapsed or
+ *  related-view box, whose `drawnBounds` and `bounds` disagree. */
+function shrunk(row) {
+  if (!isPlaced(row.bounds) || !isPlaced(row.expanded)) return false;
+  const [drawn, full] = [box(row.bounds), box(row.expanded)];
+  return drawn.width !== full.width || drawn.height !== full.height;
+}
+
+/** A collapsed or related-view occurrence is two rectangles: the one FileMaker
+ *  draws and the one it would fill open. Saying only the first hides why the box
+ *  is a sliver; saying only the second contradicts the picture, so when they
+ *  differ the line says both, and names the view that made them differ (which is
+ *  then left off the tail of the Graph line, rather than said twice). */
+function geometryText(row) {
+  if (!shrunk(row)) return boundsText(row.bounds);
+  const full = box(row.expanded);
+  const why = [row.view, `expands to ${full.width} \u00d7 ${full.height}`].filter(Boolean).join('; ');
+  return `drawn ${boundsText(row.bounds)} (${why})`;
+}
+
 function sideKv(label, side) {
   const flags = ['createRelated', 'cascadeDelete', 'cascadeUpdate', 'sortRelated'].filter((f) => get(side, f) === true);
   const sort = sortText(side);
@@ -288,7 +390,7 @@ function renderDetail(solution, view, occurrences, relations) {
     ['Source', sourceBadges(row) || 'none'], ['Position', esc(get(d, 'position'))],
     ['Related', (get(d, 'related') ?? []).map((r) => esc(nameOf(r))).join(', ') || 'none'],
     ['Cascade', row.cascade ? badge('has cascade', 'warn') : 'none'],
-    ['Graph', `${esc(boundsText(row.bounds))} <span class="swatch" style="background:${row.color}"></span> ${esc(row.color)}, view ${esc(path(d, 'graph.view'))}`],
+    ['Graph', `${esc(geometryText(row))} <span class="swatch" style="background:${row.color}"></span> ${esc(row.color)}${shrunk(row) ? '' : `, view ${esc(row.view)}`}`],
     ['Tags', esc(row.tags) || 'none'],
   ] : [
     ['Left', esc(row.left)], ['Right', esc(row.right)],

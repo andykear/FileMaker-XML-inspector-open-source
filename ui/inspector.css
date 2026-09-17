@@ -303,6 +303,11 @@ svg.graph .to { stroke-width: 1; }
 svg.graph .to.highlight { stroke: var(--brand); stroke-width: 3; fill: var(--brand); fill-opacity: .18; }
 svg.graph .to-name { font: 600 11px -apple-system, ui-sans-serif, system-ui, sans-serif; fill: var(--ink); }
 svg.graph .rel { stroke: var(--ink-4); stroke-width: 1.5; }
+/* A relation is a group: the line, its tooltip and the key field names it joins on.
+   The whole group is the click target, so a label selects the relation too. */
+svg.graph .rel-group { cursor: pointer; }
+svg.graph .rel-group:hover line { stroke: var(--brand); stroke-width: 2.5; }
+svg.graph .key { font-size: 9px; fill: var(--ink-2); }
 svg.graph .note { stroke-width: 1; }
 svg.graph .note-text { font: 11px -apple-system, ui-sans-serif, system-ui, sans-serif; fill: var(--ink-2); }
 
