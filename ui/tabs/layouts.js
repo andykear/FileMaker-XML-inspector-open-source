@@ -313,7 +313,7 @@ function detailPairs(detail, counts) {
     ['Theme', `${esc(path(detail, 'theme.displayName'))} <span class="muted">(${esc(path(detail, 'theme.group'))})</span>`],
     ['View styles', `${esc(path(detail, 'viewStyles.default'))} <span class="muted">enabled: ${esc(enabled.join(', ')) || 'none'}</span>`],
     ['Flags', path(detail, 'flags.areDefaults') === true ? 'defaults' : esc((path(detail, 'flags.set') ?? []).join(', ')) || 'none'],
-    ['Geometry', `${num(get(g, 'baseWidth'))} ${esc(get(g, 'units'))} wide, body ${num(get(g, 'bodyHeight'))}`
+    ['Geometry', `${num(get(g, 'baseWidth'))} ${esc(get(g, 'units'))} wide, body ${num(get(g, 'bodyHeight'))}`
       + ` <span class="muted">${esc(get(g, 'layoutType'))}, ${esc(get(g, 'orientation'))}, ${esc(get(g, 'clientType'))}</span>`],
     ['Triggers', count(get(detail, 'scriptTriggerCount'))
       + ` <span class="muted">${esc((get(detail, 'scriptTriggers') ?? []).map((t) => get(t, 'event')).join(', '))}</span>`],

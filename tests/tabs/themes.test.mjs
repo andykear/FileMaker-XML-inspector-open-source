@@ -7,7 +7,7 @@ import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
 import { link } from '../../ui/dom.js';
 import {
-  tab, themeRows, styleUsage, paletteSwatches, themesTotals, selectionOf,
+  tab, themeRows, styleUsage, styleCountsByTheme, paletteSwatches, themesTotals, selectionOf,
 } from '../../ui/tabs/themes.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
@@ -183,19 +183,32 @@ test('every model string is escaped', () => {
   assert.match(html, /&lt;style&gt;bad&lt;\/style&gt;/);
 });
 
-test('styleUsage walks every layout once for all themes, and caches that walk per file', () => {
+test('styleUsage walks every layout once for all themes, and gives consistent answers', () => {
   const theme = themeRows(root).find((r) => r.namedStyleCount > 0);
   const first = styleUsage(root, theme.theme);
   const again = styleUsage(root, theme.theme);
+  // styleUsage itself builds a fresh `.map().sort()` array on every call --
+  // that array's identity proves nothing about the cache below it, only its
+  // values can be compared here. The cache itself is pinned separately, on
+  // styleCountsByTheme's own return identity.
   assert.deepEqual(again, first);
   // Two themes of the same file share one walk; the answers still differ.
   const other = themeRows(root).find((r) => r.id !== theme.id && r.namedStyleCount > 0);
   assert.notDeepEqual(styleUsage(root, other.theme), first);
-  // A layout re-read invalidates the walk: the memoised per-file walk is gone,
-  // so this is a freshly computed array, not the cached one (like the layouts
-  // tab's own memo test, tests/tabs/layouts.test.mjs).
+});
+
+test('styleCountsByTheme memoises the walk per file until a layout re-read replaces detailById', () => {
+  // The memo styleUsage rests on: same input, same Map back by identity, the
+  // way tests/tabs/layouts.test.mjs pins layoutRows.
+  const first = styleCountsByTheme(root);
+  assert.equal(styleCountsByTheme(root), first);
+
+  // A layout re-read invalidates the walk: model.js replaces `detailById` at
+  // either grain (see ui/model.js), which is exactly what the memo keys on.
   const slot = root.catalogs.layout;
   root.catalogs.layout = { ...slot, detailById: { ...slot.detailById } };
-  assert.notEqual(styleUsage(root, theme.theme), first);
+  const afterReread = styleCountsByTheme(root);
+  assert.notEqual(afterReread, first, 'a layout re-read must invalidate the cached walk');
+  assert.equal(styleCountsByTheme(root), afterReread, 'the new walk is itself now cached');
   root.catalogs.layout = slot;
 });

@@ -38,7 +38,11 @@ export function themeRows(file) {
  *  re-read replaces at either grain (see ui/model.js). */
 const styleUsageCache = new WeakMap();
 
-function styleCountsByTheme(file) {
+/** Exported only so a test can assert on ITS return identity: `styleUsage`
+ *  builds a fresh `.map().sort()` array on every call regardless of whether
+ *  this walk was recomputed, so the array itself proves nothing about the
+ *  cache. This Map is what the WeakMap actually remembers. */
+export function styleCountsByTheme(file) {
   const details = path(file, 'catalogs.layout.detailById');
   const hit = styleUsageCache.get(file ?? {});
   if (hit && hit.details === details) return hit.byTheme;
