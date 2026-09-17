@@ -46,10 +46,12 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 
 Point it at a live file (or a hosted `fmnet://` address) and it reads the solution directly through `fm`, following every external data source it finds so a multi-file solution is inspected whole. Nothing is uploaded anywhere; nothing here writes to the file.
 
+Every table on every tab sorts on a header click — ascending, then descending, in the browser, without losing what you have selected.
+
 **Schema**
 - Base tables, table occurrences, fields — counts, types, storage, validation, auto-entry
 - Relationships — full sortable list with TOs, base tables, and join keys; multi-predicate, sort specs
-- Relationship graph — interactive view rendered from the table-occurrence geometry fm reports, so occurrences sit exactly where they sit in Manage Database
+- Relationship graph — interactive view rendered from the table-occurrence geometry fm reports, drawn at the box FileMaker itself draws, so occurrences sit exactly where they sit in Manage Database; every relation line carries the key fields it joins at each end and says its full predicates on hover
 
 **Layouts and Themes**
 - Layouts — count, triggers, portal usage, object counts, parts
@@ -58,7 +60,7 @@ Point it at a live file (or a hosted `fmnet://` address) and it reads the soluti
 
 **Scripts**
 - Script tree as FileMaker folds it, with step-by-step rendering through the shared step display
-- Step index across every file reached, with usage counts and per-step drill-down to the scripts using it
+- Step index across every file reached, with usage counts; select a step for every script that uses it and the lines it sits on
 - Script issue checks — swallowed errors, dead Set Variables (a write with no later read), embedded credentials in a quoted literal, and more; each check names the fm key that decided it
 - Call graph between scripts
 

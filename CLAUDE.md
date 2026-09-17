@@ -21,6 +21,7 @@ The Clockwork Inspector rewrite is complete: the fm CLI inspector is the product
 - `server/` — the one fm spawn plus the HTTP endpoints.
 - `ui/` — the browser-safe model, discovery and page; no server code.
 - `ui/tabs/` — one pure renderer per tab; the shell routes `#tab/selection`.
+- `ui/read-log.js` — folds discovery's phase events into the read log `#main` shows while fm is still reading.
 - `ui/analysis/` — pure analyses over the model, memoised per solution.
 - `ui/export/` — Markdown, Mermaid and JSON exporters.
 - `tests/fixtures/ooe` — the recorded solution, with `meta.json` naming the fm build.
