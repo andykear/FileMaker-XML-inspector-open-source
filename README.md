@@ -62,10 +62,6 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 - Layouts: count, visibility, themes, triggers, portal usage, object counts; portals and layout controls in their own sortable tables
 - **Layout Calcs**: every calculation stored on a layout object in one searchable table: hide conditions, conditional formatting, tooltips, placeholder text, portal filters and web viewer addresses, button labels, button bar segments, panel labels, button action and script trigger parameters, plus portal sort fields. Each row flags `$$` globals, dynamic evaluation (`Evaluate`, `GetField`, `ExecuteSQL`, `GetLayoutObjectAttribute`), references to an occurrence other than the layout's own, and references to unstored calculation fields, the usual reason a portal filter or hide condition is slow. Portal filters and conditional formatting have no read path in live schema tooling, so the export is the only place they can be audited
 
-*(sections from here to Graph Health unchanged from your merge)*
-
----
-
 **Graph Health**
 
 Graph Health measures the relationship graph against the Anchor–Buoy convention, finds every direct anchor to anchor edge, and writes the severing work plan for each one: which buoy to create or reuse, what to repoint, which scripts to confirm, then delete and verify. Crossings are traced across eight categories, from calc fields and script references (with window context and caller triage) to portal filters, merge fields and value lists. On a real 114 MB production export: 54 candidate edges whose severing takes the graph from 4 connected groups to 58 independent modules.
