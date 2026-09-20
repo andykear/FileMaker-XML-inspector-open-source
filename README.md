@@ -72,13 +72,7 @@ Graph Health measures the relationship graph against the Anchor–Buoy conventio
 
 Every card carries Copy work plan (the human brief as markdown), Copy for an agent (the same plan as one JSON operation per line, for an AI agent or a script driving a schema tool), and with more than one candidate, Copy master programme sequences the whole job cheapest first with shared scripts deduplicated. Every plan states what a single export cannot see before step one. It is observations only: the analyser flags, the developer decides.
 
-The full method, the crossing categories, the triage rules and the honest limits are in GRAPH-HEALTH.md.
-
----
-
-### Honest limits
-
-Static analysis of one export cannot see server side schedules, other files calling in, Data API and OData clients, or values assembled at runtime. Every plan says so before step one. Exports whose script catalog ships names without step bodies are bannered, because the script trace sees nothing in that case and silence would be a lie.
+The full method, with the crossing categories, the triage rules and the honest limits, is inside the product: open the Graph Health tab and click About this method.
 
 ---
 
