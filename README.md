@@ -49,18 +49,79 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 
 ## What it analyses
 
-Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) and the Inspector parses it entirely in your browser. Nothing is uploaded anywhere. Handles UTF-16 and UTF-8 with BOM detection, FileMaker 2026 split catalog folders, and strips (and reports) illegal XML control characters so affected files still parse.
+**Files and parsing**
+- Reads Save as XML, FileMaker's native object export, entirely in the browser; nothing is uploaded anywhere
+- FileMaker 2026 split catalog folders load as one solution
+- UTF-16 and UTF-8 with BOM detection; illegal XML control characters stripped and reported so affected files still parse
+- Around a million lines of XML per second on a reasonably capable computer
+
+**Overview**
+- Dashboard cards for every catalog, each linking to its tab
+- The FileMaker version that wrote the export, shown in About and Methodology
 
 **Schema**
-- Base tables, table occurrences, fields: counts, types, storage, validation, auto entry
-- Field performance risk: each field scored 1 to 10 from its storage, whether a calculation reaches across relationships, aggregate and SQL calls, how many other calculations it feeds, relationship keys, and layout exposure, so likely cost hotspots surface. A heuristic from schema shape, not a measurement
-- **Calculations**: every calculation field as one row: storage, result type, indexed, the same 1 to 10 performance score as the Fields tab (factors on hover), the other tables the formula reaches through relationships, how many calculations depend on it, aggregate, `$$` and dynamic evaluation flags, expensive functions inside unstored calcs, unreferenced status, the warnings for stored calcs that reference globals or related fields (FileMaker silently unstores those), and the formula itself with click to expand and copy
-- Relationships: full sortable list with TOs, base tables, and join keys; multiple predicates, sorted, cascade create and delete
-- Relationship graph: interactive view rendered from the TO geometry stored in the file, so occurrences sit exactly where they sit in Manage Database; zoom, pan, rightward chain tracing, Edit Relationship detail on click; Graph Health candidate edges drawn dashed on the same geometry
-- **Graph Health**: Anchor–Buoy analysis of the relationship graph with a severing work plan for every direct anchor to anchor edge (see the section below)
-- Field dependencies and container field usage
-- Layouts: count, visibility, themes, triggers, portal usage, object counts; portals and layout controls in their own sortable tables
-- **Layout Calcs**: every calculation stored on a layout object in one searchable table: hide conditions, conditional formatting, tooltips, placeholder text, portal filters and web viewer addresses, button labels, button bar segments, panel labels, button action and script trigger parameters, plus portal sort fields. Each row flags `$$` globals, dynamic evaluation (`Evaluate`, `GetField`, `ExecuteSQL`, `GetLayoutObjectAttribute`), references to an occurrence other than the layout's own, and references to unstored calculation fields, the usual reason a portal filter or hide condition is slow. Portal filters and conditional formatting have no read path in live schema tooling, so the export is the only place they can be audited
+- Tables, table occurrences and fields: counts, types, storage, validation, auto entry
+- Field performance risk: every field scored 1 to 10 from storage, cross relationship reach, aggregates and SQL, dependency fan out and layout exposure. A heuristic from schema shape, not a measurement
+- Calculations browser: every calculation field with storage, result type, index state, performance score, cross table reach, dependency counts, silently unstored warnings and the formula itself
+- Field dependencies traced in both directions
+- Container fields and their storage options
+- Relationships: full sortable list with TOs, base tables, join keys, multiple predicates, sort specs and cascade flags
+- Relationship graph drawn from the real Manage Database geometry: zoom, pan, chain tracing, click a relation for its detail
+- Graph Health: Anchor–Buoy severing analysis with a work plan for every direct anchor to anchor edge, a master programme, and the module split figure (method inside the tab under About this method)
+- Graph hygiene: exact duplicate relationships and same predicate buoy pairs
+
+**Layouts and themes**
+- Layouts: visibility, themes, triggers, portal usage, object counts and parts
+- Portals and layout controls in their own sortable tables
+- Layout Calcs: every calculation stored on a layout object, searchable, with far TO, $$ global, dynamic evaluation and unstored reference flags. Portal filters and conditional formatting have no live read path, so the export is the only place they can be audited
+- Wireframe: any layout drawn from its real object bounds, with part bands, hidden panels, popovers and portal rows
+- Theme mood board: every named style rendered as the object it styles, from its own fill, border, corners and font
+- Colour palette per theme, indexed to the styles wearing each colour, with WCAG contrast checks
+- Local CSS: every per object style override in the file
+
+**Logic**
+- Script tree as FileMaker folds it, with full step rendering
+- Step Index: every step used in the file with counts, drill down to the scripts using it, and content search inside step text
+- Script issue checks: swallowed errors, dead Set Variables, enabled steps inside disabled guards, PSoS bodies with client only steps checked on the callee, credential keywords in script logic, and more
+- Call graph between scripts, interactive and exportable
+- Variables: every $$ global with set counts, reading scripts and dead or write only globals called out
+- Custom functions with usage counts
+- Value lists including broken sources and show related values only
+
+**Security**
+- Accounts with privilege set and state
+- Privilege sets with per area overrides
+- Extended privileges and who holds them
+
+**Configuration and metadata**
+- File Config: file options and triggers
+- External Sources: each source's paths and the table occurrences that depend on it
+- Plugins referenced by the file
+- Persistent Data: FileMaker 2026's persistent data store
+- Custom menus and menu sets
+- Developer Tags gathered from names and comments
+- Activity: modification metadata across the file
+- Bit Flag Decoder for the format's packed option fields
+
+**Analysis**
+- Unreferenced fields, table occurrences, scripts, layouts and value lists, tiered by confidence because dynamic references (Evaluate, GetField, SQL) are visible but not resolvable
+- Broken references across hide conditions, tooltips, conditional formatting, portal filters and value list sources
+- Reference Explorer: pick any object and see both directions at once, what it references and what references it, from every list in the tool
+
+**Comparison**
+- Load two exports and diff them: script step diffs, field calculation diffs, and counter changes, exportable as Markdown or JSON
+
+**Outputs**
+- Header Export menu: full Markdown report, findings as JSON, CSV tables
+- Mermaid export for the relationship graph and the script call graph
+- Graph Health copy buttons: work plan as markdown, JSON operations for an AI agent, master programme across every edge
+- Copy on every formula; layout and script objects copy as XML
+- Every export reads from the same parsed model the tabs render from, so a report can never disagree with the page it came from
+
+**Methodology and About**
+- Methodology documents what each analysis can and cannot see, in the product, updated with the code that computes it
+
+---
 
 **Graph Health**
 
