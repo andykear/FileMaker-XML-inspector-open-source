@@ -68,8 +68,6 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 
 ## Graph Health and the Anchor–Buoy severing method
 
-*Method and implementation by Andrew Kear, Clockwork Creative Technology. First published September 2026. Developed on a production severing job across a 758 occurrence relationship graph.*
-
 The Graph Health tab measures the relationship graph against the Anchor–Buoy convention: each layout sits on an anchor occurrence, and anything that anchor needs to reach should hang from it through a dedicated buoy occurrence.
 
 Direct anchor to anchor links turn the graph into a spiderweb: relationships from one part of the solution run directly into another, making the structure harder to read and forcing the graph to be traversed more broadly than necessary. Keeping each anchor's dependencies hanging from its own buoys makes the solution easier to understand and keeps relationship traversal local.
