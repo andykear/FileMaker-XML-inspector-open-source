@@ -5,7 +5,8 @@
 
 **Full solution analysis for FileMaker. Local, in the browser, open. No install, no licence, no cloud.**
 
-**Latest release: 2.8, September 2026. In active development.**
+**Latest release: 2.8, September 2026.\
+In active development.**
 
 <img width="855" height="553" alt="Screenshot 2026-09-05 at 14 30 14" src="https://github.com/user-attachments/assets/1d926a42-4e71-4d9d-a777-0ee1cc220d00" />
 
