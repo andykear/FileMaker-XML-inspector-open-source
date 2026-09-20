@@ -66,7 +66,7 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 
 ---
 
-### Graph Health
+**Graph Health**
 
 Graph Health measures the relationship graph against the Anchor–Buoy convention, finds every direct anchor to anchor edge, and writes the severing work plan for each one: which buoy to create or reuse, what to repoint, which scripts to confirm, then delete and verify. Crossings are traced across eight categories, from calc fields and script references (with window context and caller triage) to portal filters, merge fields and value lists. On a real 114 MB production export: 54 candidate edges whose severing takes the graph from 4 connected groups to 58 independent modules.
 
