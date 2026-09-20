@@ -137,26 +137,29 @@ If the file contains API keys, passwords, or internal hostnames, run it through 
 
 ---
 
-## The FileMaker XML suite
+## The rest of the collection
 
-One of a set that reverse engineers FileMaker's clipboard format family end to end: the private type codes FileMaker uses to carry schema and objects through the clipboard. The three generation specs cover all seven codes between them; two tools support the workflow.
+**[Menu](https://github.com/andykear)**
 
-**[Script XML Skill](https://github.com/andykear/FileMaker-XMLsnippet-Claude-Skill)** (XMSS, XMSC, XMFN)
-The full script step ID dictionary, plus the hidden paste handler rules that decide whether your XML survives the trip into FileMaker.
+**Reference skills**
 
-**[Layout XML Skill](https://github.com/andykear/FileMaker-XMLsnippet-Layout-Claude-Skill)** (XML2)
-All 18 layout object types mapped, every flag decoded, element order confirmed against native output. Verified across 45+ layouts in 10 production files.
+**[FileMaker Second Opinion](https://github.com/andykear/FileMaker-second-opinion)**\
+**[FileMaker AI Vocabulary](https://github.com/andykear/FileMaker-AI-vocabulary)**\
 
+**Research / Specialist**
+
+**[FileMaker AI Grammar](https://github.com/andykear/FileMaker-AI-grammar)**
+
+**Generation, paste-ready FileMaker XML**
+
+**[Script XML Skill](https://github.com/andykear/FileMaker-XMLsnippet-Claude-Skill)** (XMSS, XMSC, XMFN)\
+**[Layout XML Skill](https://github.com/andykear/FileMaker-XMLsnippet-Layout-Claude-Skill)** (XML2)\
 **[Field, Table & Value List Definitions](https://github.com/andykear/FileMaker-XML-field-definitions)** (XMFD, XMTB, XMVL)
-Field, table and value list definition XML: auto enter, validation, storage, calculation options, and the three value list source arms, verified down to the individual option level.
 
-**Analysis: read, audit and clean existing XML**
+**Analyse a FileMaker solution in your browser**
 
-**[XML Inspector](https://github.com/andykear/FileMaker-XML-inspector-open-source)** (SaXML) — this repo
-Full catalog dependency analysis of a Save as XML export, entirely in the browser. Finds unreferenced fields, silent failure risks, broken references, Anchor–Buoy severing candidates with work plans, and diffs two versions of a solution against each other.
-
+**[Clockwork Inspector](https://github.com/andykear/FileMaker-XML-inspector-open-source)** (SaXML)\
 **[XML Scrubber](https://github.com/andykear/FileMaker-XML-scrubber)** (SaXML + others)
-Strips API keys, passwords and internal hostnames out of FileMaker XML before you hand it to an AI tool.
 
 ---
 
