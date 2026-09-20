@@ -10911,10 +10911,17 @@ function buildScriptCallerTriage(root, s) {
       // RESOLVED and left the caller-context path effectively dead.
       if (n.tagName === 'Layout' && !layoutEl && n.getAttribute('isFolder') !== 'True') layoutEl = n;
       if (n.tagName === 'Script' && n.parentNode && n.parentNode.tagName === 'StepsForScripts') stepsWrapper = n;
-      if (n.tagName === 'StepsForScripts' || n.tagName === 'LayoutCatalog' || n.tagName === 'ScriptCatalog' || n.tagName === 'Metadata' || n.tagName === 'CustomMenuSetCatalog') { region = n.tagName; break; }
+      if (n.tagName === 'StepsForScripts' || n.tagName === 'LayoutCatalog' || n.tagName === 'ScriptCatalog' || n.tagName === 'Metadata' || n.tagName === 'CustomMenuSetCatalog' || n.tagName === 'PrivilegeSetsCatalog') { region = n.tagName; break; }
       n = n.parentNode; depth++;
     }
     if (region === 'ScriptCatalog') continue; // definition tree, not a caller
+    // A privilege set's custom script access list names the scripts an account
+    // MAY run. That is permission, not a call. Counting it as a caller gave
+    // every listed script a non-zero caller total, so ORPHANED could never be
+    // reached and the script fell through to CONFLICTED — on a file with
+    // per-script privileges, that is most of them. Same rule as the unreferenced
+    // tallies, which excluded this catalog already.
+    if (region === 'PrivilegeSetsCatalog') continue;
     if (region === 'StepsForScripts' && stepsWrapper) {
       if (ref.parentNode === stepsWrapper) continue; // the wrapper's own identity ref
       const idRef = stepsWrapper.querySelector(':scope > ScriptReference');
