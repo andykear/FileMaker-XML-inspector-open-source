@@ -123,16 +123,6 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 
 ---
 
-**Graph Health**
-
-Graph Health measures the relationship graph against the Anchor–Buoy convention, finds every direct anchor to anchor edge, and writes the severing work plan for each one: which buoy to create or reuse, what to repoint, which scripts to confirm, then delete and verify. Crossings are traced across eight categories, from calc fields and script references (with window context and caller triage) to portal filters, merge fields and value lists.
-
-Every card carries Copy work plan (the human brief as markdown), Copy for an agent (the same plan as one JSON operation per line, for an AI agent or a script driving a schema tool), and with more than one candidate, Copy master programme sequences the whole job cheapest first with shared scripts deduplicated. Every plan states what a single export cannot see before step one. It is observations only: the analyser flags, the developer decides.
-
-The full method, with the crossing categories, the triage rules and the honest limits, is inside the product: open the Graph Health tab and click About this method.
-
----
-
 ## Quick start
 
 1. Download `clockwork-inspector.html`
