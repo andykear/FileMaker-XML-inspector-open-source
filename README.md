@@ -118,9 +118,6 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 - Copy on every formula; layout and script objects copy as XML
 - Every export reads from the same parsed model the tabs render from, so a report can never disagree with the page it came from
 
-**Methodology and About**
-- Methodology documents what each analysis can and cannot see, in the product, updated with the code that computes it
-
 ---
 
 ## Quick start
