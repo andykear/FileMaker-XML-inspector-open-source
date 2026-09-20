@@ -66,49 +66,15 @@ Load a FileMaker Save as XML file (exported via Tools → Save a Copy as XML) an
 
 ---
 
-## Graph Health and the Anchor–Buoy severing method
+### Graph Health
 
-The Graph Health tab measures the relationship graph against the Anchor–Buoy convention: each layout sits on an anchor occurrence, and anything that anchor needs to reach should hang from it through a dedicated buoy occurrence.
+Graph Health measures the relationship graph against the Anchor–Buoy convention, finds every direct anchor to anchor edge, and writes the severing work plan for each one: which buoy to create or reuse, what to repoint, which scripts to confirm, then delete and verify. Crossings are traced across eight categories, from calc fields and script references (with window context and caller triage) to portal filters, merge fields and value lists. On a real 114 MB production export: 54 candidate edges whose severing takes the graph from 4 connected groups to 58 independent modules.
 
-Direct anchor to anchor links turn the graph into a spiderweb: relationships from one part of the solution run directly into another, making the structure harder to read and forcing the graph to be traversed more broadly than necessary. Keeping each anchor's dependencies hanging from its own buoys makes the solution easier to understand and keeps relationship traversal local.
+Every card carries Copy work plan (the human brief as markdown), Copy for an agent (the same plan as one JSON operation per line, for an AI agent or a script driving a schema tool), and with more than one candidate, Copy master programme sequences the whole job cheapest first with shared scripts deduplicated. Every plan states what a single export cannot see before step one. It is observations only: the analyser flags, the developer decides.
 
-The remedy is mechanical: give the crossing reference its own buoy occurrence, repoint the references to it, then remove the direct edge. The tab finds every candidate edge and produces its work plan. On a real 114 MB production export: 54 candidate edges whose severing takes the graph from 4 connected groups to 58 independent modules. It is observations only: the analyser flags, the developer decides.
+The full method, the crossing categories, the triage rules and the honest limits are in GRAPH-HEALTH.md.
 
-### What counts as a candidate
-
-An anchor is a table occurrence named after its base table; the tab counts it as one when at least one layout sits on it. A candidate edge is a relationship joining two anchors directly. Occurrences with compound names are treated as buoys and never miscounted as anchors, including when one anchor name contains another as a substring.
-
-### The eight crossing categories
-
-For each candidate edge the analyser traces everything that would break if the edge were deleted:
-
-1. Calculation fields whose body references the far occurrence
-2. Script step references, classified by traced window context
-3. Go to Related Record steps, which name their relationship by occurrence and never appear as field reference text, so every plain text scan misses them
-4. Layout objects bound to the far occurrence, and portals based on it
-5. Portal filter calculations and portal sort fields
-6. Object calculations: hide conditions, conditional formatting, tooltips, web viewer expressions
-7. Merge fields, read from the structured field list on the text object rather than by parsing the merge tokens
-8. Value lists whose structured references span both anchors, with "show related values only" flagged because those break outright if the edge is deleted first
-
-### Script context tracing and caller triage
-
-A script reference only crosses the edge if the script's window context at that step sits on the other anchor. The tracer follows Go to Layout, Go to Related Record and the New Window and Close Window stack sequentially through each script. References with no prior navigation are ambiguous by default, then triaged by caller:
-
-* **Resolved**: every button and trigger caller sits on layouts of one occurrence, so that context is inherited and the references reclassify automatically
-* **ORPHANED**: no callers anywhere. The script cannot execute, so it cannot break; no action needed
-* **CONFLICTED**: callers disagree, or the only callers are other scripts. The one bucket that needs a human
-* **CONTEXT LOST**: a layout chosen by calculation hid the context; check where that calculation lands
-
-On real files this collapses most of the ambiguous pile.
-
-### Buckets, plans and the module split
-
-Each edge lands in one of four buckets ordered by effort: **DEAD** (nothing crosses, delete it), **CLEAN CUT** (only calcs cross), **NEEDS REVIEW** (script references cross), **HAS LAYOUT DEPENDENTS** (the biggest job). Every card opens with a numbered work plan: which buoy to create or reuse (predicates compared for you, buoy names suggested in the file's own naming convention), what to repoint, with layout objects grouped by layout showing the fields involved and the object names or ids, which scripts to confirm, then delete and verify. Warnings fire when the direct relationship carries its own sort spec or cascade flags, both of which must be replicated by hand and verified in Manage Database. Every plan states its limits before step one.
-
-The tab leads with the programme's payoff: how many independent modules the graph splits into once every candidate edge is severed, computed as connected components before and after. Candidate edges are also drawn dashed on the Relationship Graph tab, on the file's real geometry. Exact duplicate relationships and same predicate buoy pairs are listed for consolidation review.
-
-Each card carries two copy buttons. **Copy work plan** produces the human brief as markdown, a work order to file with the job or hand to whoever does the work. **Copy for an agent** produces the same plan as one JSON operation per line, for pasting into an AI agent or a script that drives a schema tool; the verbs are the Inspector's own, and the agent translates them into whatever tool it is using. With more than one candidate, **Copy master programme** produces one sequenced job across every edge, cheapest first, with shared scripts deduplicated: a script crossing fourteen edges is one review that clears fourteen cards.
+---
 
 ### Honest limits
 
