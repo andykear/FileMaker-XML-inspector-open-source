@@ -101,7 +101,7 @@ If the file contains API keys, passwords, or internal hostnames, run it through 
 **Reference skills**
 
 **[FileMaker Second Opinion](https://github.com/andykear/FileMaker-second-opinion)**\
-**[FileMaker AI Vocabulary](https://github.com/andykear/FileMaker-AI-vocabulary)**\
+**[FileMaker AI Vocabulary](https://github.com/andykear/FileMaker-AI-vocabulary)**
 
 **Research / Specialist**
 
