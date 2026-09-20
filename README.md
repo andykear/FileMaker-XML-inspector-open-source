@@ -52,7 +52,6 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 **Files and parsing**
 - Reads Save as XML, FileMaker's native object export, entirely in the browser; nothing is uploaded anywhere
 - FileMaker 2026 split catalog folders load as one solution
-- UTF-16 and UTF-8 with BOM detection; illegal XML control characters stripped and reported so affected files still parse
 - Around a million lines of XML per second on a reasonably capable computer
 
 **Overview**
