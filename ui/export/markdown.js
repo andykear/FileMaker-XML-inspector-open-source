@@ -87,6 +87,44 @@ function headlineCounts(solution) {
   return mdTable(HEADLINE, rows, { align, empty: 'No file was read.' });
 }
 
+// ── File Options ──────────────────────────────────────────────────────
+
+/** File Options, one block per file. The labels are the Solution tab's, so the
+ *  report and the page name the same setting the same way; the values are read
+ *  straight off the block because fm sends no password and no image bytes. */
+function fileOptions(solution) {
+  const parts = [];
+  for (const file of filesOf(solution)) {
+    const slot = get(file, 'fileOptions') ?? {};
+    const error = get(slot, 'error');
+    const block = get(slot, 'block');
+    parts.push(`### ${mdCell(nameOf(file))}\n`);
+    if (error) {
+      parts.push(`\`${mdCell(get(error, 'code'))}\`: ${mdCell(get(error, 'message'))}\n`);
+      continue;
+    }
+    if (!block) {
+      parts.push('Not read.\n');
+      continue;
+    }
+    const yesNo = (v) => (typeof v === 'boolean' ? (v ? 'yes' : 'no') : v);
+    const rows = [
+      ['Startup layout', get(block, 'switchToLayout') ? (path(block, 'layout.name') ?? '(none)') : 'not on open'],
+      ['Minimum FileMaker version', path(block, 'minimumVersion.version') ?? ''],
+      ['Log in as', path(block, 'login.mode') ?? ''],
+      ['Allow stored credentials', yesNo(get(block, 'allowStoredCredentials'))],
+      ['Require authorization', get(block, 'requireAuthorization') ?? ''],
+      ['Hide all toolbars', yesNo(get(block, 'hideToolbars'))],
+      ['Date, time and number formats', get(block, 'dataEntry') ?? ''],
+      ['Thumbnail storage', get(block, 'thumbnailStorage') ?? ''],
+    ].map(([k, v]) => [k, v === undefined || v === null ? '' : v]);
+    parts.push(mdTable(['Setting', 'Value'], rows, { align: 'll' }));
+    const triggers = (get(block, 'triggers') ?? []).map((t) => [get(t, 'event'), get(t, 'script')]);
+    parts.push(`\n**Script triggers**\n\n${mdTable(['Event', 'Script'], triggers, { align: 'll' })}`);
+  }
+  return parts.join('\n');
+}
+
 // ── Confidence ────────────────────────────────────────────────────────
 
 function confidence(solution) {
@@ -264,12 +302,13 @@ function gaps(solution) {
 
 /** The H2 headings, in order. Exported so a test (and a reader) has the list in
  *  one place rather than reading it out of the output. */
-export const SECTIONS = ['Headline counts', 'Confidence', 'Security observations', 'Unreferenced',
+export const SECTIONS = ['Headline counts', 'File Options', 'Confidence', 'Security observations', 'Unreferenced',
   'Script body observations', 'Calculation fields', 'Relationships', 'Container fields',
   'Broken references', 'Gaps'];
 
 const BODY = {
   'Headline counts': headlineCounts,
+  'File Options': fileOptions,
   Confidence: confidence,
   'Security observations': security,
   Unreferenced: unreferencedSection,

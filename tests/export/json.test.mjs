@@ -56,3 +56,10 @@ test('an empty solution exports the same shape', () => {
   assert.deepEqual(out.analyses.broken, []);
   assert.deepEqual(out.analyses.callGraph.nodes, []);
 });
+
+test('the JSON export carries the File Options block, because it carries the model', () => {
+  const root = parsed.solution.files['fmnet://localhost/ooe'];
+  assert.deepEqual(root.fileOptions, solution.files['fmnet://localhost/ooe'].fileOptions);
+  assert.equal(root.fileOptions.block.layout.name, 'File Open', 'measured against the fixture');
+  assert.equal(root.fileOptions.block.triggers.length, 6);
+});

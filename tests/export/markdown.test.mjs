@@ -37,7 +37,7 @@ test('the sections are the ones the brief names, in order, and nothing else is a
   const headings = [...report.matchAll(/^## .+$/gm)].map((m) => m[0].slice(3));
   assert.deepEqual(headings, SECTIONS);
   assert.deepEqual(SECTIONS, [
-    'Headline counts', 'Confidence', 'Security observations', 'Unreferenced',
+    'Headline counts', 'File Options', 'Confidence', 'Security observations', 'Unreferenced',
     'Script body observations', 'Calculation fields', 'Relationships',
     'Container fields', 'Broken references', 'Gaps',
   ]);
@@ -227,4 +227,19 @@ test('a solution with nothing read is still a report, with every section on it',
   const md = markdownReport(empty);
   const headings = [...md.matchAll(/^## .+$/gm)].map((m) => m[0].slice(3));
   assert.deepEqual(headings, SECTIONS);
+});
+
+test('File Options is a section, one table per file, naming the startup layout and the triggers', () => {
+  assert.ok(SECTIONS.includes('File Options'));
+  assert.match(report, /^## File Options$/m);
+  assert.ok(report.includes('File Open'), 'the startup layout');
+  assert.ok(report.includes('OnFirstWindowOpen'), 'a file script trigger');
+  // A boolean reads the way the page reads it, not as `true`.
+  assert.ok(!/\| true \|/.test(report));
+});
+
+test('a file whose fm has no file-options catalog says so in the report', () => {
+  const broken = structuredClone(solution);
+  broken.files[api.meta.root].fileOptions = { block: null, error: { code: 'unknown_catalog', message: 'no such catalog' }, ops: [], readAt: null };
+  assert.ok(markdownReport(broken).includes('unknown_catalog'));
 });
