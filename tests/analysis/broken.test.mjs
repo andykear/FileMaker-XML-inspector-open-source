@@ -112,21 +112,21 @@ test('a <Function Missing> marker is the same family, matched by the generic wor
 });
 
 test('the fixture carries four <Function Missing> markers, measured, and no <Field Missing> or <Table Missing>', () => {
-  // Re-measured after the 0.8.0 re-record: was 5, now 4. The body[5].value
+  // Re-measured after the 0.8.0 re-record: was 5, now 4. The body.5.value
   // marker in "All script steps and all options 20260318" is gone (fm may have
   // changed how it reports that calculation). The remaining four are in the two
   // mirrored "All script steps and all options" scripts (ids 39 and 55): a
   // Set Field's calculated `record`, a Go to Layout's calculated `layoutName`,
-  // and two Set Variable `value`s.
+  // and two Set Variable `value`s. Paths use dot notation to match refs.js.
   const rows = broken(solution).filter((r) => r.kind === 'missingMarker');
   assert.deepEqual([...new Set(rows.map((r) => r.detail.what))], ['Function']);
   assert.equal(rows.length, 4);
   const by = rows.map((r) => `${r.from.name}|${r.from.where}`).sort();
   assert.deepEqual(by, [
-    'All script steps and all options 20260318|body[118].value',
-    'All script steps and all options|body[124].layoutName',
-    'All script steps and all options|body[159].record',
-    'All script steps and all options|body[84].value',
+    'All script steps and all options 20260318|body.118.value',
+    'All script steps and all options|body.124.layoutName',
+    'All script steps and all options|body.159.record',
+    'All script steps and all options|body.84.value',
   ]);
 });
 
@@ -189,7 +189,7 @@ test('a dangling Perform Script name is reported', () => {
   const rows = broken(sol);
   assert.deepEqual(rows, [{
     target: 'file:///x.fmp12', kind: 'danglingName',
-    from: { kind: 'script', id: 1, name: 'caller', where: 'body[0].script', stepID: 7 },
+    from: { kind: 'script', id: 1, name: 'caller', where: 'body.0.script', stepID: 7 },
     detail: { name: 'gone', refKind: 'script' },
   }]);
 });
@@ -267,14 +267,18 @@ test('a marker on a script step is spelled the way refs.js spells the same place
   assert.ok(markers.length > 0);
   const stepPaths = references(solution).filter((r) => r.from.kind === 'script').map((r) => String(r.from.where));
   assert.ok(stepPaths.length > 0);
-  for (const where of stepPaths) assert.match(where, /^body\[\d+\]\./, where);
-  for (const m of markers) assert.match(m.from.where, /^body\[\d+\]\./, m.from.where);
+  // Both use dot notation now: body.N.key, not body[N].key.
+  for (const where of stepPaths) assert.match(where, /^body\.\d+\./, where);
+  for (const m of markers) assert.match(m.from.where, /^body\.\d+\./, m.from.where);
   // Not merely the same shape: on at least one step both analyses found
   // something, and they name that step identically. (Not every marker step has
-  // a reference -- `body[124].layoutName` on ooe is calculation text whose only
+  // a reference -- `body.124.layoutName` on ooe is calculation text whose only
   // token is the missing function itself, so refs.js finds no name there.)
   const shared = markers.filter((m) => {
-    const prefix = m.from.where.slice(0, m.from.where.indexOf(']') + 1);
+    // Extract the step prefix (e.g., "body.84" from "body.84.value").
+    const match = m.from.where.match(/^body\.\d+/);
+    if (!match) return false;
+    const prefix = match[0];
     return stepPaths.some((p) => p.startsWith(`${prefix}.`));
   });
   assert.ok(shared.length > 0, 'no marker step carries a reference too');
@@ -295,6 +299,17 @@ test('a field option marker carries the options prefix refs.js uses', () => {
   const row = broken(sol).find((r) => r.kind === 'missingMarker');
   assert.equal(row.from.where, 'options.autoEnter.calculation');
   assert.equal(row.from.id, 'T::A');
+});
+
+test('a deadKey on a script step is spelled the way refs.js spells it: dot notation, not [i]', () => {
+  // The path spelling must match refs.js so a deadKey row and a reference row
+  // about one step read identically. refs.js uses dot-separated indices.
+  const one = withStep({ stepID: 22, step: 'Perform Find', findRequests: [{ operation: 'find', criteria: [{ fieldKey: [3, 17], criterion: 'x' }] }] });
+  const dead = broken(one).filter((b) => b.kind === 'deadKey');
+  assert.equal(dead.length, 1);
+  // Dot notation: body.0.findRequests.0.criteria.0.fieldKey, not body[0].findRequests[0].criteria[0].fieldKey.
+  assert.match(dead[0].from.where, /^body\.\d+\.findRequests\.\d+\.criteria\.\d+\.fieldKey$/);
+  assert.ok(!dead[0].from.where.includes('['), 'no bracket notation');
 });
 
 test("a marker in a script's own problems[] is still found, outside the body split", () => {
@@ -329,7 +344,8 @@ test('a fieldKey with no field beside it is a reference fm says is dead', () => 
   assert.deepEqual(dead[0].detail.raw, [3, 17]);
   assert.equal(dead[0].detail.key, 'fieldKey');
   assert.equal(dead[0].from.id, 1);
-  assert.match(dead[0].from.where, /criteria\[0\]/);
+  // The spelling must match refs.js: dot-separated indices, not [i] notation.
+  assert.match(dead[0].from.where, /^body\.0\.findRequests\.0\.criteria\.0\.fieldKey$/);
 });
 
 test('a fieldKey BESIDE its field is not dead -- fm reports the name when it resolves', () => {
@@ -346,6 +362,26 @@ test('a fieldKey of [0,0] is not dead -- that is an unconfigured sort level, not
   const one = withStep({ stepID: 39, step: 'Sort Records', sortOrder: { fields: [{ fieldKey: [0, 0], order: 'ascending' }] } });
   assert.deepEqual(broken(one).filter((b) => b.kind === 'deadKey'), [],
     'unconfigured sort level is not a broken reference');
+});
+
+test('a fieldKey of [] is not dead -- an empty array is more plausible as a placeholder than a real key', () => {
+  // No such value occurs in the fixture, so the conservative rule (both elements
+  // non-zero) excludes it. A false positive is worse than a miss.
+  const one = withStep({ stepID: 39, step: 'Sort Records', sortOrder: { fields: [{ fieldKey: [], order: 'ascending' }] } });
+  assert.deepEqual(broken(one).filter((b) => b.kind === 'deadKey'), []);
+});
+
+test('a half-zero pair [0,n] or [n,0] is not dead -- no such value occurs in the fixture', () => {
+  // Scalar placeholders corroborate the scalar branch: memberKey: 0 (×127),
+  // scriptKey: 0 (×59). No half-zero pair occurs anywhere, so the conservative
+  // rule (both non-zero) is chosen rather than OR. A false positive is worse than a miss.
+  const cases = [
+    { stepID: 39, step: 'Sort Records', sortOrder: { fields: [{ fieldKey: [0, 7], order: 'ascending' }] } },
+    { stepID: 39, step: 'Sort Records', sortOrder: { fields: [{ fieldKey: [3, 0], order: 'ascending' }] } },
+  ];
+  for (const step of cases) {
+    assert.deepEqual(broken(withStep(step)).filter((b) => b.kind === 'deadKey'), []);
+  }
 });
 
 test('every *Key variant is recognised, with the kind it would have named', () => {

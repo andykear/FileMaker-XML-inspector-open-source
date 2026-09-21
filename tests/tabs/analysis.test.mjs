@@ -284,8 +284,9 @@ test("the Broken table's Where header says fm's /N paths are fm's own JSON point
   assert.match(th[1], /not a line number/);
   // The two spellings the column really carries, on the page to be read next
   // to the sentence: fm's pointer on a problem row, our key path on the rest.
+  // Key paths use dot notation (body.N.key) to match refs.js, not [N] notation.
   assert.ok(section.includes('<td>/4</td>'), "fm's own pointer rides through unread");
-  assert.ok(section.includes('<td>body[84].value</td>'), 'and a marker carries the key path');
+  assert.ok(section.includes('<td>body.84.value</td>'), 'and a marker carries the key path');
 });
 
 test('a check heading is its id de-kebabbed, with the id itself in the title', () => {

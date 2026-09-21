@@ -26,7 +26,7 @@
 //     It is fm's step TYPE id -- 141 is EVERY `Set Variable` -- so it identifies
 //     what the step is, never which step it is, and it is NOT the anchor the
 //     Scripts tab links to: that is FileMaker's 1-based line, `#L<line>`, built
-//     from `from.where` (`body[<index>]` + 1) by ui/tabs/explorer.js. It is kept
+//     from `from.where` (`body.<index>` + 1) by ui/tabs/explorer.js. It is kept
 //     because a caller asking what KIND of step wrote a name would otherwise
 //     have to find the step again;
 //   * an occurrence's fields are the SOURCE file's: `nameIndex` follows
@@ -74,24 +74,19 @@ import { fieldsOf } from '../tabs/tables.js';
 
 // ── The one string walk ───────────────────────────────────────────────
 
-// Two families of value fm reports for round-tripping rather than for reading, and
-// neither can carry information any analysis in this codebase uses:
-//   `preserved`  the platform's own print and page-setup state, hex-encoded. fm hands
-//                it back unchanged so a write can restore it; on ooe one step carries
-//                52KB of it and the file carries 1.2MB in all.
-//   `*Raw`       the stored word behind a name fm has already decoded into the sibling
-//                key next to it (`characterSet` beside `characterSetRaw`).
-//
-// Skipping them is not only waste avoidance. `FIELD_RE` is `NAME_CHARS::NAME_CHARS`
-// and a hex digit is a valid name character, so a long delimiter-free string makes the
-// scan quadratic -- every start position rescans forward with no `::` to stop it.
-// Measured: 16k chars of hex costs 788ms where the same length carrying delimiters
-// costs 9ms. Tokenising fm 0.8.0's blobs took `references()` from under a second to
+// fm reports the platform's own print and page-setup state under `preserved`
+// subtrees: hex-encoded plists it hands back unchanged so a write can restore them.
+// No analysis reads them, and skipping them prevents a quadratic scan. `FIELD_RE` is
+// `NAME_CHARS::NAME_CHARS` and a hex digit is a valid name character, so a long
+// delimiter-free string makes the scan quadratic -- every start position rescans
+// forward with no `::` to stop it. Measured on ooe: 352 strings totaling 1.2MB, the
+// longest 52KB. That blob alone cost 788ms where the same length carrying delimiters
+// cost 9ms. Tokenising fm 0.8.0's blobs took `references()` from under a second to
 // 105 seconds, and three of the four callers of `strings()` also walk every string
 // looking for markers or regex patterns, paying the same cost independently. The
 // walker skips them on behalf of every analysis.
 const OPAQUE_SUBTREE = /(^|\.)preserved(\[|\.|$)/;
-export const isOpaqueValue = (key, at) => key.endsWith('Raw') || OPAQUE_SUBTREE.test(at);
+export const isOpaqueValue = (key, at) => OPAQUE_SUBTREE.test(at);
 
 /** Visit every string value of `obj`, however deep, with its dotted key path,
  *  its own key, and the object it sits on. Array indices are path segments.
@@ -580,9 +575,10 @@ function* sources(solution) {
       const body = get(detail, 'body') ?? [];
       // A step has no name of its own -- `name` on a step is an operand -- so
       // `hasOwnName` stays false here. `stepID` is fm's step TYPE id, which says
-      // what the step is; WHICH step it is, is the `body[<index>]` in `where`,
-      // and the Scripts tab's anchor is that index + 1 (`#L<line>`).
-      for (let i = 0; i < body.length; i += 1) yield { ...src, record: body[i], prefix: `body[${i}]`, stepID: get(body[i], 'stepID') };
+      // what the step is; WHICH step it is, is the `body.<index>` in `where`,
+      // and the Scripts tab's anchor is that index + 1 (`#L<line>`). Dot notation
+      // throughout for consistency with broken.js and strings().
+      for (let i = 0; i < body.length; i += 1) yield { ...src, record: body[i], prefix: `body.${i}`, stepID: get(body[i], 'stepID') };
       // `problems` is fm's own list of what it could not resolve: Task 3's
       // input, not a reference, so it is not scanned here.
     }

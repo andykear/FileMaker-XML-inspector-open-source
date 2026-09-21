@@ -182,12 +182,13 @@ function isFrom(sel, entry, ref) {
 
 /** FileMaker's own line number for a reference written on a script step, or ''
  *  for one written anywhere else. `where` is the path ui/analysis/refs.js
- *  builds, which starts `body[<index>]` for a step and counts from 0; every
+ *  builds, which starts `body.<index>` for a step and counts from 0; every
  *  number this page SHOWS counts from 1, the way FileMaker does and the way the
  *  Scripts, Gaps and Analysis tabs already do. The path itself stays on the row
- *  beside it: it is fm's own spelling and is what a reader greps for. */
+ *  beside it: it is fm's own spelling (now dot notation) and is what a reader greps for. */
 const lineOf = (from) => {
-  const at = from.kind === 'script' ? /^body\[(\d+)\]/.exec(String(from.where ?? '')) : null;
+  // Dot notation: body.<N>, not body[<N>].
+  const at = from.kind === 'script' ? /^body\.(\d+)\./.exec(String(from.where ?? '')) : null;
   return at ? Number(at[1]) + 1 : '';
 };
 

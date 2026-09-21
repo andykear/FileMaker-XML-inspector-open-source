@@ -3,7 +3,7 @@
 // the named references from Task 1 (ui/analysis/refs.js) that resolve to
 // nothing.
 //
-// Four kinds, one flat list, `{ target, kind, from: {kind,id,name,where}, detail }`:
+// Five kinds, one flat list, `{ target, kind, from: {kind,id,name,where}, detail }`:
 //   `problem`            -- an entry of fm's own `script.problems[]`, kept
 //                            verbatim in `detail`. fm's list, not ours: whatever
 //                            fields it carries (today: `path`, `step`) ride
@@ -30,6 +30,13 @@
 //                            token the tokeniser invented is noise, not a name
 //                            fm reported. `detail` carries the name that did
 //                            not resolve and the kind it was looked up as.
+//   `deadKey`                -- fm 0.8.0 reports a raw stored key in place of a
+//                            name when the name is dead (a field deleted under
+//                            a step, an occurrence no longer resolving). fm's
+//                            own help: "the raw [tableKey, fieldKey] pair of a
+//                            criterion whose field no longer exists". `detail`
+//                            carries the key name fm sent, the raw value, and
+//                            the kind it would have named.
 //
 // The one false positive this file knows about and suppresses: `Perform
 // AppleScript` reports its AppleScript source under the same `script` key
@@ -111,13 +118,14 @@ const without = (obj, key) => {
 // and the prefix its `where` paths hang off. Deliberately coarser than Task 1's
 // per-step sources -- a marker's owner is enough context, and `strings()`
 // recurses into the children on its own -- with one exception: a script's body
-// IS split per step, so a marker's `where` reads `body[84].value`, exactly the
-// spelling ui/analysis/refs.js gives a reference on the same step. Two rows
-// about one place in two notations is a reader's problem, not a reader's job.
-// A field's options carry the `options` prefix for the same reason. What is
-// left coarse is the layout walk: refs.js numbers a layout object by fm's own
-// id (`object[12]`) and `strings()` numbers it by position, and no marker on
-// the reference solution lands there -- when one does, that is the next split.
+// IS split per step, so a marker's `where` reads `body.84.value`, exactly the
+// spelling ui/analysis/refs.js gives a reference on the same step (dot-separated
+// indices, not [i] notation). Two rows about one place in two notations is a
+// reader's problem, not a reader's job. A field's options carry the `options`
+// prefix for the same reason. What is left coarse is the layout walk: refs.js
+// numbers a layout object by fm's own id (`object[12]`) and `strings()` numbers
+// it by position, and no marker on the reference solution lands there -- when one
+// does, that is the next split.
 function* records(solution) {
   for (const file of filesOf(solution)) {
     const target = get(file, 'target');
@@ -136,7 +144,7 @@ function* records(solution) {
           continue;
         }
         const body = get(detail, 'body') ?? [];
-        for (let i = 0; i < body.length; i += 1) yield { ...src, record: body[i], prefix: `body[${i}]` };
+        for (let i = 0; i < body.length; i += 1) yield { ...src, record: body[i], prefix: `body.${i}` };
         // Everything else the script carries -- `problems` above all -- still
         // goes through whole, minus the body already yielded.
         yield { ...src, record: without(detail, 'body'), prefix: '' };
@@ -226,19 +234,24 @@ const DEAD_KEYS = new Map([
   ['targetTableKey', ['targetTable', 'occurrence']],
 ]);
 
-// Walk an object tree, calling visit(obj, path) on every object (not arrays,
-// primitives, or null). `path` is the dot-notation from the root to this object.
-function walkObjects(obj, path, visit) {
+// Walk an object tree, calling visit(obj, path, key) on every object (not arrays,
+// primitives, or null), with its path and the key it sits under. `path` uses
+// dot-separated indices for arrays, matching the spelling `strings()` produces, so a
+// deadKey row and a reference on the same step read identically.
+function walkObjects(obj, path, key, visit) {
   if (obj === null || obj === undefined) return;
   if (typeof obj !== 'object') return;
   if (Array.isArray(obj)) {
-    for (let i = 0; i < obj.length; i += 1) walkObjects(obj[i], `${path}[${i}]`, visit);
+    for (let i = 0; i < obj.length; i += 1) {
+      const nextPath = path ? `${path}.${i}` : String(i);
+      walkObjects(obj[i], nextPath, String(i), visit);
+    }
     return;
   }
-  visit(obj, path);
-  for (const [key, value] of Object.entries(obj)) {
-    const nextPath = path ? `${path}.${key}` : key;
-    walkObjects(value, nextPath, visit);
+  visit(obj, path, key);
+  for (const [k, value] of Object.entries(obj)) {
+    const nextPath = path ? `${path}.${k}` : k;
+    walkObjects(value, nextPath, k, visit);
   }
 }
 
@@ -246,19 +259,22 @@ function walkObjects(obj, path, visit) {
 // FileMaker's catalog keys are 1-based: [0,0] means no field was ever chosen,
 // not that a chosen field no longer resolves. A deleted field leaves its real
 // non-zero stored numbers behind, which is why fm reports the key at all.
+// Measured on ooe: only `[0,0]` (10 times), `memberKey: 0` (127), `scriptKey: 0` (59).
+// No `[0,n]`, `[n,0]`, `[]` or negative key occurs anywhere, so the conservative rule
+// (both elements non-zero) is chosen: a false positive is worse than a miss.
 function isRealKey(raw) {
   if (typeof raw === 'number') return raw !== 0;
   // Array key: [tableKey, fieldKey] or [tableKey, fieldKey, repetition].
   // The repetition is 1-based but can be 1 on an unconfigured field, so test
-  // the key elements only: at least one must be non-zero.
-  if (Array.isArray(raw)) return raw[0] !== 0 || raw[1] !== 0;
+  // the key elements only: both must be non-zero.
+  if (Array.isArray(raw)) return raw.length >= 2 && raw[0] !== 0 && raw[1] !== 0;
   return false;
 }
 
 function deadKeys(solution) {
   const rows = [];
   for (const src of records(solution)) {
-    walkObjects(src.record, src.prefix, (obj, at) => {
+    walkObjects(src.record, src.prefix, '', (obj, at, key) => {
       for (const [deadKey, [twin, names]] of DEAD_KEYS) {
         const raw = get(obj, deadKey);
         if (raw === undefined) continue;
@@ -270,9 +286,13 @@ function deadKeys(solution) {
         // (an unconfigured sort level, an empty groupBy), not a deleted field.
         // A genuinely deleted field leaves non-zero stored numbers behind.
         if (!isRealKey(raw)) continue;
+        // The where points at the container holding the key, spelled the way
+        // strings() spells it (dot-separated array indices), so a deadKey and a
+        // reference on the same step read identically.
+        const where = at ? `${at}.${deadKey}` : deadKey;
         rows.push({
           target: src.target, kind: 'deadKey',
-          from: { kind: src.kind, id: src.id, name: src.name, where: at },
+          from: { kind: src.kind, id: src.id, name: src.name, where },
           detail: { key: deadKey, names, raw },
         });
       }

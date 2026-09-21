@@ -267,17 +267,27 @@ const CALCULATED_NAME_KEYS = new Map(['scriptName', 'layoutName', 'layoutByCalcu
 const places = (n) => (n === 1 ? '1 place' : `${n} places`);
 const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
+const detailsOf = (file) => Object.values(path(file, 'catalogs.script.detailById') ?? {})
+  .map((e) => get(e, 'result')).filter((r) => r !== undefined && r !== null);
+
 function signals(solution) {
   const s = { evaluate: 0, getField: 0, getFieldDynamic: 0, sql: 0, calculatedName: 0, replaceByName: 0, keys: new Set() };
   const hits = (text, re) => (text.match(re) ?? []).length;
   for (const file of filesOf(solution)) {
+    // replaceByName counts enabled steps, like calculatedSetSites does, so a
+    // disabled step is not counted as writing to a field. Match on the step
+    // object, not on any string whose key folds to 'step' (which would also
+    // match script.problems[].step and double-count a flagged step).
+    for (const detail of detailsOf(file)) {
+      const body = get(detail, 'body') ?? [];
+      for (const step of body) {
+        if (get(step, 'disabled') === true) continue;
+        if (get(step, 'step') === REPLACE_BY_NAME) s.replaceByName += 1;
+      }
+    }
     // Every string of every catalog, whatever its key: a formula is not only
     // where a key list says it is.
     strings(get(file, 'catalogs'), (value, at, key) => {
-      // A step's own type is the value of its `step` key, which this walk
-      // visits like any other string -- so a step type is counted here rather
-      // than by a second walk over script bodies.
-      if (foldKey(key) === 'step' && value === REPLACE_BY_NAME) s.replaceByName += 1;
       const calculated = CALCULATED_NAME_KEYS.get(foldKey(key));
       if (calculated) { s.calculatedName += 1; s.keys.add(calculated); }
       s.evaluate += hits(value, EVALUATE);
@@ -340,7 +350,7 @@ function runtimePaths(solution) {
 const NOTES = [
   'Plug-in function call sites cannot be told from built-in ones (toolkit gap plugin-call-sites), so a field or script name passed to a plug-in is not counted as a reference.',
   'A privilege set\'s custom access lists can name individual layouts, scripts and value lists; the reference scan does not read them, so an object reachable only through one is listed here.',
-  'fm 0.7.0 reports no style on a layout part (the register\'s part: entries name every key a part carries, and a style is not among them), so a named style worn only by a part is listed here as unused.',
+  'fm reports no style on a layout part (the register\'s part: entries name every key a part carries, and a style is not among them), so a named style worn only by a part is listed here as unused.',
 ];
 
 function confidenceOf(solution) {

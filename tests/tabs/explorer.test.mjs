@@ -65,7 +65,7 @@ test('a selected script lists what it names: script 9 references noop', () => {
   const noop = rows.find((r) => r.kind === 'script' && r.name === 'noop');
   assert.ok(noop, 'noop is not in the references of Decode base64 image');
   assert.equal(noop.how, 'named');
-  assert.equal(noop.where, 'body[3].script');
+  assert.equal(noop.where, 'body.3.script');
   assert.equal(parseHash(`#${noop.hash}`.replace('#', '#')).tab, 'scripts');
   assert.deepEqual(rows.map((r) => `${r.kind}:${r.name}`).sort(), [
     'field:TestTable::ContainerField1', 'field:TestTable::TextField1', 'script:noop',
@@ -207,10 +207,10 @@ test('every model string goes through esc', () => {
 test("a reference written on a script step shows FileMaker's line beside the key path", () => {
   const sel = selectionOf(viewOf(selectionKey(ROOT, 'script', '55')));
   const rows = outgoing(solution, sel);
-  const onSteps = rows.filter((r) => /^body\[\d+\]\./.test(r.where));
+  const onSteps = rows.filter((r) => /^body\.\d+\./.test(r.where));
   assert.ok(onSteps.length > 0);
   for (const r of onSteps) {
-    assert.equal(r.line, Number(/^body\[(\d+)\]/.exec(r.where)[1]) + 1, r.where);
+    assert.equal(r.line, Number(/^body\.(\d+)\./.exec(r.where)[1]) + 1, r.where);
   }
   // A line and a step link arrive together or not at all: a link labelled with
   // a line that is not there would be an anchor with nothing in it.
@@ -347,9 +347,13 @@ test('every reference in the solution is reachable from some selectable object',
       : `${r.from.kind}|${r.from.target}|${id}`;
   };
   const all = references(solution);
+  assert.equal(all.length, 2652); // Re-measured after 0.8.0 re-record: new field refs from structured options; Task 5: +8 (File Options references); Task 5b: +1 (targetTable)
   // Task 5: File Options is now a reference source but is not yet selectable in
   // the Explorer, so its 8 references (2 layouts + 6 scripts) are not covered.
+  const fileOptionsRefs = all.filter((r) => r.from.kind === 'fileOptions');
+  assert.equal(fileOptionsRefs.length, 8, 'File Options references: 2 startup layouts + 6 trigger scripts');
+  // The original invariant holds for everything else: every reference from a
+  // selectable owner is covered, so a reference without an owner row is a gap.
   const covered = all.filter((r) => r.from.kind !== 'fileOptions' && owners.has(ownerOf(r)));
-  assert.equal(covered.length, all.length - 8, [...new Set(all.filter((r) => r.from.kind !== 'fileOptions' && !owners.has(ownerOf(r))).map(ownerOf))].join(', '));
-  assert.equal(all.length, 2652); // Re-measured after 0.8.0 re-record: new field refs from structured options; Task 5: +8 (File Options references); Task 5b: +1 (targetTable)
+  assert.equal(covered.length, all.length - fileOptionsRefs.length, [...new Set(all.filter((r) => r.from.kind !== 'fileOptions' && !owners.has(ownerOf(r))).map(ownerOf))].join(', '));
 });

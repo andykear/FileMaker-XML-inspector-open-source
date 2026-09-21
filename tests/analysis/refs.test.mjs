@@ -89,7 +89,7 @@ test('references finds the named script reference of a Perform Script step', () 
   const hit = rows.find((r) => r.kind === 'script' && r.name === 'noop' && r.how === 'named' && r.from.kind === 'script');
   assert.ok(hit, 'a named script reference to noop from a script step');
   assert.equal(hit.resolved, true);
-  assert.match(hit.from.where, /^body\[\d+\]\.script$/);
+  assert.match(hit.from.where, /^body\.\d+\.script$/);
 });
 
 test('references finds a named field reference from a layout object', () => {
@@ -285,7 +285,7 @@ test('a Perform Script naming a script that is not there resolves to false', () 
     },
   });
   const hit = references(sol).find((r) => r.kind === 'script');
-  assert.deepEqual({ name: hit.name, resolved: hit.resolved, how: hit.how, where: hit.from.where }, { name: 'gone', resolved: false, how: 'named', where: 'body[0].script' });
+  assert.deepEqual({ name: hit.name, resolved: hit.resolved, how: hit.how, where: hit.from.where }, { name: 'gone', resolved: false, how: 'named', where: 'body.0.script' });
 });
 
 test('a field token resolves only when the occurrence exists and its base table has the field', () => {
@@ -386,7 +386,7 @@ test('a table is named by the occurrence that declares it and by a step, never b
 });
 
 test('a step `from` is an occurrence only when the index has that name', () => {
-  const rows = references(solution).filter((r) => /^body\[\d+\]\.from$/.test(r.from.where));
+  const rows = references(solution).filter((r) => /^body\.\d+\.from$/.test(r.from.where));
   // 21 Go to Related Record steps; the 40 `camera`/`file`/`target` words on
   // Insert from Device, Open PDF and Append PDF name nothing.
   assert.equal(rows.length, 21);
@@ -401,7 +401,7 @@ test("every reference whose owner is a script step carries fm's step TYPE id", (
   assert.ok(fromSteps.every((r) => Number.isInteger(r.from.stepID)));
   assert.ok(rows.filter((r) => r.from.kind !== 'script').every((r) => r.from.stepID === undefined));
   // It is the TYPE, not the step: one id repeats across a body, so it can never
-  // be an anchor. The anchor is the `body[<index>]` of `where`, + 1.
+  // be an anchor. The anchor is the `body.<index>` of `where`, + 1.
   const ids = fromSteps.map((r) => r.from.stepID);
   assert.ok(new Set(ids).size < ids.length);
 });
