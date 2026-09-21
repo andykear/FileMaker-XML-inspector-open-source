@@ -78,3 +78,39 @@ test('catalogCounts', () => {
 test('createSolution', () => {
   assert.deepEqual(createSolution('r', { version: '0.6.0' }), { root: 'r', cli: { version: '0.6.0' }, files: {}, unreachable: [], readAt: null });
 });
+
+test('createFile has a file-options slot, empty, beside facts and outside catalogs', () => {
+  const file = createFile('file:///x.fmp12');
+  assert.deepEqual(file.fileOptions, { block: null, error: null, ops: [], readAt: null });
+  assert.ok(!('fileOptions' in file.catalogs), 'not a catalog slot');
+});
+
+test('a file-options answer lands in the slot as fm sent it, not as a list', () => {
+  const file = createFile('file:///x.fmp12');
+  const ops = [{ op: 'read:fileOptions' }];
+  const block = { kind: 'fileOptions', switchToLayout: true, layout: { name: 'File Open', id: 11 } };
+  applyBatch(file, ops, { results: [{ op: 'read:fileOptions', status: 'ok', result: block }] }, '2026-09-21T00:00:00Z');
+  assert.deepEqual(file.fileOptions.block, block);
+  assert.equal(file.fileOptions.error, null);
+  assert.equal(file.fileOptions.readAt, '2026-09-21T00:00:00Z');
+  assert.deepEqual(file.fileOptions.ops, ops);
+  // The op has no `id`, so the list path would have claimed it and stored
+  // `result.items ?? []` -- nothing -- without erroring.
+  assert.ok(!('fileOptions' in file.catalogs));
+});
+
+test('an fm build with no file-options catalog leaves the error and no block', () => {
+  const file = createFile('file:///x.fmp12');
+  const error = { code: 'unknown_catalog', message: 'no such catalog: fileOptions' };
+  applyBatch(file, [{ op: 'read:fileOptions' }], { results: [{ op: 'read:fileOptions', status: 'error', error }] }, '2026-09-21T00:00:00Z');
+  assert.equal(file.fileOptions.block, null);
+  assert.deepEqual(file.fileOptions.error, error);
+  assert.equal(file.fileOptions.readAt, '2026-09-21T00:00:00Z');
+});
+
+test('a file-options batch replaces the slot object, so a memo can see it changed', () => {
+  const file = createFile('file:///x.fmp12');
+  const before = file.fileOptions;
+  applyBatch(file, [{ op: 'read:fileOptions' }], { results: [{ op: 'read:fileOptions', status: 'ok', result: { kind: 'fileOptions' } }] }, '2026-09-21T00:00:00Z');
+  assert.notEqual(file.fileOptions, before, 'new identity, never mutated in place');
+});

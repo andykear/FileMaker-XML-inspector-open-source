@@ -1,21 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LIST_CATALOGS, FILE_FACTS, listOps, factOps, describeOps, describeKey, catalogOf } from '../ui/read-plan.js';
+import { LIST_CATALOGS, FILE_FACTS, listOps, factOps, fileOptionsOps, describeOps, describeKey, catalogOf } from '../ui/read-plan.js';
 
-test('listOps is the 19 list ops with their flags, then the file facts', () => {
+test('listOps is the 19 list ops, then the file-options block, then the file facts', () => {
   const ops = listOps();
-  assert.equal(ops.length, 19 + 8);
-  assert.deepEqual(ops[0], { op: 'read:externalDataSource', detail: true });
-  assert.deepEqual(ops.find((o) => o.op === 'read:layout'), { op: 'read:layout', flatten: true });
-  assert.deepEqual(ops.find((o) => o.op === 'read:script'), { op: 'read:script', flatten: true });
-  assert.deepEqual(ops.find((o) => o.op === 'read:customFunction'), { op: 'read:customFunction', flatten: true });
-  assert.deepEqual(ops.find((o) => o.op === 'read:table'), { op: 'read:table' });
-  assert.deepEqual(ops.find((o) => o.op === 'read:theme'), { op: 'read:theme', detail: true });
-  assert.equal(LIST_CATALOGS.length, 19);
-  assert.equal(LIST_CATALOGS.at(-1), 'theme');
-  assert.deepEqual(ops.slice(19), FILE_FACTS.map((calculation) => ({ op: 'evaluate:calculation', calculation })));
-  assert.deepEqual(ops.slice(19), factOps(), 'a facts re-read sends exactly what the list batch sent');
-  assert.ok(FILE_FACTS.includes('Get ( EncryptionState )'));
+  assert.equal(ops.length, 19 + 1 + 8);
+  assert.deepEqual(ops[19], { op: 'read:fileOptions' }, 'no detail: fm reports at full depth either way');
+  assert.deepEqual(ops.slice(20), FILE_FACTS.map((calculation) => ({ op: 'evaluate:calculation', calculation })));
+  assert.deepEqual(ops.slice(20), factOps(), 'a facts re-read sends exactly what the list batch sent');
+  assert.deepEqual(fileOptionsOps(), [{ op: 'read:fileOptions' }], 'a file-options re-read sends exactly what the list batch sent');
+  assert.ok(!LIST_CATALOGS.includes('fileOptions'), 'not a catalog: it has no list and no ids');
+});
+
+test('catalogOf routes the file-options op to its own slot', () => {
+  assert.equal(catalogOf({ op: 'read:fileOptions' }), 'fileOptions');
 });
 
 test('describeOps derives one describe per table, layout, script and id-described member, skipping the folders of a flattened listing', () => {

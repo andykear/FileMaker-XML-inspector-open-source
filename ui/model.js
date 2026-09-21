@@ -11,10 +11,17 @@ function emptyCatalog() {
   return { list: [], listError: null, detailById: {}, ops: [], readAt: null };
 }
 
+/** File Options is one block per file, not a catalog: no list, no ids, one
+ *  answer. It sits beside `facts`, which is the same kind of thing -- a
+ *  file-level slot the catalog machinery does not describe. */
+function emptyFileOptions() {
+  return { block: null, error: null, ops: [], readAt: null };
+}
+
 export function createFile(target) {
   const catalogs = {};
   for (const c of [...LIST_CATALOGS, 'field']) catalogs[c] = emptyCatalog();
-  return { target, name: null, facts: {}, catalogs };
+  return { target, name: null, facts: {}, fileOptions: emptyFileOptions(), catalogs };
 }
 
 const NO_RESULT = { code: 'no_result', message: 'fm returned no result line for this op' };
@@ -36,6 +43,16 @@ export function applyBatch(file, ops, response, readAt) {
         ? { value: line.result.value, dataType: line.result.dataType }
         : { error: line?.error ?? NO_RESULT };
       if (op.calculation === 'Get ( FileName )' && line?.status === 'ok') file.name = line.result.value;
+      return;
+    }
+    // Before isList(): `read:fileOptions` carries no `id`, so the list path
+    // would claim it and store `result.items ?? []` -- an empty list -- without
+    // erroring. Replaced whole rather than mutated, so ui/analysis/memo.js can
+    // tell by identity that a re-read landed.
+    if (catalog === 'fileOptions') {
+      file.fileOptions = line?.status === 'ok'
+        ? { block: line.result, error: null, ops: [op], readAt }
+        : { block: null, error: line?.error ?? NO_RESULT, ops: [op], readAt };
       return;
     }
     const slot = file.catalogs[catalog] ?? (file.catalogs[catalog] = emptyCatalog());

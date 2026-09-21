@@ -1,7 +1,7 @@
 // Walks a solution: root file, then every FileMaker external data source it
 // names, recursively, once each. Re-reads at solution, catalog and object grain.
 // Browser safe; `api` is the only door to fm. Spec section 2.
-import { listOps, factOps, describeOps, describeKey, catalogOf, DESCRIBED_BY_ID } from './read-plan.js';
+import { listOps, factOps, fileOptionsOps, describeOps, describeKey, catalogOf, DESCRIBED_BY_ID } from './read-plan.js';
 import { createSolution, createFile, applyBatch } from './model.js';
 
 function now() {
@@ -196,9 +196,11 @@ function freshCatalogs(...names) {
  *  only once every read has succeeded — a fatal at either step leaves the real
  *  catalog (list and detailById both) exactly as it was. Object: the one
  *  describe op. Table and field share one pair of reads: table's list, then
- *  field describes for every table in the new list. `facts` is a catalog for
- *  re-read purposes although it is not one in the model: the same eight
- *  `evaluate:calculation` ops discovery sent, staged the same way. */
+ *  field describes for every table in the new list. `facts` and `fileOptions`
+ *  are catalogs for re-read purposes although they are not catalogs in the
+ *  model: `facts` sends the same eight `evaluate:calculation` ops discovery
+ *  sent, `fileOptions` sends the one `read:fileOptions` op, both staged the
+ *  same way. */
 export async function reread(api, solution, slot, hooks = {}) {
   if (slot.kind === 'solution') return discover(api, solution.root, hooks);
 
@@ -211,6 +213,15 @@ export async function reread(api, solution, slot, hooks = {}) {
     applyBatch(staged, ops, response, now());
     file.facts = staged.facts;
     file.name = staged.name ?? file.name;
+    return solution;
+  }
+
+  if (slot.kind === 'catalog' && slot.catalog === 'fileOptions') {
+    const ops = fileOptionsOps();
+    const response = await readBatch(api, slot.target, ops);
+    const staged = createFile(slot.target);
+    applyBatch(staged, ops, response, now());
+    file.fileOptions = staged.fileOptions;
     return solution;
   }
 

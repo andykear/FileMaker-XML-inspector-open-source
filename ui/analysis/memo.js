@@ -12,6 +12,9 @@
 //                   (ui/model.js `applyBatch`), so its identity is new and the
 //                   slot's is not.
 //   facts grain     `file.facts` is replaced.
+//   file-options    `file.fileOptions` is replaced (ui/model.js `applyBatch`),
+//                   the same as facts: one block, no list and no detailById to
+//                   watch, so the slot itself is the identity.
 //
 // So the fingerprint is exactly those identities: for every file, `file.facts`,
 // and for every catalog slot its `list` and its `detailById`, compared by `===`
@@ -42,7 +45,7 @@ export function fingerprint(solution) {
   const files = get(solution, 'files') ?? {};
   for (const target of Object.keys(files).sort()) {
     const file = files[target];
-    out.push(target, get(file, 'facts'));
+    out.push(target, get(file, 'facts'), get(file, 'fileOptions'));
     const catalogs = get(file, 'catalogs') ?? {};
     for (const catalog of Object.keys(catalogs).sort()) {
       const slot = catalogs[catalog];

@@ -122,3 +122,12 @@ test('a facts re-read is watched too', async () => {
   assert.equal(after.length, before.length, 'facts carry no references, so the answer is the same length');
   assert.notEqual(after, before, 'but file.facts was replaced, so the memo recomputed');
 });
+
+test('the fingerprint watches the file-options slot, which a re-read replaces', () => {
+  const file = { target: 'file:///x.fmp12', facts: {}, fileOptions: { block: null, error: null, ops: [], readAt: null }, catalogs: {} };
+  const solution = { files: { 'file:///x.fmp12': file } };
+  const before = fingerprint(solution);
+  file.fileOptions = { block: { kind: 'fileOptions' }, error: null, ops: [], readAt: 'now' };
+  const after = fingerprint(solution);
+  assert.notDeepEqual(before, after, 'a file-options re-read must invalidate every memo');
+});

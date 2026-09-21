@@ -302,6 +302,17 @@ test('reread at facts grain sends the eight Get() ops and replaces the facts and
   assert.deepEqual(Object.keys(file.facts), keysBefore, 'every fact is asked again, none is dropped');
 });
 
+test('a file-options re-read sends the one op and swaps the slot', async () => {
+  const api = createReplayApi(FIXTURE);
+  const solution = await discover(api, api.meta.root);
+  const before = solution.files[api.meta.root].fileOptions;
+  assert.ok(before.block, 'discovery read the block');
+  const after = await reread(api, solution, { kind: 'catalog', target: api.meta.root, catalog: 'fileOptions' });
+  const slot = after.files[api.meta.root].fileOptions;
+  assert.notEqual(slot, before, 'the slot is replaced, not mutated');
+  assert.deepEqual(slot.block, before.block, 'the same fixture answers the same way');
+});
+
 test('a fatal at facts grain leaves the facts and the name untouched', async () => {
   const api = fakeApi();
   const s = await discover(api, 'fmnet://localhost/root');

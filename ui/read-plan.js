@@ -14,6 +14,23 @@ export const FILE_FACTS = [
   'Get ( HostApplicationVersion )',
 ];
 
+/** The one file-level block fm answers with a single object rather than a list.
+ *  It is deliberately NOT in LIST_CATALOGS: that constant drives listOp(), the
+ *  Solution tab's catalog-counts table and the per-catalog model slots, and a
+ *  block with no list and no ids fits none of the three.
+ *
+ *  `detail` is not sent. fm's help says it is "accepted only as true: this
+ *  report is at full depth either way", so sending it buys nothing and implies
+ *  a choice that does not exist. */
+export const FILE_OPTIONS_OP = { op: 'read:fileOptions' };
+
+/** The file-options half of a list batch, on its own so a re-read sends exactly
+ *  what discovery sent -- the same contract factOps() has. A fresh object each
+ *  call: a caller must not be able to mutate the exported constant. */
+export function fileOptionsOps() {
+  return [{ ...FILE_OPTIONS_OP }];
+}
+
 /** Catalogs whose members are described one by one with {id}. Layouts add detail:true. */
 export const DESCRIBED_BY_ID = [
   'layout', 'script', 'tableOccurrence', 'relation', 'valueList', 'customFunction',
@@ -39,7 +56,7 @@ export function factOps() {
 }
 
 export function listOps() {
-  return [...LIST_CATALOGS.map(listOp), ...factOps()];
+  return [...LIST_CATALOGS.map(listOp), ...fileOptionsOps(), ...factOps()];
 }
 
 /** A flattened listing carries the folders (and, for scripts and layouts, the
