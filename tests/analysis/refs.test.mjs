@@ -571,3 +571,19 @@ test('an import\'s target table is an occurrence reference, and targetTableName 
   // reference would invent one, and would report LegacyName as dangling.
   assert.deepEqual(refs.filter((r) => r.from.where.endsWith('.targetTableName')), []);
 });
+
+test('Set Script Triggers and MBS name no solution object', () => {
+  const steps = [
+    { stepID: 997, step: 'Set Script Triggers', on: false },
+    { stepID: 996, step: 'MBS', Function: 'MBS( "Menubar.Install" )', P1: '$x' },
+  ];
+  const one = structuredClone(solution);
+  one.files[api.meta.root].catalogs.script.detailById = { 1: { result: { id: 1, name: 'S', body: steps } } };
+  const from = references(one).filter((r) => r.from.kind === 'script' && r.from.id === 1);
+  // `on` is a flag; MBS's Function names a plug-in function, not an object in
+  // this solution, and its arguments are tokenised like any other formula.
+  assert.deepEqual(from.filter((r) => r.kind === 'script'), []);
+  assert.deepEqual(from.filter((r) => r.kind === 'layout'), []);
+  assert.ok(from.every((r) => r.kind === 'variable' || r.kind === 'field' || r.kind === 'customFunction'),
+    'nothing else is claimed');
+});

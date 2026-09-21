@@ -652,6 +652,14 @@ function predicateRefs(solution, out, resolve) {
 // The provenance of the id list is in ui/analysis/scripts.js (PSOS_ONLY_STEPS).
 export const SET_VARIABLE = 141;
 
+/** The two 0.8.0 steps that name their target by calculation instead of
+ *  literally. Matched on fm's own `step` name rather than a numeric id: the
+ *  step-display catalog has no entry for either, the register's step entries
+ *  carry ids without names, and both steps postdate every id this repo knows.
+ *  fm reports `step` on every step object, so the name is the key available. */
+export const SET_VARIABLE_BY_NAME = 'Set Variable by Name';
+export const REPLACE_BY_NAME = 'Replace Field Contents by Name';
+
 /** Every variable name the solution's `Set Variable` steps write, `$` and `$$`,
  *  verbatim and sorted: the names a `$` token in calculation text may be read
  *  whole against. A DISABLED step counts too -- the question is how a name is

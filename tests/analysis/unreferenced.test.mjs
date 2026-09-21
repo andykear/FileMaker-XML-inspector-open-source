@@ -533,3 +533,13 @@ test('a script used only by a file trigger is not listed unreferenced', () => {
   const listed = unreferenced(one).scripts.some((s) => s.id === script.id && s.target === api.meta.root);
   assert.ok(!listed, `${script.name} is named by a file trigger, so it is referenced`);
 });
+
+test('a Replace Field Contents by Name step is a reason the field list is incomplete', () => {
+  const step = { stepID: 998, step: 'Replace Field Contents by Name', fieldName: '"Table::" & $col', replace: 'calculation' };
+  const one = structuredClone(solution);
+  const root = one.files[api.meta.root];
+  root.catalogs.script.detailById = { 1: { result: { id: 1, name: 'S', body: [step] } } };
+  const reasons = unreferenced(one).confidence.reasons;
+  assert.ok(reasons.some((r) => r.includes('Replace Field Contents by Name')),
+    'a step that writes to a field named by calculation lowers confidence in the field list');
+});

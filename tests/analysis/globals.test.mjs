@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { createReplayApi } from '../replay-api.mjs';
 import { discover } from '../../ui/discovery.js';
-import { GLOBALS_NOTE, globals } from '../../ui/analysis/globals.js';
+import { GLOBALS_NOTE, globals, calculatedSetSites } from '../../ui/analysis/globals.js';
 
 const FIXTURE = fileURLToPath(new URL('../fixtures/ooe/', import.meta.url));
 const api = createReplayApi(FIXTURE);
@@ -146,4 +146,40 @@ test('a set site carries FileMaker\'s own 1-based line beside the body index', (
   assert.deepEqual(globals(sol)[0].sets.map((s) => [s.step.index, s.step.line]), [[1, 2]]);
   // On the fixture too.
   assert.ok(globals(solution).every((r) => r.sets.every((s) => s.step.line === s.step.index + 1)));
+});
+
+test('a Set Variable by Name step is a set site whose name is not statically known', () => {
+  const step = { stepID: 999, step: 'Set Variable by Name', name: '"$$" & $prefix', value: '1' };
+  const solution = {
+    root: 'file:///x.fmp12', cli: { version: '0.8.0-beta.0' }, unreachable: [],
+    files: { 'file:///x.fmp12': {
+      target: 'file:///x.fmp12', name: 'x', facts: {},
+      fileOptions: { block: null, error: null, ops: [], readAt: null },
+      catalogs: { script: { list: [], detailById: { 1: { result: { id: 1, name: 'S', body: [step] } } } } },
+    } },
+  };
+  const rows = globals(solution);
+  // The name is calculation text, so it is NOT a $$ global row of its own --
+  // inventing `"$$" & $prefix` as a global name would be a false positive.
+  assert.ok(!rows.some((r) => r.name.includes('&')), 'no calculated name becomes a row');
+  // But the step is recorded as a site where a global may be written, so the
+  // analysis can say its answer is incomplete rather than silently complete.
+  assert.equal(calculatedSetSites(solution).length, 1);
+  assert.deepEqual(calculatedSetSites(solution)[0], {
+    target: 'file:///x.fmp12', script: { id: 1, name: 'S' },
+    step: { index: 0, line: 1, step: 'Set Variable by Name' }, name: '"$$" & $prefix',
+  });
+});
+
+test('a disabled Set Variable by Name is not a set site', () => {
+  const step = { stepID: 999, step: 'Set Variable by Name', name: '"$$x"', disabled: true };
+  const solution = {
+    root: 'file:///x.fmp12', cli: { version: '0.8.0-beta.0' }, unreachable: [],
+    files: { 'file:///x.fmp12': {
+      target: 'file:///x.fmp12', name: 'x', facts: {},
+      fileOptions: { block: null, error: null, ops: [], readAt: null },
+      catalogs: { script: { list: [], detailById: { 1: { result: { id: 1, name: 'S', body: [step] } } } } },
+    } },
+  };
+  assert.deepEqual(calculatedSetSites(solution), []);
 });

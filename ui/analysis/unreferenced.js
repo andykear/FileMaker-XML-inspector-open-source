@@ -49,7 +49,7 @@ import { get, path } from '../access.js';
 import { fieldsOf } from '../tabs/tables.js';
 import { styleUsage } from '../tabs/themes.js';
 import { memoise } from './memo.js';
-import { nameIndex, references, strings } from './refs.js';
+import { nameIndex, references, strings, REPLACE_BY_NAME } from './refs.js';
 
 const listOf = (file, catalog) => path(file, `catalogs.${catalog}.list`) ?? [];
 const filesOf = (solution) => Object.values(get(solution, 'files') ?? {});
@@ -268,12 +268,16 @@ const places = (n) => (n === 1 ? '1 place' : `${n} places`);
 const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 function signals(solution) {
-  const s = { evaluate: 0, getField: 0, getFieldDynamic: 0, sql: 0, calculatedName: 0, keys: new Set() };
+  const s = { evaluate: 0, getField: 0, getFieldDynamic: 0, sql: 0, calculatedName: 0, replaceByName: 0, keys: new Set() };
   const hits = (text, re) => (text.match(re) ?? []).length;
   for (const file of filesOf(solution)) {
     // Every string of every catalog, whatever its key: a formula is not only
     // where a key list says it is.
     strings(get(file, 'catalogs'), (value, at, key) => {
+      // A step's own type is the value of its `step` key, which this walk
+      // visits like any other string -- so a step type is counted here rather
+      // than by a second walk over script bodies.
+      if (foldKey(key) === 'step' && value === REPLACE_BY_NAME) s.replaceByName += 1;
       const calculated = CALCULATED_NAME_KEYS.get(foldKey(key));
       if (calculated) { s.calculatedName += 1; s.keys.add(calculated); }
       s.evaluate += hits(value, EVALUATE);
@@ -345,6 +349,7 @@ function confidenceOf(solution) {
   const reasons = [...incomplete, ...runtimePaths(solution)];
   if (s.evaluate) reasons.push(`Evaluate ( ) in ${places(s.evaluate)}: it runs a calculation built at run time, which can name anything.`);
   if (s.getField) reasons.push(`GetField ( ) / GetFieldName ( ) in ${places(s.getField)} (${s.getFieldDynamic} with a non-literal argument): the field is named by text the reference scan does not follow.`);
+  if (s.replaceByName) reasons.push(`Replace Field Contents by Name in ${places(s.replaceByName)}: the step writes to a field named by calculation, so the field it changes is not a field the reference scan can name.`);
   if (s.sql) reasons.push(`ExecuteSQL ( ) with a constructed query in ${places(s.sql)}: an identifier built from variables cannot be read.`);
   if (s.calculatedName) reasons.push(`A script, layout or object named by calculation in ${places(s.calculatedName)} (${[...s.keys].sort().join(', ')}): fm reports these keys as calculation text, so the name is not a name the scan can match.`);
   const tier = incomplete.length ? 'low' : reasons.length ? 'medium' : 'high';

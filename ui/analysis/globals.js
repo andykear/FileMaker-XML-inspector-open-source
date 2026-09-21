@@ -35,7 +35,7 @@
 // object.
 import { get, path } from '../access.js';
 import { memoise } from './memo.js';
-import { SET_VARIABLE, references } from './refs.js';
+import { SET_VARIABLE, SET_VARIABLE_BY_NAME, references } from './refs.js';
 
 /** Why a mention count is a reading of the text and not a fact about the file.
  *  Named here once so a tab can print it next to the number. */
@@ -46,7 +46,10 @@ export const GLOBALS_NOTE = 'Mentions are counted by tokenising calculation text
   + ' containing a space (FileMaker allows `$$SMTP Server`) is read whole only where some script sets it:'
   + ' nothing in calculation text says where such a name ends, so the tokeniser matches the names this'
   + ' solution\'s Set Variable steps write. A spaced name no step sets is read as its first word, and is'
-  + ' listed twice -- once under the full name, with no mentions, and once under the first word, with them.';
+  + ' listed twice -- once under the full name, with no mentions, and once under the first word, with them.'
+  + ' And fm 0.8.0 added Set Variable by Name, whose variable name is a formula rather than a name:'
+  + ' such a step is listed by `calculatedSetSites` and is in no row here, because the name it writes'
+  + ' is not knowable without running the file.';
 
 // fm's own step id for Set Variable is refs.js's `SET_VARIABLE`: the tokeniser
 // reads the same steps for the names they spell, so the number has one home.
@@ -94,6 +97,36 @@ function computeGlobals(solution) {
   const out = [...rows.values()]
     .map((row) => ({ ...row, files: [...row.files].sort() }))
     .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+  Object.freeze(out);
+  return out;
+}
+
+/** Every enabled `Set Variable by Name` step, whose variable name is a formula.
+ *  Not a `$$` row: the name is calculation text, and inventing a global called
+ *  `"$$" & $prefix` would be a false positive. It is listed so the answer can
+ *  say where it is incomplete -- a global written only by one of these steps is
+ *  in no row above, and this is the only record that it exists.
+ *
+ *  Memoised like every other analysis here. */
+export const calculatedSetSites = (solution) => memoise(solution, computeCalculatedSetSites);
+
+function computeCalculatedSetSites(solution) {
+  const out = [];
+  for (const file of filesOf(solution)) {
+    const target = get(file, 'target');
+    for (const detail of detailsOf(file)) {
+      const body = get(detail, 'body') ?? [];
+      body.forEach((step, index) => {
+        if (get(step, 'disabled') === true || get(step, 'step') !== SET_VARIABLE_BY_NAME) return;
+        out.push({
+          target,
+          script: { id: get(detail, 'id'), name: get(detail, 'name') },
+          step: { index, line: index + 1, step: SET_VARIABLE_BY_NAME },
+          name: get(step, 'name'),
+        });
+      });
+    }
+  }
   Object.freeze(out);
   return out;
 }
