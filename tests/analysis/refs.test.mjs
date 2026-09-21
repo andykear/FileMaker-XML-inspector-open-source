@@ -145,6 +145,27 @@ test('the reference counts by how, and by the kind of object doing the naming', 
   });
 });
 
+test('references() does not tokenise fm\'s opaque round-trip blobs', async () => {
+  // fm 0.8.0 reports printOptions.preserved[].data and pageSetup.preserved[].data as
+  // hex-encoded plists of the platform's print settings -- 1.2MB of them on ooe, up to
+  // 52KB in one string. FIELD_RE is NAME_CHARS::NAME_CHARS and every hex digit is a
+  // valid name character, so a delimiter-free run makes it quadratic: measured, 16k
+  // chars of hex costs 788ms against 9ms for the same length with delimiters. Left
+  // alone it took references() from under a second to 105 SECONDS, and the page
+  // computes this live.
+  //
+  // A generous budget, not a benchmark: it is here to fail loudly if a future build
+  // adds another blob under another key, which is exactly how this one arrived.
+  const api = createReplayApi(FIXTURE);
+  const freshSolution = await discover(api, api.meta.root);
+  const started = Date.now();
+  const refs = references(freshSolution);
+  const ms = Date.now() - started;
+  assert.ok(ms < 10_000, `references() took ${ms}ms; a blob is being tokenised again`);
+  // No blob contributes a reference, so nothing is reported from inside one.
+  assert.deepEqual(refs.filter((r) => /(^|\.)preserved\b/.test(r.from.where)), []);
+});
+
 test('the name index sizes on the fixture', () => {
   const idx = nameIndex(solution);
   assert.deepEqual(Object.fromEntries(Object.entries(idx).filter(([, m]) => m instanceof Map).map(([k, m]) => [k, m.size])), {

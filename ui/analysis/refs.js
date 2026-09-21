@@ -387,6 +387,23 @@ const NAMED_STRING = {
 // two the regression steps use.
 const FIELD_KEYS = new Set(['field', 'vectorsField', 'labelsField']);
 
+// Two families of value fm reports for round-tripping rather than for reading, and
+// neither can carry a reference to anything in the solution:
+//   `preserved`  the platform's own print and page-setup state, hex-encoded. fm hands
+//                it back unchanged so a write can restore it; on ooe one step carries
+//                52KB of it and the file carries 1.2MB in all.
+//   `*Raw`       the stored word behind a name fm has already decoded into the sibling
+//                key next to it (`characterSet` beside `characterSetRaw`).
+//
+// Skipping them is not only waste avoidance. `FIELD_RE` is `NAME_CHARS::NAME_CHARS`
+// and a hex digit is a valid name character, so a long delimiter-free string makes the
+// scan quadratic -- every start position rescans forward with no `::` to stop it.
+// Measured: 16k chars of hex costs 788ms where the same length carrying delimiters
+// costs 9ms. Tokenising fm 0.8.0's blobs took `references()` from under a second to
+// 105 seconds, and the page computes it live.
+const OPAQUE_SUBTREE = /(^|\.)preserved(\[|\.|$)/;
+const isOpaqueValue = (key, at) => key.endsWith('Raw') || OPAQUE_SUBTREE.test(at);
+
 // A `{ name, id, … }` object under one of these keys names an object of that
 // kind: `field.tableOccurrence`, a trigger's `script`, a relation's
 // `left`/`right`, a layout object's `valueList`, a sub-summary part's
@@ -429,6 +446,7 @@ function scanRecord(record, src, out, resolve, idx, options) {
     out.push({ kind, name, resolved: kind === 'variable' ? false : resolve(kind, name, src.themeId), how, from });
   };
   strings(record, (value, at, key, parent) => {
+    if (isOpaqueValue(key, at)) return;
     // A record's own name is not a reference to anything. Only a record that
     // HAS a name of its own is skipped here: a script step's root `name` is the
     // variable a Set Variable writes -- an operand, and the set site globals.js
