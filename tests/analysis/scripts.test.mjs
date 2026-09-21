@@ -491,6 +491,21 @@ test('every step on the PSoS list appears somewhere on ooe, in 22 scripts', () =
   assert.equal(new Set(rows.map((r) => r.script.name)).size, 22);
 });
 
+test('scriptIssues() does not scan fm\'s opaque round-trip blobs', async () => {
+  // scripts.js calls `strings()` three times, each walking every string fm reports.
+  // fm 0.8.0's hex-encoded print-settings blobs made scriptIssues() quadratic the
+  // same way they did references(): FIELD_RE and the Evaluate/GetField/ExecuteSQL
+  // regexes all rescan long delimiter-free runs. The walker now skips opaque values
+  // on behalf of every analysis, so this budget guards the next blob.
+  const api = createReplayApi(FIXTURE);
+  const freshSolution = await discover(api, api.meta.root);
+  const started = Date.now();
+  const issues = scriptIssues(freshSolution);
+  const ms = Date.now() - started;
+  assert.ok(ms < 5_000, `scriptIssues() took ${ms}ms; a blob is being scanned again`);
+  assert.equal(issues.length, 806);
+});
+
 test('the ooe call graph: every script a node, every naming site an edge', () => {
   const graph = callGraph(solution);
   assert.equal(graph.nodes.length, 44);
