@@ -19,7 +19,7 @@ const parsed = JSON.parse(jsonExport(solution));
 
 test('the export round-trips and carries the solution the page was drawn from', () => {
   assert.equal(parsed.solution.root, solution.root);
-  assert.equal(parsed.solution.cli.version, '0.7.0');
+  assert.equal(parsed.solution.cli.version, '0.8.0-beta.0');
   assert.deepEqual(Object.keys(parsed.solution.files), Object.keys(solution.files));
   assert.equal(parsed.solution.files['fmnet://localhost/ooe'].catalogs.table.list.length, 14);
 });

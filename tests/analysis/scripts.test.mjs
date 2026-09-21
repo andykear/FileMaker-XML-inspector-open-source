@@ -435,9 +435,12 @@ const ooe = (name) => scriptIssues(solution).filter((r) => r.check === name);
 test('the ooe fixture: how many of each check, and one named example of each', () => {
   const counts = {};
   for (const row of scriptIssues(solution)) counts[row.check] = (counts[row.check] ?? 0) + 1;
+  // Re-measured after 0.8.0 re-record: embedded-credential 65→71 because the
+  // structured option keys (printOptions, exportOptions, etc.) now expose
+  // credential data the 0.7.0 shape did not carry.
   assert.deepEqual(counts, {
     'dead-set-variable': 12,
-    'embedded-credential': 65,
+    'embedded-credential': 71,
     'literal-account': 4,
     'psos-only-step': 715,
     'swallowed-error': 4,
@@ -447,7 +450,7 @@ test('the ooe fixture: how many of each check, and one named example of each', (
   // seven `Allow User Abort [Off]` steps -- four of them [Off] only by the flags
   // bit, fm reporting no `on` -- sit in scripts that do set error capture. Both
   // are covered by the hand-made bodies above.
-  assert.equal(scriptIssues(solution).length, 800);
+  assert.equal(scriptIssues(solution).length, 806);
 
   const dead = ooe('dead-set-variable')[0];
   assert.deepEqual([dead.script.name, dead.step.index, dead.detail.variable], ['Control', 7, '$some_var_with_repetitions']);
@@ -455,7 +458,8 @@ test('the ooe fixture: how many of each check, and one named example of each', (
   assert.deepEqual([credential.script.name, credential.step.step, credential.detail], ['Capture_AICaptions', 'Configure AI Account', { key: 'apiKey', where: 'apiKey', characters: 3 }]);
   const byStep = {};
   for (const row of ooe('embedded-credential')) byStep[row.step.step] = (byStep[row.step.step] ?? 0) + 1;
-  assert.deepEqual(byStep, { 'Create PDF': 56, 'Open PDF': 4, 'Append PDF': 3, 'Configure AI Account': 1, 'Print PDF': 1 });
+  // Re-measured after 0.8.0 re-record: Print PDF 1→7 (+6) because printOptions exposes credentials.
+  assert.deepEqual(byStep, { 'Create PDF': 56, 'Open PDF': 4, 'Append PDF': 3, 'Configure AI Account': 1, 'Print PDF': 7 });
   // All four are AI account references, which is why the check is named for the
   // literal it found and the detail carries the step that carried it.
   const accounts = ooe('literal-account');

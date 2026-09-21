@@ -307,13 +307,19 @@ test('a check of nothing does not say 0 of 0 probes could not find their object'
 });
 
 test('renderingGaps: measured on the ooe fixture', () => {
+  // Re-measured after the fm 0.8.0-beta.0 re-record: the catalog now renders
+  // Export Records, Import Records, Page Setup and Print, which previously
+  // rendered nothing at all and so could carry no display-form gap. The two
+  // new gaps are on createFolders and performAutoEnter, both keys fm added
+  // in this build. Against the same catalog, the re-record takes stepsWithGaps
+  // from 69 (stale fixture) to 47 (correct baseline).
   const r = renderingGaps(ooe);
   assert.equal(r.steps, 3482);
   assert.equal(r.noCatalogEntry, 67);
-  assert.equal(r.stepsWithGaps, 45);
-  assert.equal(r.gaps, 52);
-  assert.equal(r.groups.length, 15);
-  assert.deepEqual(r.byKind, { noDisplayForm: 50, catalogMarkedMismatch: 2 });
+  assert.equal(r.stepsWithGaps, 47);
+  assert.equal(r.gaps, 54);
+  assert.equal(r.groups.length, 17);
+  assert.deepEqual(r.byKind, { noDisplayForm: 52, catalogMarkedMismatch: 2 });
   // The largest group, and the one example a reader is shown for it.
   const top = r.groups[0];
   assert.equal(top.step, 'Save Records as PDF');
@@ -353,7 +359,7 @@ test('the rendering-gaps section names the step types and the counts', () => {
   assert.match(html, /Rendering gaps/);
   assert.match(html, /Save Records as PDF/);
   assert.match(html, /noDisplayForm/);
-  assert.match(html, /<span class="num">52<\/span>/);
+  assert.match(html, /<span class="num">54<\/span>/); // gaps, re-measured after 0.8.0 re-record
   assert.match(html, /<span class="num">67<\/span>/);
 });
 

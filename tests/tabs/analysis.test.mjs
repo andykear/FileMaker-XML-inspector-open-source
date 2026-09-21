@@ -39,14 +39,15 @@ const handView = { selection: null, filter: '', multiFile: false };
 
 test('analysisTotals: solution-wide, unfiltered, pinned on ooe', () => {
   const t = analysisTotals(solution);
+  // Re-measured after 0.8.0 re-record: unreferenced fields 40→39, broken 357→354.
   assert.deepEqual(t.unreferenced.byCategory, {
-    fields: 40, tables: 0, occurrences: 6, scripts: 37,
+    fields: 39, tables: 0, occurrences: 6, scripts: 37,
     layouts: 15, valueLists: 4, customFunctions: 6, styles: 277,
   });
-  assert.equal(t.unreferenced.total, 385);
+  assert.equal(t.unreferenced.total, 384);
 
-  assert.equal(t.broken.total, 357);
-  assert.deepEqual(t.broken.byKind, { problem: 352, missingMarker: 5 });
+  assert.equal(t.broken.total, 354);
+  assert.deepEqual(t.broken.byKind, { problem: 350, missingMarker: 4 });
 
   assert.equal(t.issues.total, scriptIssues(solution).length);
   assert.equal(t.issues.byCheck['psos-only-step'], 715);
@@ -61,19 +62,20 @@ test('the totals line names the derivation of every item in a title attribute', 
   const items = [...line.matchAll(/title="([^"]*)"/g)].map((m) => m[1]);
   assert.equal(items.length, 5); // unreferenced, broken references, fm problem steps, issues, globals
   for (const title of items) assert.ok(title.length > 20, `thin title: ${title}`);
-  assert.ok(line.includes('>385<'));
-  // The two halves of what used to be one 357: 352 of fm's own problem steps
-  // beside 5 real broken references. Measured on ooe before it was pinned.
-  assert.ok(line.includes('Broken references <span class="num">5</span>'), line);
-  assert.ok(line.includes('fm problem steps <span class="num">352</span>'), line);
-  assert.ok(!line.includes('>357<'), 'the two kinds are no longer added together');
+  assert.ok(line.includes('>384<')); // Re-measured after 0.8.0 re-record: 385→384
+  // The two halves: fm's own problem steps beside real broken references.
+  // Re-measured after 0.8.0 re-record: 5→4, 352→350.
+  assert.ok(line.includes('Broken references <span class="num">4</span>'), line);
+  assert.ok(line.includes('fm problem steps <span class="num">350</span>'), line);
+  assert.ok(!line.includes('>354<'), 'the two kinds are no longer added together');
 });
 
 test('the headline splits fm problem steps out of broken references', () => {
   const t = analysisTotals(solution);
-  assert.equal(t.broken.total, 357);
-  assert.equal(brokenReferenceCount(t), 5);
-  assert.equal(t.broken.byKind[PROBLEM_KIND], 352);
+  // Re-measured after 0.8.0 re-record: 357→354, 5→4, 352→350.
+  assert.equal(t.broken.total, 354);
+  assert.equal(brokenReferenceCount(t), 4);
+  assert.equal(t.broken.byKind[PROBLEM_KIND], 350);
   // Counted as the rest of the total, so a new kind out of ui/analysis/broken.js
   // lands in "Broken references" rather than vanishing from the headline.
   const invented = { broken: { total: 10, byKind: { problem: 4, somethingNew: 6 } } };
@@ -196,7 +198,7 @@ test('Globals: the table, its counts and the note that explains the mention coun
 test('the filter narrows every table and leaves the totals alone', () => {
   const all = tab.render(solution, view);
   const html = tab.render(solution, { ...view, filter: '$$my_var_global' });
-  assert.ok(html.includes('>385<'), 'the totals moved with the filter');
+  assert.ok(html.includes('>384<'), 'the totals moved with the filter'); // Re-measured: 385→384
   assert.ok(html.includes('$$my_var_global'));
   assert.ok(!html.includes('$$some_global_var'));
   assert.ok(html.length < all.length);

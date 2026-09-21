@@ -1,12 +1,12 @@
 {
-  "recordedOn": "2026-09-16",
+  "recordedOn": "2026-09-21",
   "root": "fmnet://localhost/ooe",
   "username": "admin",
   "fm": {
-    "path": "/usr/local/bin/fm",
-    "version": "0.7.0",
+    "path": "/Users/wdecorte/Library/Application Support/ADT/MCP/fm-cli/fm-cli",
+    "version": "0.8.0-beta.0",
     "contract": null,
-    "banner": "0.7.0 (29823677)"
+    "banner": "0.8.0-beta.0 (29827611)"
   },
   "files": [
     "fmnet://localhost/ooe",

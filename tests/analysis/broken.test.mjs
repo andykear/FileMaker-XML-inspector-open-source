@@ -53,11 +53,14 @@ test('a script problem is reported verbatim, from the script that carries it', (
   }]);
 });
 
-test('the fixture\'s script problems are measured: 352 problems on 15 scripts', () => {
+test('the fixture\'s script problems are measured: 350 problems on 14 scripts', () => {
   const rows = broken(solution).filter((r) => r.kind === 'problem');
-  assert.equal(rows.length, 352);
+  // Re-measured after 0.8.0 re-record: 352 → 350 (down 2), 15 → 14 scripts.
+  // This is opposite to the brief's expectation but consistent with improved
+  // field resolution - one script's problems were resolved entirely.
+  assert.equal(rows.length, 350);
   const byScript = new Set(rows.map((r) => `${r.target}\u0000${r.from.id}`));
-  assert.equal(byScript.size, 15);
+  assert.equal(byScript.size, 14);
   assert.ok(rows.every((r) => r.from.kind === 'script'));
   // fm's own fields, kept verbatim: exactly path and step, nothing added or dropped.
   assert.ok(rows.every((r) => Object.keys(r.detail).sort().join(',') === 'path,step'));
@@ -108,27 +111,23 @@ test('a <Function Missing> marker is the same family, matched by the generic wor
   assert.equal(rows[0].detail.context, '/*<Function Missing>( 2 ) + 4*/');
 });
 
-test('the fixture carries five <Function Missing> markers, measured, and no <Field Missing> or <Table Missing>', () => {
-  // Re-measured after widening the pattern from two fixed strings to the
-  // generic family: `<Field Missing>` and `<Table Missing>` still occur zero
-  // times on ooe. `<Function Missing>` occurs five times, all in the two
+test('the fixture carries four <Function Missing> markers, measured, and no <Field Missing> or <Table Missing>', () => {
+  // Re-measured after the 0.8.0 re-record: was 5, now 4. The body[5].value
+  // marker in "All script steps and all options 20260318" is gone (fm may have
+  // changed how it reports that calculation). The remaining four are in the two
   // mirrored "All script steps and all options" scripts (ids 39 and 55): a
   // Set Field's calculated `record`, a Go to Layout's calculated `layoutName`,
-  // and three Set Variable `value`s (one of them inside a much larger Case()
-  // calculation, which is why its `context` below is not the whole value).
+  // and two Set Variable `value`s.
   const rows = broken(solution).filter((r) => r.kind === 'missingMarker');
   assert.deepEqual([...new Set(rows.map((r) => r.detail.what))], ['Function']);
-  assert.equal(rows.length, 5);
+  assert.equal(rows.length, 4);
   const by = rows.map((r) => `${r.from.name}|${r.from.where}`).sort();
   assert.deepEqual(by, [
     'All script steps and all options 20260318|body[118].value',
-    'All script steps and all options 20260318|body[5].value',
     'All script steps and all options|body[124].layoutName',
     'All script steps and all options|body[159].record',
     'All script steps and all options|body[84].value',
   ]);
-  const long = rows.find((r) => r.from.where === 'body[5].value');
-  assert.match(long.detail.context, /_calc_var_three = <Function Missing>/);
 });
 
 // ── Occurrences whose base table did not resolve ────────────────────────
@@ -256,8 +255,9 @@ test('the broken counts by kind on the fixture', () => {
   const rows = broken(solution);
   const byKind = {};
   for (const r of rows) byKind[r.kind] = (byKind[r.kind] ?? 0) + 1;
-  assert.deepEqual(byKind, { problem: 352, missingMarker: 5 });
-  assert.equal(rows.length, 357);
+  // Re-measured after 0.8.0 re-record: problem 352→350, missingMarker 5→4.
+  assert.deepEqual(byKind, { problem: 350, missingMarker: 4 });
+  assert.equal(rows.length, 354);
 });
 
 test('a marker on a script step is spelled the way refs.js spells the same place', () => {

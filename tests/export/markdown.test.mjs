@@ -29,7 +29,7 @@ const fieldsIn = (file) => (file.catalogs.table.list ?? [])
 test('the header names the root, the fm version and the read time', () => {
   assert.match(report, /^# Clockwork Inspector report: ooe\n/);
   assert.ok(report.includes('`fmnet://localhost/ooe`'), 'the root target');
-  assert.ok(report.includes('fm 0.7.0'), 'the fm version from solution.cli');
+  assert.ok(report.includes('fm 0.8.0-beta.0'), 'the fm version from solution.cli');
   assert.ok(report.includes(solution.readAt), 'the read time');
 });
 

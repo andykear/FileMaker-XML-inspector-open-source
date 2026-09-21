@@ -220,9 +220,9 @@ test('a step name with markup in it is escaped everywhere it is drawn', () => {
 
 test('scriptStats counts scripts, steps, the longest, the steps fm flagged, unbalanced blocks and orphaned enabled steps', () => {
   // ooe's two disabled steps are both plain Set Web Viewer steps, not openers, so
-  // nothing on either file is orphaned. Measured from the fixture.
+  // nothing on either file is orphaned. Re-measured after 0.8.0 re-record: flaggedSteps 352→350.
   assert.deepEqual(scriptStats(root),
-    { scripts: 41, steps: 3104, maxLength: 1155, flaggedSteps: 352, unbalanced: 0, orphanedEnabled: 0 });
+    { scripts: 41, steps: 3104, maxLength: 1155, flaggedSteps: 350, unbalanced: 0, orphanedEnabled: 0 });
   assert.equal(scriptStats(root).scripts, root.catalogs.script.list.filter((i) => i.type === 'script').length);
   assert.deepEqual(scriptStats(solution.files['fmnet://localhost/BrojDva']),
     { scripts: 3, steps: 378, maxLength: 181, flaggedSteps: 0, unbalanced: 0, orphanedEnabled: 0 });
@@ -284,7 +284,7 @@ test('renders the tree, the totals and the step index', () => {
   assert.match(html, /<details open>/);
   assert.match(html, /Scripts <span class="num">44<\/span>/); // 41 + 3, the whole solution
   assert.match(html, /<h2>Step index<\/h2>/);
-  assert.match(html, /Steps fm flagged <span class="num">352<\/span>/);
+  assert.match(html, /Steps fm flagged <span class="num">350<\/span>/); // Re-measured after 0.8.0 re-record
   assert.match(html, /Enabled steps under a disabled opener <span class="num">0<\/span>/);
   assert.match(html, /data-reread-catalog="script"/);
   assert.ok(html.includes(`data-select="${ROOT}|39"`));

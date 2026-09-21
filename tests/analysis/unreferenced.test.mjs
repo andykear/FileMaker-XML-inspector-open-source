@@ -370,25 +370,29 @@ test('unreferenced is memoised on the solution object and recomputes for another
   assert.equal(unreferenced(solution), unreferenced(solution));
 });
 
-// ── Pinned against the ooe fixture (fm 0.7.0, recorded 2026-09-16) ────
+// ── Pinned against the ooe fixture (fm 0.8.0-beta.0, re-recorded 2026-09-21) ────
 // Every number below was printed from the fixture before it was written here.
 
 test('the count of unreferenced objects per kind on the fixture', () => {
   const out = unreferenced(solution);
   const sizes = Object.fromEntries(['fields', 'tables', 'occurrences', 'scripts', 'layouts', 'valueLists', 'customFunctions', 'styles'].map((k) => [k, out[k].length]));
+  // Re-measured after 0.8.0 re-record: one field (OrderOfOperationsTest_u) that
+  // was text-only is now properly named in structured option keys.
   assert.deepEqual(sizes, {
-    fields: 40, tables: 0, occurrences: 6, scripts: 37,
+    fields: 39, tables: 0, occurrences: 6, scripts: 37,
     layouts: 15, valueLists: 4, customFunctions: 6, styles: 277,
   });
   // Two files, and each list carries rows from both.
   assert.deepEqual(out.fields.reduce((o, r) => ({ ...o, [r.target]: (o[r.target] ?? 0) + 1 }), {}), {
-    'fmnet://localhost/ooe': 34, 'fmnet://localhost/BrojDva': 6,
+    'fmnet://localhost/ooe': 33, 'fmnet://localhost/BrojDva': 6,
   });
 });
 
-test('the fixture\'s unreferenced fields split 34 with no reference at all, 6 named only in calculation text', () => {
+test('the fixture\'s unreferenced fields split 34 with no reference at all, 5 named only in calculation text', () => {
   const out = unreferenced(solution);
-  assert.deepEqual(out.fields.reduce((o, r) => ({ ...o, [r.tier]: (o[r.tier] ?? 0) + 1 }), {}), { none: 34, 'text-only': 6 });
+  // Re-measured after 0.8.0 re-record: OrderOfOperationsTest_u promoted from
+  // text-only to properly referenced (appears in sortOrder or findRequests).
+  assert.deepEqual(out.fields.reduce((o, r) => ({ ...o, [r.tier]: (o[r.tier] ?? 0) + 1 }), {}), { none: 34, 'text-only': 5 });
   // Nothing anywhere names this one: not a layout, not a script, not a calc.
   assert.deepEqual(out.fields.find((r) => r.field === 'field_hindi'), {
     target: 'fmnet://localhost/ooe', table: 'index_languages', field: 'field_hindi',
@@ -397,7 +401,7 @@ test('the fixture\'s unreferenced fields split 34 with no reference at all, 6 na
   // A global whose only appearances are inside other fields' formulas.
   assert.equal(out.fields.find((r) => r.name === 'TestTable::MyGlobal_g').tier, 'text-only');
   assert.deepEqual(out.fields.filter((r) => r.tier === 'text-only').map((r) => r.name), [
-    'Invoice::InvoiceNumber', 'Contacts::listOf_s', 'Contacts::OrderOfOperationsTest_u',
+    'Invoice::InvoiceNumber', 'Contacts::listOf_s',
     'TestTable::field_that_contains_array', 'TestTable::field_that_contains_embedding', 'TestTable::MyGlobal_g',
   ]);
 });

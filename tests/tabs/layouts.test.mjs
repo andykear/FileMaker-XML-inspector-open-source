@@ -30,7 +30,7 @@ test('walkObjects visits every object through the nesting, carrying depth', () =
 });
 
 test('walkObjects also descends panels and segments when fm reports them', () => {
-  // fm 0.7.0 nests everything under `objects`; these two keys are in the contract, so
+  // fm 0.8.0-beta.0 nests everything under `objects`; these two keys are in the contract, so
   // the walk must not go blind if a later build uses them.
   const objects = [{ id: 1, type: 'tabControl', bounds: { left: 0, top: 0, width: 10, height: 10 }, panels: [{ id: 2, type: 'tabPanel', bounds: { left: 0, top: 0, width: 10, height: 10 } }] },
     { id: 3, type: 'buttonBar', bounds: { left: 0, top: 0, width: 10, height: 10 }, segments: [{ id: 4, type: 'button', bounds: { left: 0, top: 0, width: 5, height: 5 } }] }];

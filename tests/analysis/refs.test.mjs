@@ -117,26 +117,30 @@ test('references is memoised on the solution object', () => {
   assert.equal(references(solution), references(solution));
 });
 
-// ── Pinned against the ooe fixture (fm 0.7.0, recorded 2026-09-16) ────
+// ── Pinned against the ooe fixture (fm 0.8.0-beta.0, re-recorded 2026-09-21) ────
 // Every number below was printed from the fixture before it was written here.
 
 test('the reference counts by kind on the fixture', () => {
   const rows = references(solution);
   const byKind = {};
   for (const r of rows) byKind[r.kind] = (byKind[r.kind] ?? 0) + 1;
+  // Re-measured after 0.8.0 re-record: structured option keys (findRequests,
+  // sortOrder, exportOptions, importOptions) expose field names the 0.7.0
+  // recording did not carry, so field and variable references increase.
   assert.deepEqual(byKind, {
-    variable: 1220, field: 919, occurrence: 314, script: 64, table: 35,
+    variable: 1257, field: 933, occurrence: 314, script: 64, table: 35,
     layout: 16, valueList: 14, style: 7, customFunction: 3,
   });
-  assert.equal(rows.length, 2592);
+  assert.equal(rows.length, 2643);
 });
 
 test('the reference counts by how, and by the kind of object doing the naming', () => {
   const rows = references(solution);
   const tally = (f) => rows.reduce((o, r) => ({ ...o, [f(r)]: (o[f(r)] ?? 0) + 1 }), {});
-  assert.deepEqual(tally((r) => r.how), { text: 1601, named: 991 });
+  // Re-measured after 0.8.0 re-record: new field references from option keys.
+  assert.deepEqual(tally((r) => r.how), { text: 1634, named: 1009 });
   assert.deepEqual(tally((r) => r.from.kind), {
-    script: 1925, layoutObject: 401, field: 119, layout: 51, relation: 42,
+    script: 1976, layoutObject: 401, field: 119, layout: 51, relation: 42,
     tableOccurrence: 27, valueList: 17, customMenu: 8, customFunction: 2,
   });
 });

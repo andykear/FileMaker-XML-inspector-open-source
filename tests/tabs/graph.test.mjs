@@ -36,7 +36,7 @@ test('occurrenceRows describes every occurrence of the file', () => {
 
   assert.equal(rows.filter((r) => r.related === 0).length, 10);
 
-  // fm 0.7.0 hands back {0,0,0,0} for six of ooe's occurrences: listed, but with
+  // fm 0.8.0-beta.0 hands back {0,0,0,0} for six of ooe's occurrences: listed, but with
   // no geometry to draw. 18 of the 24 carry a real box.
   assert.equal(rows.filter((r) => r.placed).length, 18);
   assert.deepEqual(rows.filter((r) => !r.placed).map((r) => r.name),

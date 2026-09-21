@@ -348,5 +348,5 @@ test('every reference in the solution is reachable from some selectable object',
   const all = references(solution);
   const covered = all.filter((r) => owners.has(ownerOf(r)));
   assert.equal(covered.length, all.length, [...new Set(all.filter((r) => !owners.has(ownerOf(r))).map(ownerOf))].join(', '));
-  assert.equal(all.length, 2592);
+  assert.equal(all.length, 2643); // Re-measured after 0.8.0 re-record: new field refs from structured options
 });
