@@ -286,9 +286,9 @@ function deadKeys(solution) {
         // (an unconfigured sort level, an empty groupBy), not a deleted field.
         // A genuinely deleted field leaves non-zero stored numbers behind.
         if (!isRealKey(raw)) continue;
-        // The where points at the container holding the key, spelled the way
-        // strings() spells it (dot-separated array indices), so a deadKey and a
-        // reference on the same step read identically.
+        // The where names the key itself, spelled the way strings() spells it
+        // (dot-separated array indices), so a deadKey and a reference on the same
+        // step read identically.
         const where = at ? `${at}.${deadKey}` : deadKey;
         rows.push({
           target: src.target, kind: 'deadKey',
