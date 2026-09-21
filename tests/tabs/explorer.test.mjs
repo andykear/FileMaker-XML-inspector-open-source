@@ -351,5 +351,5 @@ test('every reference in the solution is reachable from some selectable object',
   // the Explorer, so its 8 references (2 layouts + 6 scripts) are not covered.
   const covered = all.filter((r) => r.from.kind !== 'fileOptions' && owners.has(ownerOf(r)));
   assert.equal(covered.length, all.length - 8, [...new Set(all.filter((r) => r.from.kind !== 'fileOptions' && !owners.has(ownerOf(r))).map(ownerOf))].join(', '));
-  assert.equal(all.length, 2651); // Re-measured after 0.8.0 re-record: new field refs from structured options; Task 5: +8 (File Options references)
+  assert.equal(all.length, 2652); // Re-measured after 0.8.0 re-record: new field refs from structured options; Task 5: +8 (File Options references); Task 5b: +1 (targetTable)
 });

@@ -380,21 +380,26 @@ test('the count of unreferenced objects per kind on the fixture', () => {
   // was text-only is now properly named in structured option keys.
   // Re-measured after Task 5: layouts -1 (BrojDva's Ooe2 is now referenced by
   // its File Options startup layout, so it is no longer unreferenced).
+  // Re-measured after Task 5b: fields -1 (Contacts::listOf_s was text-only, now
+  // properly referenced via orderBy in a Sort Records step).
   assert.deepEqual(sizes, {
-    fields: 39, tables: 0, occurrences: 6, scripts: 37,
+    fields: 38, tables: 0, occurrences: 6, scripts: 37,
     layouts: 14, valueLists: 4, customFunctions: 6, styles: 277,
   });
   // Two files, and each list carries rows from both.
+  // Re-measured after Task 5b: ooe -1 (Contacts::listOf_s now referenced).
   assert.deepEqual(out.fields.reduce((o, r) => ({ ...o, [r.target]: (o[r.target] ?? 0) + 1 }), {}), {
-    'fmnet://localhost/ooe': 33, 'fmnet://localhost/BrojDva': 6,
+    'fmnet://localhost/ooe': 32, 'fmnet://localhost/BrojDva': 6,
   });
 });
 
-test('the fixture\'s unreferenced fields split 34 with no reference at all, 5 named only in calculation text', () => {
+test('the fixture\'s unreferenced fields split 34 with no reference at all, 4 named only in calculation text', () => {
   const out = unreferenced(solution);
   // Re-measured after 0.8.0 re-record: OrderOfOperationsTest_u promoted from
   // text-only to properly referenced (appears in sortOrder or findRequests).
-  assert.deepEqual(out.fields.reduce((o, r) => ({ ...o, [r.tier]: (o[r.tier] ?? 0) + 1 }), {}), { none: 34, 'text-only': 5 });
+  // Re-measured after Task 5b: Contacts::listOf_s promoted from text-only to
+  // properly referenced (orderBy in a Sort Records step).
+  assert.deepEqual(out.fields.reduce((o, r) => ({ ...o, [r.tier]: (o[r.tier] ?? 0) + 1 }), {}), { none: 34, 'text-only': 4 });
   // Nothing anywhere names this one: not a layout, not a script, not a calc.
   assert.deepEqual(out.fields.find((r) => r.field === 'field_hindi'), {
     target: 'fmnet://localhost/ooe', table: 'index_languages', field: 'field_hindi',
@@ -403,7 +408,7 @@ test('the fixture\'s unreferenced fields split 34 with no reference at all, 5 na
   // A global whose only appearances are inside other fields' formulas.
   assert.equal(out.fields.find((r) => r.name === 'TestTable::MyGlobal_g').tier, 'text-only');
   assert.deepEqual(out.fields.filter((r) => r.tier === 'text-only').map((r) => r.name), [
-    'Invoice::InvoiceNumber', 'Contacts::listOf_s',
+    'Invoice::InvoiceNumber',
     'TestTable::field_that_contains_array', 'TestTable::field_that_contains_embedding', 'TestTable::MyGlobal_g',
   ]);
 });

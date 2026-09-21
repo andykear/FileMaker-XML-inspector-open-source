@@ -130,11 +130,13 @@ test('the reference counts by kind on the fixture', () => {
   // Re-measured after Task 5 (File Options as reference source): layout +2
   // (both files name a startup layout), script +6 (ooe's six file triggers all
   // run `noop`; BrojDva's triggers are all empty so emit() drops them).
+  // Re-measured after Task 5b: occurrence +1 (targetTable names the import's
+  // target occurrence in the fixture's one Import Records step).
   assert.deepEqual(byKind, {
-    variable: 1257, field: 933, occurrence: 314, script: 70, table: 35,
+    variable: 1257, field: 933, occurrence: 315, script: 70, table: 35,
     layout: 18, valueList: 14, style: 7, customFunction: 3,
   });
-  assert.equal(rows.length, 2651);
+  assert.equal(rows.length, 2652);
 });
 
 test('the reference counts by how, and by the kind of object doing the naming', () => {
@@ -143,9 +145,12 @@ test('the reference counts by how, and by the kind of object doing the naming', 
   // Re-measured after 0.8.0 re-record: new field references from option keys.
   // Re-measured after Task 5: named +8 (File Options names the startup layout
   // and trigger scripts under keys fm documents), fileOptions +8 (new source).
-  assert.deepEqual(tally((r) => r.how), { text: 1634, named: 1017 });
+  // Re-measured after Task 5b: named +2 (orderBy was tokenized as text, now named;
+  // targetTable is new), text -1 (orderBy moved from text to named).
+  assert.deepEqual(tally((r) => r.how), { text: 1633, named: 1019 });
+  // Re-measured after Task 5b: script +1 (targetTable is a step option of Import Records).
   assert.deepEqual(tally((r) => r.from.kind), {
-    script: 1976, layoutObject: 401, field: 119, layout: 51, relation: 42,
+    script: 1977, layoutObject: 401, field: 119, layout: 51, relation: 42,
     tableOccurrence: 27, valueList: 17, fileOptions: 8, customMenu: 8, customFunction: 2,
   });
 });
@@ -523,4 +528,46 @@ test('a file with no file-options block contributes no references', () => {
   const bare = structuredClone(solution);
   for (const f of Object.values(bare.files)) f.fileOptions = { block: null, error: null, ops: [], readAt: null };
   assert.deepEqual(references(bare).filter((r) => r.from.kind === 'fileOptions'), []);
+});
+
+// ── fm 0.8.0 structured step options ──────────────────────────────────
+
+const oneStep = (step) => {
+  const one = structuredClone(solution);
+  one.files[api.meta.root].catalogs.script.detailById = { 1: { result: { id: 1, name: 'S', body: [step] } } };
+  return one;
+};
+
+test('a summary column\'s break field is a field reference', () => {
+  const to = solution.files[api.meta.root].catalogs.tableOccurrence.list[0];
+  const field = references(solution).find((r) => r.kind === 'field' && r.resolved);
+  const one = oneStep({ stepID: 36, step: 'Export Records', exportOptions: { fields: [{ field: field.name, summarizeBy: field.name }] } });
+  const refs = references(one).filter((r) => r.kind === 'field' && r.from.where.endsWith('.summarizeBy'));
+  assert.equal(refs.length, 1, 'summarizeBy names the break field a summary is grouped by');
+  assert.equal(refs[0].name, field.name);
+  assert.equal(refs[0].how, 'named');
+  assert.equal(refs[0].resolved, true);
+  assert.ok(to, 'the fixture has an occurrence to build a name from');
+});
+
+test('a sort level\'s reordering summary field is a field reference', () => {
+  const field = references(solution).find((r) => r.kind === 'field' && r.resolved);
+  const one = oneStep({ stepID: 39, step: 'Sort Records', sortOrder: { fields: [{ field: field.name, orderBy: field.name }] } });
+  const refs = references(one).filter((r) => r.kind === 'field' && r.from.where.endsWith('.orderBy'));
+  assert.equal(refs.length, 1);
+  assert.equal(refs[0].resolved, true);
+});
+
+test('an import\'s target table is an occurrence reference, and targetTableName is not', () => {
+  const occurrence = solution.files[api.meta.root].catalogs.tableOccurrence.list[0].name;
+  const one = oneStep({ stepID: 37, step: 'Import Records', importOptions: { targetTable: occurrence, targetTableName: 'LegacyName' } });
+  const refs = references(one).filter((r) => r.from.id === 1);
+  const target = refs.filter((r) => r.kind === 'occurrence' && r.from.where.endsWith('.targetTable'));
+  assert.equal(target.length, 1, 'targetTable names the occurrence records are imported into');
+  assert.equal(target[0].name, occurrence);
+  assert.equal(target[0].resolved, true);
+  // fm: "written by Convert File and empty on an ordinary import; carried so it
+  // round-trips" -- a legacy stored copy, not a live binding. Treating it as a
+  // reference would invent one, and would report LegacyName as dangling.
+  assert.deepEqual(refs.filter((r) => r.from.where.endsWith('.targetTableName')), []);
 });

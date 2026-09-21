@@ -409,11 +409,21 @@ const NAMED_STRING = {
   // `callback` (Perform Script on Server with Callback), `table` (Save Records
   // as JSONL, Fine-Tune Model; the only string `table` key in the whole model).
   scriptReference: 'script', callback: 'script', table: 'table',
+  // fm 0.8.0: the table OCCURRENCE an Import Records step imports into, by name.
+  // Its sibling `targetTableName` is deliberately absent -- fm calls it "the
+  // target table's name as stored beside the mapping. Written by Convert File
+  // and empty on an ordinary import; carried so it round-trips", so it is a
+  // legacy copy rather than a live binding, and reading it as a reference would
+  // report a name nothing points at as dangling.
+  targetTable: 'occurrence',
 };
 
 // Keys whose value is a field name, bare or `TO::Field`: fm's `field` plus the
-// two the regression steps use.
-const FIELD_KEYS = new Set(['field', 'vectorsField', 'labelsField']);
+// two the regression steps use, plus the two fm 0.8.0 added inside the
+// structured step options -- a summary column's break field and the summary
+// field that reorders a sort level. Both are documented as 'Occurrence::Field',
+// so they take the same path `field` does.
+const FIELD_KEYS = new Set(['field', 'vectorsField', 'labelsField', 'summarizeBy', 'orderBy']);
 
 // A `{ name, id, … }` object under one of these keys names an object of that
 // kind: `field.tableOccurrence`, a trigger's `script`, a relation's
