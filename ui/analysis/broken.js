@@ -209,6 +209,61 @@ function danglingNames(solution) {
   return rows;
 }
 
+// ── Dead keys: the references fm reports rather than infers ──────────────
+
+// fm 0.8.0 reports a raw stored key IN PLACE OF a name when the name is dead.
+// Each entry is the key fm sends -> [the named twin it replaces, the kind it
+// would have named]. From fm's own help: "the raw [tableKey, fieldKey] pair of a
+// criterion whose field no longer exists", "for an occurrence that no longer
+// resolves by name", and so on. This is a broken reference fm STATES, where
+// `danglingName` is one this file infers from a failed lookup -- so it catches
+// what refs.js never saw as a name at all.
+const DEAD_KEYS = new Map([
+  ['fieldKey', ['field', 'field']],
+  ['summarizeByKey', ['summarizeBy', 'field']],
+  ['orderByKey', ['orderBy', 'field']],
+  ['valueListKey', ['valueList', 'valueList']],
+  ['targetTableKey', ['targetTable', 'occurrence']],
+]);
+
+// Walk an object tree, calling visit(obj, path) on every object (not arrays,
+// primitives, or null). `path` is the dot-notation from the root to this object.
+function walkObjects(obj, path, visit) {
+  if (obj === null || obj === undefined) return;
+  if (typeof obj !== 'object') return;
+  if (Array.isArray(obj)) {
+    for (let i = 0; i < obj.length; i += 1) walkObjects(obj[i], `${path}[${i}]`, visit);
+    return;
+  }
+  visit(obj, path);
+  for (const [key, value] of Object.entries(obj)) {
+    const nextPath = path ? `${path}.${key}` : key;
+    walkObjects(value, nextPath, visit);
+  }
+}
+
+function deadKeys(solution) {
+  const rows = [];
+  for (const src of records(solution)) {
+    walkObjects(src.record, src.prefix, (obj, at) => {
+      for (const [deadKey, [twin, names]] of DEAD_KEYS) {
+        const raw = get(obj, deadKey);
+        if (raw === undefined) continue;
+        // The rule that prevents the false positive: fm reports the name when it
+        // resolves and the key when it does not, so both together means the
+        // reference is fine. Only report when the twin is absent.
+        if (get(obj, twin) !== undefined) continue;
+        rows.push({
+          target: src.target, kind: 'deadKey',
+          from: { kind: src.kind, id: src.id, name: src.name, where: at },
+          detail: { key: deadKey, names, raw },
+        });
+      }
+    });
+  }
+  return rows;
+}
+
 // ── The analysis ──────────────────────────────────────────────────────────
 
 /** Every reference the solution's own read already shows is broken, in one
@@ -222,6 +277,7 @@ function computeBroken(solution) {
     ...missingMarkers(solution),
     ...unresolvedOccurrences(solution),
     ...danglingNames(solution),
+    ...deadKeys(solution),
   ];
   Object.freeze(out);
   return out;

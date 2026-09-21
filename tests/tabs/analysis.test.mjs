@@ -50,8 +50,9 @@ test('analysisTotals: solution-wide, unfiltered, pinned on ooe', () => {
   });
   assert.equal(t.unreferenced.total, 382);
 
-  assert.equal(t.broken.total, 354);
-  assert.deepEqual(t.broken.byKind, { problem: 350, missingMarker: 4 });
+  // Re-measured for deadKey (Task 5c): broken 354→364, adding 10 dead keys.
+  assert.equal(t.broken.total, 364);
+  assert.deepEqual(t.broken.byKind, { problem: 350, missingMarker: 4, deadKey: 10 });
 
   assert.equal(t.issues.total, scriptIssues(solution).length);
   assert.equal(t.issues.byCheck['psos-only-step'], 715);
@@ -69,16 +70,18 @@ test('the totals line names the derivation of every item in a title attribute', 
   assert.ok(line.includes('>382<')); // Re-measured after 0.8.0 re-record: 385→384; Task 5: 384→383; Task 5b: 383→382
   // The two halves: fm's own problem steps beside real broken references.
   // Re-measured after 0.8.0 re-record: 5→4, 352→350.
-  assert.ok(line.includes('Broken references <span class="num">4</span>'), line);
+  // Re-measured for deadKey (Task 5c): 4→14 (added 10 dead keys).
+  assert.ok(line.includes('Broken references <span class="num">14</span>'), line);
   assert.ok(line.includes('fm problem steps <span class="num">350</span>'), line);
-  assert.ok(!line.includes('>354<'), 'the two kinds are no longer added together');
+  assert.ok(!line.includes('>364<'), 'the two kinds are no longer added together');
 });
 
 test('the headline splits fm problem steps out of broken references', () => {
   const t = analysisTotals(solution);
   // Re-measured after 0.8.0 re-record: 357→354, 5→4, 352→350.
-  assert.equal(t.broken.total, 354);
-  assert.equal(brokenReferenceCount(t), 4);
+  // Re-measured for deadKey (Task 5c): 354→364, 4→14 (added 10 dead keys).
+  assert.equal(t.broken.total, 364);
+  assert.equal(brokenReferenceCount(t), 14);
   assert.equal(t.broken.byKind[PROBLEM_KIND], 350);
   // Counted as the rest of the total, so a new kind out of ui/analysis/broken.js
   // lands in "Broken references" rather than vanishing from the headline.

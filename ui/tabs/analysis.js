@@ -149,7 +149,7 @@ function renderUnreferenced(solution, view) {
 // are adjacent on purpose: one missing table fires both, and a reader who sees
 // only one of the pair reads half the answer. A kind not on this list (a new
 // one from ui/analysis/broken.js) is appended rather than dropped.
-const KIND_ORDER = ['problem', 'missingMarker', 'unresolvedOccurrence', 'danglingName'];
+const KIND_ORDER = ['problem', 'missingMarker', 'deadKey', 'unresolvedOccurrence', 'danglingName'];
 
 /** fm's own `problems[]` entries ride through unread, and a check's detail may
  *  nest (`expensive-in-loop` carries the loop it found the call in), so a detail

@@ -256,8 +256,9 @@ test('the broken counts by kind on the fixture', () => {
   const byKind = {};
   for (const r of rows) byKind[r.kind] = (byKind[r.kind] ?? 0) + 1;
   // Re-measured after 0.8.0 re-record: problem 352→350, missingMarker 5→4.
-  assert.deepEqual(byKind, { problem: 350, missingMarker: 4 });
-  assert.equal(rows.length, 354);
+  // Re-measured for deadKey (fm 0.8.0): added 10 dead keys.
+  assert.deepEqual(byKind, { problem: 350, missingMarker: 4, deadKey: 10 });
+  assert.equal(rows.length, 364);
 });
 
 test('a marker on a script step is spelled the way refs.js spells the same place', () => {
@@ -309,4 +310,56 @@ test("a marker in a script's own problems[] is still found, outside the body spl
   });
   const markers = broken(sol).filter((r) => r.kind === 'missingMarker');
   assert.deepEqual(markers.map((r) => r.from.where), ['problems.0.step']);
+});
+
+// ── Dead keys: references fm reports by raw key instead of name ─────────
+
+const withStep = (step) => {
+  const one = structuredClone(solution);
+  one.files[api.meta.root].catalogs.script.detailById = { 1: { result: { id: 1, name: 'S', body: [step] } } };
+  return one;
+};
+
+test('a fieldKey with no field beside it is a reference fm says is dead', () => {
+  // fm: "the raw [tableKey, fieldKey] pair of a criterion whose field no longer
+  // exists -- how the criterion is read back once that happens."
+  const one = withStep({ stepID: 22, step: 'Perform Find', findRequests: [{ operation: 'find', criteria: [{ fieldKey: [3, 17], criterion: 'x' }] }] });
+  const dead = broken(one).filter((b) => b.kind === 'deadKey');
+  assert.equal(dead.length, 1);
+  assert.equal(dead[0].detail.names, 'field');
+  assert.deepEqual(dead[0].detail.raw, [3, 17]);
+  assert.equal(dead[0].detail.key, 'fieldKey');
+  assert.equal(dead[0].from.id, 1);
+  assert.match(dead[0].from.where, /criteria\[0\]/);
+});
+
+test('a fieldKey BESIDE its field is not dead -- fm reports the name when it resolves', () => {
+  const field = 'Any::Field';
+  const one = withStep({ stepID: 22, step: 'Perform Find', findRequests: [{ operation: 'find', criteria: [{ field, fieldKey: [3, 17], criterion: 'x' }] }] });
+  assert.deepEqual(broken(one).filter((b) => b.kind === 'deadKey'), [],
+    'both present means the reference resolved; reporting it would be a false positive');
+});
+
+test('every *Key variant is recognised, with the kind it would have named', () => {
+  const cases = [
+    [{ stepID: 36, step: 'Export Records', exportOptions: { fields: [{ summarizeByKey: [1, 2] }] } }, 'summarizeByKey', 'field'],
+    [{ stepID: 36, step: 'Export Records', exportOptions: { groupBy: [{ fieldKey: [1, 2] }] } }, 'fieldKey', 'field'],
+    [{ stepID: 39, step: 'Sort Records', sortOrder: { fields: [{ orderByKey: [1, 2] }] } }, 'orderByKey', 'field'],
+    [{ stepID: 39, step: 'Sort Records', sortOrder: { fields: [{ valueListKey: 9 }] } }, 'valueListKey', 'valueList'],
+    [{ stepID: 37, step: 'Import Records', importOptions: { targetTableKey: 4 } }, 'targetTableKey', 'occurrence'],
+  ];
+  for (const [step, key, names] of cases) {
+    const dead = broken(withStep(step)).filter((b) => b.kind === 'deadKey');
+    assert.equal(dead.length, 1, `${key} was not recognised`);
+    assert.equal(dead[0].detail.key, key);
+    assert.equal(dead[0].detail.names, names);
+  }
+});
+
+test('the ooe fixture is measured, not assumed', () => {
+  // A dead key needs a step whose field was deleted under it, which the
+  // reference file may simply not contain -- so this pins whatever is there and
+  // the behaviour above is proven on synthesised shapes.
+  const dead = broken(solution).filter((b) => b.kind === 'deadKey');
+  assert.equal(dead.length, 10);
 });

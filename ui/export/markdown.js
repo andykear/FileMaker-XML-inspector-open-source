@@ -224,8 +224,9 @@ function brokenSection(solution) {
     ['Broken references', rows.length - problems.length],
     ['fm problem steps', problems.length],
   ], { align: 'lr' })
-    + '\nA broken reference is a `<Word Missing>` marker fm wrote, an occurrence whose base table did not'
-    + ' resolve, or a named reference that resolves to nothing. An fm problem step is an entry of fm\'s own'
+    + '\nA broken reference is a `<Word Missing>` marker fm wrote, a reference fm reports by raw key'
+    + ' because the name no longer resolves, an occurrence whose base table did not resolve, or a named'
+    + ' reference that resolves to nothing. An fm problem step is an entry of fm\'s own'
     + ' `script.problems[]`: its report about its own rendering of a step, not a finding about the file.\n';
   const byKind = mdTable(['Kind', 'Count'], tally(rows, (r) => r.kind), { align: 'lr', empty: 'Nothing is broken.' });
   const perScript = mdTable(['File', 'Script', 'Problems'],
