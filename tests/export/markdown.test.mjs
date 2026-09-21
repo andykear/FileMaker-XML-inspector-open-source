@@ -229,9 +229,24 @@ test('a solution with nothing read is still a report, with every section on it',
   assert.deepEqual(headings, SECTIONS);
 });
 
-test('File Options is a section, one table per file, naming the startup layout and the triggers', () => {
+test('File Options is a section with all 19 settings from FILE_OPTIONS_GROUPS, naming the startup layout and the triggers', () => {
   assert.ok(SECTIONS.includes('File Options'));
   assert.match(report, /^## File Options$/m);
+  // The report carries every setting from FILE_OPTIONS_GROUPS, which is exported
+  // from ui/tabs/solution.js and shared by both the page and the report.
+  const settingLabels = [
+    'Switch to a layout on open', 'Startup layout', 'Log in as', 'A password is set',
+    'Minimum FileMaker version', 'Hide all toolbars',
+    'Allow stored credentials', 'Require a device passcode', 'Show sign-in fields', 'Require authorization',
+    'Underline questionable spellings', 'Smart quotes', 'Asian line breaking (kinsoku)',
+    'Roman line breaking on word boundaries', 'Date, time and number formats',
+    'Generate thumbnails', 'Thumbnail storage',
+    'Give new tables the default fields',
+    'Icon',
+  ];
+  for (const label of settingLabels) {
+    assert.ok(report.includes(label), `setting "${label}" is in the report`);
+  }
   assert.ok(report.includes('File Open'), 'the startup layout');
   assert.ok(report.includes('OnFirstWindowOpen'), 'a file script trigger');
   // A boolean reads the way the page reads it, not as `true`.

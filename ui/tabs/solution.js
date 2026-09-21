@@ -31,8 +31,9 @@ const FILE_SIZE_KEY = 'Get ( FileSize )';
 // Options dialog groups and labels them rather than the way fm spells its keys:
 // a reader looking for "Log in as" is looking for the dialog they know. Each
 // entry is [label, path], read through access.js so a build that drops or
-// respells a key renders "not reported" instead of throwing.
-const FILE_OPTIONS_GROUPS = [
+// respells a key renders "not reported" instead of throwing. Exported so the
+// Markdown report uses the same list and cannot diverge.
+export const FILE_OPTIONS_GROUPS = [
   ['Open', [
     ['Switch to a layout on open', 'switchToLayout'],
     ['Startup layout', 'layout'],
