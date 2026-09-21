@@ -3,7 +3,7 @@
 // (tests/fixtures/register-summary.json) so they can be reasoned about by hand;
 // the drill-down is exercised against the register the page really gets -- the
 // toolkit's own, through the same loadRegisterSummary the server serves it with,
-// because the shape a reader walks (26 kinds, 302 entries, 8502 attributes) is
+// because the shape a reader walks (26 kinds, 302 entries, 8533 attributes) is
 // not a shape three hand-made entries have. Those numbers are MEASURED from the
 // register in the test and pinned beside the measurement, so a toolkit bump that
 // moves one fails on the pin rather than agreeing with itself.
@@ -11,6 +11,8 @@
 // The rendering-gap numbers were MEASURED against tests/fixtures/ooe before they
 // were pinned here -- 3482 steps, 67 of a type the catalog has no entry for, 45
 // steps carrying 52 gaps in 15 (step type, gap kind) groups.
+// Updated 2026-09-21: register attribute total moved 8502 -> 8533 as fm 0.8.0-beta.0
+// now reports 37 of the 54 file-options rows and partly closes calculation-tokens.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -131,13 +133,13 @@ test('the register section has no disclosure tree', () => {
   // The totals of the whole register, measured from it.
   assert.match(html, /Kinds <span class="num">26<\/span>/);
   assert.match(html, /Entries <span class="num">302<\/span>/);
-  assert.match(html, /Attributes <span class="num">8502<\/span>/);
+  assert.match(html, /Attributes <span class="num">8533<\/span>/);
   assert.equal(FULL.length, 302);
-  assert.equal(FULL.reduce((n, e) => n + e.attributes.length, 0), 8502);
+  assert.equal(FULL.reduce((n, e) => n + e.attributes.length, 0), 8533);
   // The tree of <details> the manual test called very bad UI is gone. Nothing
   // else on a script-less, un-checked solution folds, so one assertion does it.
   assert.doesNotMatch(html, /<details/);
-  // Nothing is shown until a kind is selected: 302 entries and 8502 attributes
+  // Nothing is shown until a kind is selected: 302 entries and 8533 attributes
   // are the thing the tables exist to avoid printing at once.
   assert.doesNotMatch(html, /account:filemaker/);
 });
