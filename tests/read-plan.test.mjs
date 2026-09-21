@@ -2,11 +2,20 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LIST_CATALOGS, FILE_FACTS, listOps, factOps, fileOptionsOps, describeOps, describeKey, catalogOf } from '../ui/read-plan.js';
 
-test('listOps is the 19 list ops, then the file-options block, then the file facts', () => {
+test('listOps is the 19 list ops with their flags, then the file-options block, then the file facts', () => {
   const ops = listOps();
   assert.equal(ops.length, 19 + 1 + 8);
+  // The list ops carry their flags: detail:true on EDSes, flatten:true on layout/script/customFunction, bare read:table, detail:true on theme.
+  assert.deepEqual(ops[0], { op: 'read:externalDataSource', detail: true });
+  assert.deepEqual(ops[4], { op: 'read:layout', flatten: true });
+  assert.deepEqual(ops[5], { op: 'read:script', flatten: true });
+  assert.deepEqual(ops[1], { op: 'read:table' });
+  assert.deepEqual(ops[18], { op: 'read:theme', detail: true });
+  assert.equal(LIST_CATALOGS.length, 19);
+  assert.equal(LIST_CATALOGS.at(-1), 'theme');
   assert.deepEqual(ops[19], { op: 'read:fileOptions' }, 'no detail: fm reports at full depth either way');
   assert.deepEqual(ops.slice(20), FILE_FACTS.map((calculation) => ({ op: 'evaluate:calculation', calculation })));
+  assert.ok(FILE_FACTS.includes('Get ( EncryptionState )'));
   assert.deepEqual(ops.slice(20), factOps(), 'a facts re-read sends exactly what the list batch sent');
   assert.deepEqual(fileOptionsOps(), [{ op: 'read:fileOptions' }], 'a file-options re-read sends exactly what the list batch sent');
   assert.ok(!LIST_CATALOGS.includes('fileOptions'), 'not a catalog: it has no list and no ids');
