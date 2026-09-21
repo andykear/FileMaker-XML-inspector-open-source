@@ -575,12 +575,12 @@ Classification is one of `covered`, `derived`, `gap`, `dropped`. `dropped` marks
 
 | Classification | Rows |
 |---|---|
-| covered | 413 |
+| covered | 432 |
 | derived | 67 |
-| gap | 75 |
+| gap | 56 |
 | dropped | 8 |
 
-Counted from this file on 2026-09-16 by tallying the Classification column of every table row; 413 + 67 + 75 + 8 = 563, the number of rows in the table. The rows themselves have not moved since 2026-09-14; what changed is that fm 0.7.0 turned 27 gap rows into covered or derived rows (the theme count is derived from the listing total, like every other count) - all 23 of `catalog-theme-styles`, the one `catalog-relation-sort` row, and three of the seven `catalog-layout-parts` rows - leaving 10 gap ids. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
+Counted from this file on 2026-09-22 by tallying the Classification column of every table row; 432 + 67 + 56 + 8 = 563, the number of rows in the table. The rows themselves have not moved since 2026-09-14; what changed is that fm 0.7.0 turned 27 gap rows into covered or derived rows (the theme count is derived from the listing total, like every other count) - all 23 of `catalog-theme-styles`, the one `catalog-relation-sort` row, and three of the seven `catalog-layout-parts` rows - and then fm 0.8.0-beta.0's `read:fileOptions` turned 19 more gap rows into covered ones, leaving the two host-list sharing flags, the saved page setup, the Browse-mode trigger flag and the `Metadata` container. A plain `grep -c` over the whole file returns one more than each number here, because the Summary row above also matches.
 
 ## Gap ids introduced
 

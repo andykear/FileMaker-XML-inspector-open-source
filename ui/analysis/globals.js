@@ -40,8 +40,9 @@ import { SET_VARIABLE, SET_VARIABLE_BY_NAME, references } from './refs.js';
 /** Why a mention count is a reading of the text and not a fact about the file.
  *  Named here once so a tab can print it next to the number. */
 export const GLOBALS_NOTE = 'Mentions are counted by tokenising calculation text: fm reports a formula as'
-  + ' text and names none of the references it makes (gap register `calculation-tokens`), so this is what the'
-  + ' text says, not what FileMaker resolves. A name built at run time -- Evaluate, a constructed'
+  + ' text and names no variable a formula reads (since 0.8.0 it does name fields and custom functions via'
+  + ' `validate:calculation` references, but not variables — gap register `calculation-tokens`), so this is what'
+  + ' the text says, not what FileMaker resolves. A name built at run time -- Evaluate, a constructed'
   + ' ExecuteSQL, Get ( ScriptParameter ) -- is mentioned nowhere and counted nowhere. And a $$ name'
   + ' containing a space (FileMaker allows `$$SMTP Server`) is read whole only where some script sets it:'
   + ' nothing in calculation text says where such a name ends, so the tokeniser matches the names this'
