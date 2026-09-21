@@ -256,9 +256,8 @@ test('the broken counts by kind on the fixture', () => {
   const byKind = {};
   for (const r of rows) byKind[r.kind] = (byKind[r.kind] ?? 0) + 1;
   // Re-measured after 0.8.0 re-record: problem 352→350, missingMarker 5→4.
-  // Re-measured for deadKey (fm 0.8.0): added 10 dead keys.
-  assert.deepEqual(byKind, { problem: 350, missingMarker: 4, deadKey: 10 });
-  assert.equal(rows.length, 364);
+  assert.deepEqual(byKind, { problem: 350, missingMarker: 4 });
+  assert.equal(rows.length, 354);
 });
 
 test('a marker on a script step is spelled the way refs.js spells the same place', () => {
@@ -340,6 +339,15 @@ test('a fieldKey BESIDE its field is not dead -- fm reports the name when it res
     'both present means the reference resolved; reporting it would be a false positive');
 });
 
+test('a fieldKey of [0,0] is not dead -- that is an unconfigured sort level, not a deleted field', () => {
+  // [0,0] is what FileMaker writes when nothing was chosen for a sort level.
+  // A deleted field leaves non-zero stored numbers behind (fm's catalog keys
+  // are 1-based), which is why fm reports the key at all.
+  const one = withStep({ stepID: 39, step: 'Sort Records', sortOrder: { fields: [{ fieldKey: [0, 0], order: 'ascending' }] } });
+  assert.deepEqual(broken(one).filter((b) => b.kind === 'deadKey'), [],
+    'unconfigured sort level is not a broken reference');
+});
+
 test('every *Key variant is recognised, with the kind it would have named', () => {
   const cases = [
     [{ stepID: 36, step: 'Export Records', exportOptions: { fields: [{ summarizeByKey: [1, 2] }] } }, 'summarizeByKey', 'field'],
@@ -359,7 +367,8 @@ test('every *Key variant is recognised, with the kind it would have named', () =
 test('the ooe fixture is measured, not assumed', () => {
   // A dead key needs a step whose field was deleted under it, which the
   // reference file may simply not contain -- so this pins whatever is there and
-  // the behaviour above is proven on synthesised shapes.
+  // the behaviour above is proven on synthesised shapes. ooe is a healthy file
+  // and carries no deleted-field step, so the expected count is 0.
   const dead = broken(solution).filter((b) => b.kind === 'deadKey');
-  assert.equal(dead.length, 10);
+  assert.equal(dead.length, 0);
 });

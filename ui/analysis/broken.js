@@ -242,6 +242,19 @@ function walkObjects(obj, path, visit) {
   }
 }
 
+// Check if a raw key is a real stored key rather than fm's null placeholder.
+// FileMaker's catalog keys are 1-based: [0,0] means no field was ever chosen,
+// not that a chosen field no longer resolves. A deleted field leaves its real
+// non-zero stored numbers behind, which is why fm reports the key at all.
+function isRealKey(raw) {
+  if (typeof raw === 'number') return raw !== 0;
+  // Array key: [tableKey, fieldKey] or [tableKey, fieldKey, repetition].
+  // The repetition is 1-based but can be 1 on an unconfigured field, so test
+  // the key elements only: at least one must be non-zero.
+  if (Array.isArray(raw)) return raw[0] !== 0 || raw[1] !== 0;
+  return false;
+}
+
 function deadKeys(solution) {
   const rows = [];
   for (const src of records(solution)) {
@@ -253,6 +266,10 @@ function deadKeys(solution) {
         // resolves and the key when it does not, so both together means the
         // reference is fine. Only report when the twin is absent.
         if (get(obj, twin) !== undefined) continue;
+        // [0,0] is what FileMaker writes when nothing was chosen for that slot
+        // (an unconfigured sort level, an empty groupBy), not a deleted field.
+        // A genuinely deleted field leaves non-zero stored numbers behind.
+        if (!isRealKey(raw)) continue;
         rows.push({
           target: src.target, kind: 'deadKey',
           from: { kind: src.kind, id: src.id, name: src.name, where: at },
