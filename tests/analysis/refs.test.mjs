@@ -127,21 +127,26 @@ test('the reference counts by kind on the fixture', () => {
   // Re-measured after 0.8.0 re-record: structured option keys (findRequests,
   // sortOrder, exportOptions, importOptions) expose field names the 0.7.0
   // recording did not carry, so field and variable references increase.
+  // Re-measured after Task 5 (File Options as reference source): layout +2
+  // (both files name a startup layout), script +6 (ooe's six file triggers all
+  // run `noop`; BrojDva's triggers are all empty so emit() drops them).
   assert.deepEqual(byKind, {
-    variable: 1257, field: 933, occurrence: 314, script: 64, table: 35,
-    layout: 16, valueList: 14, style: 7, customFunction: 3,
+    variable: 1257, field: 933, occurrence: 314, script: 70, table: 35,
+    layout: 18, valueList: 14, style: 7, customFunction: 3,
   });
-  assert.equal(rows.length, 2643);
+  assert.equal(rows.length, 2651);
 });
 
 test('the reference counts by how, and by the kind of object doing the naming', () => {
   const rows = references(solution);
   const tally = (f) => rows.reduce((o, r) => ({ ...o, [f(r)]: (o[f(r)] ?? 0) + 1 }), {});
   // Re-measured after 0.8.0 re-record: new field references from option keys.
-  assert.deepEqual(tally((r) => r.how), { text: 1634, named: 1009 });
+  // Re-measured after Task 5: named +8 (File Options names the startup layout
+  // and trigger scripts under keys fm documents), fileOptions +8 (new source).
+  assert.deepEqual(tally((r) => r.how), { text: 1634, named: 1017 });
   assert.deepEqual(tally((r) => r.from.kind), {
     script: 1976, layoutObject: 401, field: 119, layout: 51, relation: 42,
-    tableOccurrence: 27, valueList: 17, customMenu: 8, customFunction: 2,
+    tableOccurrence: 27, valueList: 17, fileOptions: 8, customMenu: 8, customFunction: 2,
   });
 });
 
@@ -199,7 +204,8 @@ test('the only named reference on the fixture that resolves to nothing is the Ap
 test('every layout, value list, field and occurrence the fixture names does resolve', () => {
   const rows = references(solution);
   const named = (kind) => [...new Set(rows.filter((r) => r.kind === kind && r.how === 'named').map((r) => `${r.name}|${r.resolved}`))].sort();
-  assert.deepEqual(named('layout'), ['Contacts|true', 'File Open|true', 'My Layout for TestTable|true', 'SaXMLDeliveryExecutionContext|true']);
+  // Re-measured after Task 5: Ooe2 is BrojDva's startup layout, named by its File Options.
+  assert.deepEqual(named('layout'), ['Contacts|true', 'File Open|true', 'My Layout for TestTable|true', 'Ooe2|true', 'SaXMLDeliveryExecutionContext|true']);
   // The external lists fm writes as `Self::MyRelatedValueList` / `BrojDva::VL`
   // resolve on the half after `::`, which is the list's own name.
   assert.deepEqual(named('valueList'), ['1|true', 'MyRelatedValueList|true', 'TestTable | TextField1|true', 'VL|true', 'YN|true']);
@@ -217,7 +223,8 @@ test('script references come from steps, layout triggers, button actions and men
   const rows = references(solution).filter((r) => r.kind === 'script');
   const byFrom = {};
   for (const r of rows) byFrom[r.from.kind] = (byFrom[r.from.kind] ?? 0) + 1;
-  assert.deepEqual(byFrom, { script: 32, layout: 25, layoutObject: 5, customMenu: 2 });
+  // Re-measured after Task 5: fileOptions +6 (ooe's six file triggers all run `noop`).
+  assert.deepEqual(byFrom, { script: 32, layout: 25, fileOptions: 6, layoutObject: 5, customMenu: 2 });
   assert.ok(rows.some((r) => r.from.kind === 'layout' && r.from.where.startsWith('scriptTriggers.')));
   assert.ok(rows.some((r) => r.from.kind === 'customMenu' && r.from.where.includes('.action.script')));
   assert.ok(rows.some((r) => r.from.kind === 'layoutObject' && r.from.where.includes('.action.script')));
@@ -486,4 +493,34 @@ test('the memo keys on the catalog slots, not on the solution object', () => {
   const second = references(one);
   assert.notEqual(second, first);
   assert.equal(second.length, 0, 'the replaced slot is empty, so nothing names anything');
+});
+
+test('File Options names the startup layout and every file trigger script', () => {
+  const refs = references(solution).filter((r) => r.from.kind === 'fileOptions' && r.from.target === ROOT);
+  const layouts = refs.filter((r) => r.kind === 'layout');
+  const scripts = refs.filter((r) => r.kind === 'script');
+  // Measured against the fixture before pinning: ooe opens on File Open and
+  // has six file script triggers, all running `noop`.
+  assert.equal(layouts.length, 1);
+  assert.equal(layouts[0].name, 'File Open');
+  assert.equal(layouts[0].how, 'named', 'fm reports it under a key it documents');
+  assert.equal(layouts[0].resolved, true);
+  assert.equal(layouts[0].from.id, 'fileOptions');
+  assert.equal(layouts[0].from.where, 'layout.name');
+  assert.equal(scripts.length, 6);
+  assert.ok(scripts.every((r) => r.how === 'named' && r.resolved === true));
+  assert.ok(scripts.every((r) => /^triggers\.\d+\.script$/.test(r.from.where)));
+});
+
+test('an empty trigger field is not a reference', () => {
+  // fm sends `field: ""` on OnWindowTransaction when no field is set. The
+  // emitter drops an empty name, so no phantom field reference appears.
+  const refs = references(solution).filter((r) => r.from.kind === 'fileOptions' && r.kind === 'field');
+  assert.deepEqual(refs, []);
+});
+
+test('a file with no file-options block contributes no references', () => {
+  const bare = structuredClone(solution);
+  for (const f of Object.values(bare.files)) f.fileOptions = { block: null, error: null, ops: [], readAt: null };
+  assert.deepEqual(references(bare).filter((r) => r.from.kind === 'fileOptions'), []);
 });

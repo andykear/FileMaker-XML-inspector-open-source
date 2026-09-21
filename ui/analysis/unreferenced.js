@@ -335,7 +335,6 @@ function runtimePaths(solution) {
 // and never move the tier: a tier that is always lowered says nothing.
 const NOTES = [
   'Plug-in function call sites cannot be told from built-in ones (toolkit gap plugin-call-sites), so a field or script name passed to a plug-in is not counted as a reference.',
-  'fm has no file-options read (toolkit gap file-options), so the file\'s startup layout and its opening and closing scripts are invisible: an object used only there is listed here.',
   'A privilege set\'s custom access lists can name individual layouts, scripts and value lists; the reference scan does not read them, so an object reachable only through one is listed here.',
   'fm 0.7.0 reports no style on a layout part (the register\'s part: entries name every key a part carries, and a style is not among them), so a named style worn only by a part is listed here as unused.',
 ];

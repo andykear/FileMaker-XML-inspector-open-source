@@ -75,7 +75,8 @@ test('a selected script lists what it names: script 9 references noop', () => {
 test('a selected script lists what names it, and the Explorer renders both tables', () => {
   const key = selectionKey(ROOT, 'script', 2); // noop
   const rows = incoming(solution, { target: ROOT, kind: 'script', id: '2' });
-  assert.equal(rows.length, 47);
+  // Re-measured after Task 5: 47→53 (noop is named by six file triggers in ooe's File Options).
+  assert.equal(rows.length, 53);
   assert.ok(rows.some((r) => r.kind === 'script' && r.name === 'Decode base64 image'));
   const html = tab.render(solution, viewOf(key));
   assert.ok(html.includes('<h3>References</h3>'));
@@ -346,7 +347,9 @@ test('every reference in the solution is reachable from some selectable object',
       : `${r.from.kind}|${r.from.target}|${id}`;
   };
   const all = references(solution);
-  const covered = all.filter((r) => owners.has(ownerOf(r)));
-  assert.equal(covered.length, all.length, [...new Set(all.filter((r) => !owners.has(ownerOf(r))).map(ownerOf))].join(', '));
-  assert.equal(all.length, 2643); // Re-measured after 0.8.0 re-record: new field refs from structured options
+  // Task 5: File Options is now a reference source but is not yet selectable in
+  // the Explorer, so its 8 references (2 layouts + 6 scripts) are not covered.
+  const covered = all.filter((r) => r.from.kind !== 'fileOptions' && owners.has(ownerOf(r)));
+  assert.equal(covered.length, all.length - 8, [...new Set(all.filter((r) => r.from.kind !== 'fileOptions' && !owners.has(ownerOf(r))).map(ownerOf))].join(', '));
+  assert.equal(all.length, 2651); // Re-measured after 0.8.0 re-record: new field refs from structured options; Task 5: +8 (File Options references)
 });

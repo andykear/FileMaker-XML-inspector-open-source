@@ -378,9 +378,11 @@ test('the count of unreferenced objects per kind on the fixture', () => {
   const sizes = Object.fromEntries(['fields', 'tables', 'occurrences', 'scripts', 'layouts', 'valueLists', 'customFunctions', 'styles'].map((k) => [k, out[k].length]));
   // Re-measured after 0.8.0 re-record: one field (OrderOfOperationsTest_u) that
   // was text-only is now properly named in structured option keys.
+  // Re-measured after Task 5: layouts -1 (BrojDva's Ooe2 is now referenced by
+  // its File Options startup layout, so it is no longer unreferenced).
   assert.deepEqual(sizes, {
     fields: 39, tables: 0, occurrences: 6, scripts: 37,
-    layouts: 15, valueLists: 4, customFunctions: 6, styles: 277,
+    layouts: 14, valueLists: 4, customFunctions: 6, styles: 277,
   });
   // Two files, and each list carries rows from both.
   assert.deepEqual(out.fields.reduce((o, r) => ({ ...o, [r.target]: (o[r.target] ?? 0) + 1 }), {}), {
@@ -453,7 +455,9 @@ test('confidence on the fixture is low, because one file could not be read', () 
   // that failed (DBError 802) and makes the answer provisional; the $$variable
   // path is a permanent property of the file and is only a reason.
   assert.equal(solution.unreachable.length, 2);
-  assert.equal(c.notes.length, 4);
+  // Re-measured after Task 5: notes.length -1 (the file-options note is retired,
+  // because fm 0.8.0 reports both the startup layout and file trigger scripts).
+  assert.equal(c.notes.length, 3);
 });
 
 test('every row says which file it came from', () => {
@@ -497,4 +501,30 @@ test('an occurrence with no base table name suppresses nothing', () => {
   };
   const sol = handMadeFiles([{ target: 'file:///a.fmp12', name: 'A', catalogs: nameless }, fileB]);
   assert.deepEqual(unreferenced(sol).fields.map((r) => r.name), ['Invoice::InvoiceNumber', 'Invoice::Spare']);
+});
+
+test('the file-options confidence note is gone, and the other three stand', () => {
+  const notes = unreferenced(solution).confidence.notes;
+  assert.ok(!notes.some((n) => n.includes('file-options')), 'fm 0.8.0 has a file-options read');
+  assert.ok(!notes.some((n) => n.includes('startup layout')));
+  assert.equal(notes.length, 3, 'plug-in call sites, privilege-set custom access, part styles');
+  assert.ok(notes.some((n) => n.includes('plugin-call-sites')));
+  assert.ok(notes.some((n) => n.includes('privilege set')));
+  assert.ok(notes.some((n) => n.includes('style')));
+});
+
+test('a script used only by a file trigger is not listed unreferenced', () => {
+  // On ooe this changes no list -- File Open and noop are both referenced from
+  // elsewhere -- so it is asserted on a solution where the trigger is the only
+  // reference, which is the case the note used to disclaim.
+  const one = structuredClone(solution);
+  for (const f of Object.values(one.files)) f.fileOptions = { block: null, error: null, ops: [], readAt: null };
+  const root = one.files[api.meta.root];
+  const script = Object.values(root.catalogs.script.detailById).map((e) => e.result).find((r) => r && r.name);
+  root.fileOptions = {
+    block: { kind: 'fileOptions', triggers: [{ event: 'OnFirstWindowOpen', eventId: 201, script: script.name, scriptId: script.id }] },
+    error: null, ops: [], readAt: 'now',
+  };
+  const listed = unreferenced(one).scripts.some((s) => s.id === script.id && s.target === api.meta.root);
+  assert.ok(!listed, `${script.name} is named by a file trigger, so it is referenced`);
 });

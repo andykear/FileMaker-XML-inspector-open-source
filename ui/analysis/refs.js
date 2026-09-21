@@ -47,6 +47,10 @@
 //     `tableOccurrence`      -> fm's own numeric id for that object.
 //   * `relation`             -> fm's numeric relation id; its `from.name` is
 //                               `Left <-> Right`, because a relation has no name.
+//   * `fileOptions`          -> the constant `'fileOptions'`. A file has exactly
+//                               one File Options block and fm gives it no id, so
+//                               there is nothing else it could be; `from.target`
+//                               is what says which file's.
 //
 // The one thing the field-token rule can get wrong: an occurrence or field name
 // containing a space or an operator character cannot be written in the token
@@ -535,6 +539,16 @@ const without = (obj, ...keys) => {
 function* sources(solution) {
   for (const file of Object.values(get(solution, 'files') ?? {})) {
     const target = get(file, 'target');
+
+    // File Options is one block, not a catalog, so it is yielded directly
+    // rather than walked out of `detailsOf`. It needs no new matcher: its
+    // `layout` is a `{name, id}` under a key NAMED_OBJECT already maps, and
+    // each trigger's `script` is a string under a key NAMED_STRING already
+    // maps. `hasOwnName` stays false -- the block has no `name` of its own.
+    const fileOptions = path(file, 'fileOptions.block');
+    if (fileOptions) {
+      yield { record: fileOptions, target, kind: 'fileOptions', id: 'fileOptions', name: 'File Options', prefix: '' };
+    }
 
     for (const t of listOf(file, 'table')) {
       const table = get(t, 'name');

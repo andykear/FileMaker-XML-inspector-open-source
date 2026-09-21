@@ -40,11 +40,13 @@ const handView = { selection: null, filter: '', multiFile: false };
 test('analysisTotals: solution-wide, unfiltered, pinned on ooe', () => {
   const t = analysisTotals(solution);
   // Re-measured after 0.8.0 re-record: unreferenced fields 40→39, broken 357→354.
+  // Re-measured after Task 5: unreferenced layouts 15→14 (Ooe2 is now referenced
+  // by BrojDva's File Options), total 384→383.
   assert.deepEqual(t.unreferenced.byCategory, {
     fields: 39, tables: 0, occurrences: 6, scripts: 37,
-    layouts: 15, valueLists: 4, customFunctions: 6, styles: 277,
+    layouts: 14, valueLists: 4, customFunctions: 6, styles: 277,
   });
-  assert.equal(t.unreferenced.total, 384);
+  assert.equal(t.unreferenced.total, 383);
 
   assert.equal(t.broken.total, 354);
   assert.deepEqual(t.broken.byKind, { problem: 350, missingMarker: 4 });
@@ -62,7 +64,7 @@ test('the totals line names the derivation of every item in a title attribute', 
   const items = [...line.matchAll(/title="([^"]*)"/g)].map((m) => m[1]);
   assert.equal(items.length, 5); // unreferenced, broken references, fm problem steps, issues, globals
   for (const title of items) assert.ok(title.length > 20, `thin title: ${title}`);
-  assert.ok(line.includes('>384<')); // Re-measured after 0.8.0 re-record: 385→384
+  assert.ok(line.includes('>383<')); // Re-measured after 0.8.0 re-record: 385→384; Task 5: 384→383
   // The two halves: fm's own problem steps beside real broken references.
   // Re-measured after 0.8.0 re-record: 5→4, 352→350.
   assert.ok(line.includes('Broken references <span class="num">4</span>'), line);
@@ -87,7 +89,7 @@ test('Confidence: the tier as a badge, every reason and every note', () => {
   assert.ok(html.includes('<h2>Confidence</h2>'));
   assert.ok(/<span class="badge \w+">low<\/span>/.test(html));
   const section = html.slice(html.indexOf('<h2>Confidence</h2>'), html.indexOf('<h2>Unreferenced'));
-  assert.equal([...section.matchAll(/<li>/g)].length, 9); // 5 reasons + 4 notes
+  assert.equal([...section.matchAll(/<li>/g)].length, 8); // 5 reasons + 3 notes (Task 5: file-options note retired)
   assert.ok(section.includes('GetField ( )'));
 });
 
@@ -198,7 +200,7 @@ test('Globals: the table, its counts and the note that explains the mention coun
 test('the filter narrows every table and leaves the totals alone', () => {
   const all = tab.render(solution, view);
   const html = tab.render(solution, { ...view, filter: '$$my_var_global' });
-  assert.ok(html.includes('>384<'), 'the totals moved with the filter'); // Re-measured: 385→384
+  assert.ok(html.includes('>383<'), 'the totals moved with the filter'); // Re-measured: 385→384; Task 5: 384→383
   assert.ok(html.includes('$$my_var_global'));
   assert.ok(!html.includes('$$some_global_var'));
   assert.ok(html.length < all.length);

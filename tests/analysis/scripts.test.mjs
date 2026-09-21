@@ -518,9 +518,13 @@ test('the ooe call graph: every script a node, every naming site an edge', () =>
 
 test('the two script references ooe does not resolve are AppleScript source, and are not edges', () => {
   const named = references(solution).filter((r) => r.kind === 'script');
-  assert.equal(named.length, 64);
+  // Re-measured after Task 5: named.length +6 (file trigger references from File Options).
+  assert.equal(named.length, 70);
   assert.deepEqual(named.filter((r) => !r.resolved).map((r) => r.from.name), ['All script steps and all options', 'All script steps and all options 20260318']);
-  assert.equal(callGraph(solution).edges.length, named.length - 2);
+  // File trigger references (from.kind === 'fileOptions') are not edges in the
+  // callGraph, which only tracks script->script, layout trigger, button, and menu calls.
+  const fileTriggerRefs = named.filter((r) => r.from.kind === 'fileOptions').length;
+  assert.equal(callGraph(solution).edges.length, named.length - 2 - fileTriggerRefs);
 });
 
 test('noop is what ooe calls: 47 edges in, three kinds of site, nothing out', () => {
