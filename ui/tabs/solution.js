@@ -2,10 +2,10 @@
 // The Solution tab: one panel per reached file (its facts and its catalog counts, each
 // with its re-read button), then the Unreachable list. A pure renderer -- the shell owns
 // the clicks, so the buttons only carry the slot they want re-read.
-import { esc, kv, rereadCatalogButton, section, table } from '../dom.js';
+import { esc, kv, link, rereadCatalogButton, section, table } from '../dom.js';
 import { catalogCounts } from '../model.js';
-import { get } from '../access.js';
-import { byteSize, catalogHash, factValue, linkOr } from './common.js';
+import { get, path } from '../access.js';
+import { byteSize, catalogHash, factValue, linkOr, selectionKey } from './common.js';
 
 // fm's flattened lists (layout, script, customFunction) carry folders and
 // separators alongside the real entries, so their count in this column is not
@@ -26,6 +26,112 @@ const PER_TABLE_TITLE = 'fields are read one table at a time; Described counts t
 // a reader wants "3.6 MB", so this one fact gets its own rendering, the exact
 // byte count kept on hover for whoever needs it precisely.
 const FILE_SIZE_KEY = 'Get ( FileSize )';
+
+// The File Options settings, grouped and labelled the way FileMaker's own File
+// Options dialog groups and labels them rather than the way fm spells its keys:
+// a reader looking for "Log in as" is looking for the dialog they know. Each
+// entry is [label, path], read through access.js so a build that drops or
+// respells a key renders "not reported" instead of throwing.
+const FILE_OPTIONS_GROUPS = [
+  ['Open', [
+    ['Switch to a layout on open', 'switchToLayout'],
+    ['Startup layout', 'layout'],
+    ['Log in as', 'login.mode'],
+    ['A password is set', 'login.hasPassword'],
+    ['Minimum FileMaker version', 'minimumVersion'],
+    ['Hide all toolbars', 'hideToolbars'],
+  ]],
+  ['Security', [
+    ['Allow stored credentials', 'allowStoredCredentials'],
+    ['Require a device passcode', 'requireDevicePasscode'],
+    ['Show sign-in fields', 'showSignInFields'],
+    ['Require authorization', 'requireAuthorization'],
+  ]],
+  ['Spelling and text', [
+    ['Underline questionable spellings', 'underlineMisspellings'],
+    ['Smart quotes', 'smartQuotes'],
+    ['Asian line breaking (kinsoku)', 'asianLineBreaking'],
+    ['Roman line breaking on word boundaries', 'romanLineBreaking'],
+    ['Date, time and number formats', 'dataEntry'],
+  ]],
+  ['Containers', [
+    ['Generate thumbnails', 'generateThumbnails'],
+    ['Thumbnail storage', 'thumbnailStorage'],
+  ]],
+  ['New tables', [
+    ['Give new tables the default fields', 'useDefaultFields'],
+  ]],
+  ['Icon', [
+    ['Icon', 'icon'],
+  ]],
+];
+
+/** fm never sends the password itself -- `login.hasPassword` is a boolean and
+ *  `icon` reports `hasImage` and no bytes -- so the block can be rendered as it
+ *  arrived without leaking a credential. */
+function optionValue(target, label, at, value) {
+  if (value === undefined || value === null) return '<span class="muted">not reported</span>';
+  if (typeof value === 'boolean') return value ? 'yes' : 'no';
+  if (at === 'minimumVersion') {
+    const version = get(value, 'version');
+    const raw = get(value, 'value');
+    if (version === undefined || version === null) return esc(String(raw ?? ''));
+    return `<span title="${esc(`fm reports ${raw}`)}">${esc(version)}</span>`;
+  }
+  if (at === 'layout') {
+    const name = get(value, 'name');
+    const id = get(value, 'id');
+    if (name === undefined || name === null) return '<span class="muted">none</span>';
+    return id === undefined || id === null
+      ? esc(String(name))
+      : link(`layouts/${selectionKey(target, id)}`, String(name));
+  }
+  // The icon is three facts on one line: what kind, how it is scaled, and
+  // whether a picture came with it. fm sends no image bytes.
+  if (at === 'icon') {
+    const parts = [get(value, 'type'), get(value, 'scale')].filter((p) => p !== undefined && p !== null);
+    if (get(value, 'hasImage') === true) parts.push('has an image');
+    return parts.length ? esc(parts.join(', ')) : '<span class="muted">not reported</span>';
+  }
+  return esc(String(value));
+}
+
+const TRIGGER_COLUMNS = [
+  { key: 'event', label: 'Event', render: (r) => `<span title="${esc(`fm event id ${r.eventId ?? ''}`)}">${esc(r.event)}</span>` },
+  { key: 'script', label: 'Script', render: (r) => (r.scriptId === undefined || r.scriptId === null
+    ? esc(r.script)
+    : link(`scripts/${selectionKey(r.target, r.scriptId)}`, String(r.script))) },
+];
+
+function renderFileOptions(file) {
+  const slot = file.fileOptions ?? {};
+  const actions = rereadCatalogButton(file.target, 'fileOptions');
+  const error = get(slot, 'error');
+  if (error) {
+    // fm 0.7.0 and earlier have no such catalog. The panel says so and every
+    // other panel on the page is untouched.
+    const suggestion = get(error, 'code') === 'unknown_catalog'
+      ? '<p class="muted">This fm build has no File Options catalog; fm 0.8.0 is the first that does.</p>'
+      : '';
+    return section('File Options', `<p class="error">${esc(get(error, 'code'))}: ${esc(get(error, 'message'))}</p>${suggestion}`, { actions });
+  }
+  const block = get(slot, 'block');
+  if (!block) return section('File Options', '<p class="empty">Not read</p>', { actions });
+
+  const groups = FILE_OPTIONS_GROUPS.map(([title, entries]) => {
+    const pairs = entries.map(([label, at]) => [label, optionValue(file.target, label, at, path(block, at))]);
+    return `<h3>${esc(title)}</h3>${kv(pairs)}`;
+  }).join('');
+  const triggers = (get(block, 'triggers') ?? []).map((t) => ({
+    event: get(t, 'event'), eventId: get(t, 'eventId'),
+    script: get(t, 'script'), scriptId: get(t, 'scriptId'), target: file.target,
+  }));
+  const readAt = get(slot, 'readAt');
+  const when = readAt ? `<p class="muted">Read at ${esc(readAt)}</p>` : '';
+  return section('File Options',
+    `${when}${groups}<h3>Script triggers</h3>${table(TRIGGER_COLUMNS, triggers, { empty: 'No file script triggers' })}`,
+    { actions });
+}
 
 function factLine(key, v) {
   if (key !== FILE_SIZE_KEY) return factValue(v);
@@ -72,7 +178,8 @@ function renderFile(file) {
   const body = `<p class="muted target">${esc(file.target)}</p>`
     + kv(Object.entries(file.facts).map(([k, v]) => [k, factLine(k, v)]))
     + table(COLUMNS, rows, { empty: 'No catalogs read' });
-  return section(title, body, { actions: rereadCatalogButton(file.target, 'facts', 'Re-read facts') });
+  return section(title, body, { actions: rereadCatalogButton(file.target, 'facts', 'Re-read facts') })
+    + renderFileOptions(file);
 }
 
 function renderUnreachable(list) {

@@ -79,3 +79,57 @@ test('the Catalog column links to the tab that shows each catalog', () => {
   assert.match(html, /<a href="#themes">theme<\/a>/);
   assert.match(html, /<a href="#catalogs">valueList<\/a>/);
 });
+
+test('the File Options panel shows the block, grouped the way FileMaker groups it', () => {
+  const html = tab.render(solution);
+  assert.match(html, /<h2>File Options<\/h2>/);
+  // Measured against the fixture before pinning: ooe opens on File Open,
+  // allows 12.0 and up, and has automatic login disabled.
+  assert.ok(html.includes('<dt>Minimum FileMaker version</dt>'));
+  assert.ok(html.includes('<dt>Log in as</dt>'));
+  assert.ok(html.includes('<dt>Smart quotes</dt>'));
+  // A boolean reads as yes/no, never as `true`.
+  assert.ok(!html.includes('<dd>true</dd>'));
+  assert.ok(!html.includes('<dd>false</dd>'));
+});
+
+test('the startup layout and each trigger script are links to the objects', () => {
+  const html = tab.render(solution);
+  const root = solution.files[api.meta.root];
+  const layout = root.fileOptions.block.layout;
+  assert.equal(layout.name, 'File Open', 'measured against the fixture');
+  assert.ok(html.includes(`href="#layouts/${encodeURIComponent(`${api.meta.root}|${layout.id}`)}"`));
+  for (const t of root.fileOptions.block.triggers) {
+    assert.ok(html.includes(`href="#scripts/${encodeURIComponent(`${api.meta.root}|${t.scriptId}`)}"`), `no link for ${t.event}`);
+  }
+});
+
+test('the minimum version reads as FileMaker writes it, fm\'s own number on hover', () => {
+  const root = solution.files[api.meta.root];
+  const { value, version } = root.fileOptions.block.minimumVersion;
+  const html = tab.render(solution);
+  assert.ok(html.includes(`<span title="fm reports ${value}">${version}</span>`));
+});
+
+test('a file whose fm has no file-options catalog shows the error and keeps the rest of the panel', () => {
+  const broken = structuredClone(solution);
+  const file = broken.files[api.meta.root];
+  file.fileOptions = { block: null, error: { code: 'unknown_catalog', message: 'no such catalog: fileOptions' }, ops: [], readAt: '2026-09-21T00:00:00Z' };
+  const html = tab.render(broken);
+  assert.match(html, /unknown_catalog/);
+  // The file's own facts and catalog table are untouched.
+  assert.match(html, /<h2>File Options<\/h2>/);
+  assert.ok(html.includes('<td class="num">14</td>'), 'the catalog counts still render');
+});
+
+test('a hostile File Options value is escaped', () => {
+  const hostile = structuredClone(solution);
+  hostile.files[api.meta.root].fileOptions.block.thumbnailStorage = '<img src=x onerror=alert(1)>';
+  assert.ok(!tab.render(hostile).includes('<img src=x'));
+});
+
+test('the File Options panel has no row in the catalog-counts table', () => {
+  const html = tab.render(solution);
+  assert.ok(!html.includes('data-reread-catalog="fileOptions"><td'), 'not a row');
+  assert.ok(html.includes('data-reread-catalog="fileOptions"'), 'but it does have a re-read button');
+});
