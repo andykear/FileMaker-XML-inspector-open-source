@@ -108,18 +108,28 @@ function fileOptions(solution) {
       continue;
     }
     const yesNo = (v) => (typeof v === 'boolean' ? (v ? 'yes' : 'no') : v);
+    // fm reports both the switch and the layout even when the switch is off, so
+    // they render independently: a reader auditing security needs to see what
+    // layout is bound even when the switch is off, because the reference index
+    // counts it as used and the report must not contradict that claim.
+    const layoutName = path(block, 'layout.name');
     const rows = [
-      ['Startup layout', get(block, 'switchToLayout') ? (path(block, 'layout.name') ?? '(none)') : 'not on open'],
+      ['Switch to a layout on open', yesNo(get(block, 'switchToLayout'))],
+      ['Startup layout', layoutName === undefined || layoutName === null ? 'none' : layoutName],
       ['Minimum FileMaker version', path(block, 'minimumVersion.version') ?? ''],
       ['Log in as', path(block, 'login.mode') ?? ''],
+      ['A password is set', yesNo(path(block, 'login.hasPassword'))],
       ['Allow stored credentials', yesNo(get(block, 'allowStoredCredentials'))],
+      ['Require a device passcode', yesNo(get(block, 'requireDevicePasscode'))],
+      ['Show sign-in fields', yesNo(get(block, 'showSignInFields'))],
       ['Require authorization', get(block, 'requireAuthorization') ?? ''],
       ['Hide all toolbars', yesNo(get(block, 'hideToolbars'))],
       ['Date, time and number formats', get(block, 'dataEntry') ?? ''],
       ['Thumbnail storage', get(block, 'thumbnailStorage') ?? ''],
     ].map(([k, v]) => [k, v === undefined || v === null ? '' : v]);
     parts.push(mdTable(['Setting', 'Value'], rows, { align: 'll' }));
-    const triggers = (get(block, 'triggers') ?? []).map((t) => [get(t, 'event'), get(t, 'script')]);
+    // fm reports all six events always; an empty script means no script runs on this event.
+    const triggers = (get(block, 'triggers') ?? []).map((t) => [get(t, 'event'), get(t, 'script') || 'none']);
     parts.push(`\n**Script triggers**\n\n${mdTable(['Event', 'Script'], triggers, { align: 'll' })}`);
   }
   return parts.join('\n');

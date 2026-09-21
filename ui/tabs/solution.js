@@ -69,7 +69,7 @@ const FILE_OPTIONS_GROUPS = [
 /** fm never sends the password itself -- `login.hasPassword` is a boolean and
  *  `icon` reports `hasImage` and no bytes -- so the block can be rendered as it
  *  arrived without leaking a credential. */
-function optionValue(target, label, at, value) {
+function optionValue(target, at, value) {
   if (value === undefined || value === null) return '<span class="muted">not reported</span>';
   if (typeof value === 'boolean') return value ? 'yes' : 'no';
   if (at === 'minimumVersion') {
@@ -98,9 +98,13 @@ function optionValue(target, label, at, value) {
 
 const TRIGGER_COLUMNS = [
   { key: 'event', label: 'Event', render: (r) => `<span title="${esc(`fm event id ${r.eventId ?? ''}`)}">${esc(r.event)}</span>` },
-  { key: 'script', label: 'Script', render: (r) => (r.scriptId === undefined || r.scriptId === null
-    ? esc(r.script)
-    : link(`scripts/${selectionKey(r.target, r.scriptId)}`, String(r.script))) },
+  { key: 'script', label: 'Script', render: (r) => {
+    // fm reports all six events always; an empty script means no script runs on this event.
+    if (!r.script) return '<span class="muted">none</span>';
+    return (r.scriptId === undefined || r.scriptId === null
+      ? esc(r.script)
+      : link(`scripts/${selectionKey(r.target, r.scriptId)}`, String(r.script)));
+  } },
 ];
 
 function renderFileOptions(file) {
@@ -119,7 +123,7 @@ function renderFileOptions(file) {
   if (!block) return section('File Options', '<p class="empty">Not read</p>', { actions });
 
   const groups = FILE_OPTIONS_GROUPS.map(([title, entries]) => {
-    const pairs = entries.map(([label, at]) => [label, optionValue(file.target, label, at, path(block, at))]);
+    const pairs = entries.map(([label, at]) => [label, optionValue(file.target, at, path(block, at))]);
     return `<h3>${esc(title)}</h3>${kv(pairs)}`;
   }).join('');
   const triggers = (get(block, 'triggers') ?? []).map((t) => ({
