@@ -3,10 +3,13 @@
 Measured 2026-09-22 against `fmnet://localhost/ooe` (two files: `ooe` and `BrojDva`), with
 fm 0.8.0-beta.0 (29827611) on macOS, four FileMaker plug-ins installed. Every probe read-only.
 
-The short version: **a full analysis is 268 ops across 4 fm invocations, and the ops are not
-what costs the time.** Roughly 85–90% of the wall clock is spent before fm has opened anything,
+The short version: **a full analysis runs 268 ops across 6 fm process spawns, and the ops are not
+what costs the time.** Roughly 85–90 % of the wall clock is spent before fm has opened anything,
 in a window that loads 108 MB of FileMaker plug-ins. The 268 ops themselves come to about 3
-seconds.
+seconds of a ~59 s run.
+
+One of those six spawns pays the full startup cost to discover that a file it was told about
+cannot be opened, and returns no data at all.
 
 ## What an "invocation" means here
 
@@ -18,31 +21,75 @@ one execution of that program, and it always does all of this:
 process start  →  scan plug-in dirs  →  load plug-ins  →  open --file  →  run the ops  →  write --out  →  exit
 ```
 
-Nothing in that sequence is optional or cached between invocations, because there is no
-between: each invocation is a fresh process.
+Nothing in that sequence is optional, and **fm** carries nothing from one invocation to the next:
+each is a fresh process, with no session reuse and no in-process cache.
+
+**The machine does cache, though, and that is a different thing** — see "Why cold and warm differ"
+below. The two statements are easy to conflate and they are not in tension: fm keeps nothing; the
+operating system keeps the plug-in binaries' pages after the first read.
 
 `--file` names a FileMaker **database file** — a `.fmp12`, either a local path or, as here,
 `fmnet://host/Name` for one hosted by FileMaker Server. Opening it means establishing a session
 with the server and authenticating, not reading a file off disk.
 
-The inspector's `ui/discovery.js` spawns **two invocations per file**:
+### How many invocations a run actually costs
 
-1. the **list batch** — every catalog's membership, plus the file-level facts
-2. the **describe batch** — one op per object found in step 1
+Counted by instrumenting every spawn in a live run, rather than inferred from the code. The rule:
 
-They cannot be merged: the describe batch's ops are *derived from* the list batch's answers, so
-the second invocation cannot be written until the first has returned. Two per file is the floor.
+| when | spawns | opens a file? |
+|---|---|---|
+| once at startup, to find the CLI | 1 (`--version`) | no |
+| per **reachable** file | 2 — list, then describe | yes |
+| per file that is **named but cannot be opened** | 1 — the list batch fails at open | attempts |
+| per file already visited under another data-source name | **0** | — |
+| per data source whose path cannot be resolved locally | **0** | — |
 
-Files are walked depth first: `ooe` is fully read, then its external data sources are resolved
-and `BrojDva` is fully read. So a two-file solution is four invocations, run sequentially.
+The two batches per reachable file cannot be merged: the describe batch's ops are *derived from*
+the list batch's answers, so the second invocation cannot be written until the first has
+returned. Two per reachable file is the floor.
+
+For the reference solution that comes to **6 spawns, 5 of which open or try to open a file** —
+not the four a two-file solution suggests:
+
+| # | spawn | ops sent | outcome |
+|---|---|---|---|
+| 1 | `locateFmCli` probe | — | `--version`, ~0.7 s, no file |
+| 2 | `ooe` list | 28 | ok |
+| 3 | `ooe` describe | 169 | ok |
+| 4 | **`Ooe_dev` list** | 28 | **`open_failed`, DBError 802 — full fixed cost, no data** |
+| 5 | `BrojDva` list | 28 | ok |
+| 6 | `BrojDva` describe | 43 | ok |
+
+`ooe` names five FileMaker external data sources, and only two of them cost a spawn:
+
+| source | path | outcome | spawn |
+|---|---|---|---|
+| `Ooe_dev` | `file:Ooe_dev` | cannot be opened | **yes, wasted** |
+| `TestFile_dev2` | `file:Ooe_dev` | same target, already visited | no |
+| `BrojDva` | `file:BrojDva` | read | yes, ×2 |
+| `Self` | `file:Ooe` | resolves to `ooe` itself, already visited | no |
+| `by_variable` | `$$referenced_file` | path is a variable, unresolvable without running the file | no |
+
+The `visited` set in `ui/discovery.js` is what saves the two duplicates — a second referrer to a
+target already read does not spawn fm again to be told the same thing. That dedup is worth ~24 s
+on this solution.
+
+Files are walked depth first: `ooe` is fully read, then each of its data sources is resolved and
+walked in turn, which is why `Ooe_dev` is attempted before `BrojDva` is reached.
 
 ## How many ops the analysis actually does
 
-| file | list batch | describe batch | total |
+Two numbers, because they differ:
+
+| file | list batch | describe batch | ops that RAN |
 |---|---|---|---|
 | `ooe` | 28 | 169 | 197 |
 | `BrojDva` | 28 | 43 | 71 |
-| | | | **268 ops** |
+| `Ooe_dev` | 28 sent | — | **0** — the invocation failed at open, so none executed |
+| | | | **268 ran, 296 sent** |
+
+Quote 268 for "how much work the analysis does" and 296 for "how much we ask fm to do", and say
+which. The 28-op difference is the batch aimed at a file that cannot be opened.
 
 The list batch is the same 28 ops for every file: **19** `read:<catalog>` ops, one
 `read:fileOptions`, and **8** `evaluate:calculation` ops for the `Get()` facts.
@@ -70,11 +117,32 @@ The window **before** the `plugins` line — process start, the plug-in director
 loading the plug-ins — is **9.5–12.4 s**. Everything after it, which is opening the hosted file,
 running the op, writing the output and exiting, is **1–4 s**.
 
-`/usr/bin/time` on the same run: `real 15.31  user 1.54  sys 0.46`. **Only ~2 s of CPU.** The
-rest is waiting, which is why this cost is so sensitive to the OS page cache: early in a session
-the same batch took 17–30 s, and after several dozen invocations it settles at 11–16 s. Both
-figures are real; which one a user sees depends on whether the plug-in binaries are already in
-cache. Quote the range, not a single number.
+`/usr/bin/time` on the same run: `real 15.31  user 1.54  sys 0.46`. **Only ~2 s of CPU** out of
+15 s of wall clock. The cost is almost entirely *waiting*, not computing.
+
+#### Why cold and warm differ, when fm caches nothing
+
+These two facts look contradictory and are not:
+
+- **fm carries nothing between invocations.** No session reuse, no in-process cache; each
+  invocation is a fresh process that loads the plug-ins from scratch.
+- **The same batch cost 17–30 s early in a measurement session and 11–16 s after several dozen
+  invocations.** The decline is monotonic and reproducible: 29.81, 21.27, 17.42 … then settling
+  at 11–16 s.
+
+The caching is the **operating system's, not fm's**. fm asks for 108 MB of plug-in binaries; the
+first invocation reads them from disk, and subsequent invocations get them from RAM. That is
+consistent with the CPU split — 2 s of CPU in a 15 s run is what waiting on I/O looks like, and
+what a compute-bound load would not look like.
+
+**What I have not isolated:** which OS-level cache. The page cache is the obvious candidate, but
+macOS also caches code-signature validation, and validating a signed 71 MB binary on first load
+is not cheap either. Both would produce exactly this curve. Distinguishing them needs a cache
+flush between runs (`purge`, which wants root) and was not attempted.
+
+So quote the range and the state, never a single number: **cold 17–30 s, warm 11–16 s.** A user
+who opens the inspector as the first FileMaker work of the day sees the cold figure. The
+25 s I quoted from the branch work was a mid-warming sample and should not be used.
 
 ### Marginal cost per op: 13–16 ms
 
@@ -95,17 +163,20 @@ Throughput is roughly **1.2 MB/s** of JSON. Applied to the real workload:
 
 ## Putting it together
 
-A two-file analysis, warm:
+The reference solution, warm:
 
 | | invocations | fixed | ops | total |
 |---|---|---|---|---|
-| `ooe` list | 1 | ~13 s | 0.45 s | ~13 s |
-| `ooe` describe | 1 | ~13 s | 2.2 s | ~15 s |
-| `BrojDva` list | 1 | ~13 s | 0.45 s | ~13 s |
-| `BrojDva` describe | 1 | ~13 s | 0.6 s | ~14 s |
-| | **4** | **~52 s** | **~3.7 s** | **~55 s** |
+| locate the CLI | 1 | ~0.7 s | — | ~0.7 s |
+| `ooe` list | 1 | ~12 s | 0.45 s | ~12 s |
+| `ooe` describe | 1 | ~12 s | 2.2 s | ~14 s |
+| **`Ooe_dev` list — fails at open** | 1 | ~10 s | **0** | **~10 s, no data** |
+| `BrojDva` list | 1 | ~12 s | 0.45 s | ~12 s |
+| `BrojDva` describe | 1 | ~12 s | 0.6 s | ~13 s |
+| | **6** | **~59 s** | **~3.7 s** | **~59 s** |
 
-Measured end to end on a cold-ish cache the same walk took 101 s, with per-phase figures of
+Measured end to end, this walk took **58.9 s** warm — which is the row above, and confirms the
+model. On a cold-ish cache the same walk took 101 s, with per-phase figures of
 37.2 / 19.8 / 14.7 / 14.7 s. Those four numbers look like structure — as though listing were
 twice the work of describing — and they are not. They are four samples of the same fixed cost
 fluctuating with cache state, plus one to two seconds of actual work each. **`describe` is not
@@ -269,6 +340,27 @@ fm processes against the same hosted file at once, and nine of the concurrent ru
 empty `--out` and returned in 11–15 s — they loaded plug-ins, failed, and wrote nothing. Whatever
 that contention is, it is real and it is silent. Concurrency across *distinct* files may well be
 safe, but it needs a deliberate spike with failure injection before it goes near the read path.
+
+### The unreachable file costs a full invocation, and mostly cannot be avoided
+
+`Ooe_dev` is named by two data sources, cannot be opened, and costs ~10 s of startup to find that
+out — about a sixth of the run, for nothing. The honest position is that **you cannot know a file
+is unopenable without trying**, so this is not waste in the sense of a bug.
+
+Two things would reduce it, neither free:
+
+- **Try it last.** The walk is depth first over the data-source list, so an unopenable file
+  currently blocks the reachable one behind it. Reading the reachable files first would put a
+  usable page up sooner and leave the failures to the end. It changes the order the read log
+  reports, which is user-visible.
+- **Ask more cheaply.** Nothing in fm's surface offers "can this be opened" without the full
+  startup. If the target is a hosted file, FileMaker Server's own file list would answer it for
+  the price of one query — but that is a different protocol and a dependency this tool does not
+  have today.
+
+What should *not* happen is caching the failure across runs. A file that was down five minutes ago
+may be up now, and a tool that reports a stale "unreachable" is worse than one that takes ten
+seconds to check.
 
 ### Smaller things
 
