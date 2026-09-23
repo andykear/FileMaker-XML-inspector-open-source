@@ -152,6 +152,7 @@ If the file contains API keys, passwords, or internal hostnames, run it through 
 
 **Research / Specialist**
 
+**[FileMaker XML bit-flags](https://github.com/andykear/FileMaker-XML-bit-flags)**
 **[FileMaker AI Grammar](https://github.com/andykear/FileMaker-AI-grammar)**
 
 **Generation, paste-ready FileMaker XML**
