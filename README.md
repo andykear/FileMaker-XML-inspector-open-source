@@ -5,10 +5,8 @@
 
 **Full solution analysis for FileMaker. Local, in the browser, open. No install, no licence, no cloud.**
 
-**Latest release: 2.8, September 2026.\
+**Latest release: 2.9, October 2026.\
 In active development.**
-
-Screenshots not yet updated
 
 <img width="855" height="553" alt="Screenshot 2026-09-05 at 14 30 14" src="https://github.com/user-attachments/assets/1d926a42-4e71-4d9d-a777-0ee1cc220d00" />
 
@@ -55,11 +53,13 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 - Around a million lines of XML per second on a reasonably capable computer
 
 **Overview**
-- Dashboard cards for every catalog, each linking to its tab
+- One landing screen: the file described in a few sentences, then what looks wrong, then the element inventory
+- Element inventory: every element type in one table with Count, Errors, Unreferenced and Warnings. Every figure opens the exact items it counted, on the tab those items live in, with a filter bar for All, Errors, Unreferenced and Warnings; the totals row opens them all
 - The FileMaker version that wrote the export, shown in About and Methodology
 
 **Schema**
 - Tables, table occurrences and fields: counts, types, storage, validation, auto entry
+- Per table: indexed, auto entry, validated, repeating and documented field counts, and who last changed the table
 - Field performance risk: every field scored 1 to 10 from storage, cross relationship reach, aggregates and SQL, dependency fan out and layout exposure. A heuristic from schema shape, not a measurement
 - Calculations browser: every calculation field with storage, result type, index state, performance score, cross table reach, dependency counts, silently unstored warnings and the formula itself
 - Field dependencies traced in both directions
@@ -70,21 +70,29 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 - Graph hygiene: exact duplicate relationships and same predicate buoy pairs
 
 **Layouts and themes**
-- Layouts: visibility, themes, triggers, portal usage, object counts and parts
-- Portals and layout controls in their own sortable tables
+- Layouts: visibility, themes, portal usage, object counts and parts
+- Which views each layout allows, whether QuickFind is on, and which events its triggers fire with the script each one calls
+- Portals and layout controls in their own sortable tables, with each portal's filter calculation and its own copy control, the rows it shows and the row it starts at
+- Tab order, with the number of fields a user can actually type into, so a blank reads as "nobody needed one" rather than "nobody set one"
 - Layout Calcs: every calculation stored on a layout object, searchable, with far TO, $$ global, dynamic evaluation and unstored reference flags. Portal filters and conditional formatting have no live read path, so the export is the only place they can be audited
 - Wireframe: any layout drawn from its real object bounds, with part bands, hidden panels, popovers and portal rows
 - Theme mood board: every named style rendered as the object it styles, from its own fill, border, corners and font
+- Which stock theme each custom theme derives from and at which version, which theme a new layout inherits, per theme authorship and edit counts, the named swatch palette, the layout-builder metrics that decide how a theme sizes a new layout — base font size, minimum header, body and footer — and the layouts with no theme recorded at all
 - Colour palette per theme, indexed to the styles wearing each colour, with WCAG contrast checks
+- Unused theme styles, counted per theme and identified by the style's own tag rather than its display name, because FileMaker reuses a display name across object types within one theme
 - Local CSS: every per object style override in the file
 
 **Logic**
 - Script tree as FileMaker folds it, with full step rendering
 - Step Index: every step used in the file with counts, drill down to the scripts using it, and content search inside step text
+- Script Steps: every step of every script in creation order, with its rendered detail and state
 - Script issue checks: swallowed errors, dead Set Variables, enabled steps inside disabled guards, PSoS bodies with client only steps checked on the callee, credential keywords in script logic, and more
 - Call graph between scripts, interactive and exportable
-- Variables: every $$ global with set counts, reading scripts and dead or write only globals called out
-- Custom functions with usage counts
+- Script context resolved through the call graph: a script with no layout context of its own inherits it from the scripts that call it, walked transitively, and a script nothing can start is named as such
+- Step Index carries the whole palette with the zeros visible — which of the 217 steps a file has never used
+- Perform Script steps with no script chosen, scripts whose only caller is themselves, and layouts sharing a name with a table occurrence
+- Variables: every $local and $$global, with read and set counts, the scripts that set each one, case variants, and dead or write only variables called out; names with spaces handled correctly
+- Custom functions with usage counts, recursion flagged, and the unreferenced ones — including a function whose only callers are themselves unreferenced
 - Value lists including broken sources and show related values only
 
 **Security**
@@ -100,10 +108,13 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 - Custom menus and menu sets
 - Developer Tags gathered from names and comments
 - Activity: modification metadata across the file
-- Bit Flag Decoder for the format's packed option fields
+- Bit Flag Decoder: every packed options integer in the file decoded to named flags, from a corpus of 233 flags measured by setting each one and reading the number that changed. 47 are inverted — on when the bit is absent — which is not inferable from a file, and the same corpus drives the layout, portal and field option readings elsewhere in the tool. Bits with no name yet are listed rather than hidden
 
 **Analysis**
-- Unreferenced fields, table occurrences, scripts, layouts and value lists, tiered by confidence because dynamic references (Evaluate, GetField, SQL) are visible but not resolvable
+- Unreferenced fields, table occurrences, scripts, layouts, value lists, custom functions and theme styles, tiered by confidence because dynamic references (Evaluate, GetField, SQL) are visible but not resolvable
+- Why each unreferenced script is unreferenced, with the chain of callers behind the answer
+- The routes an export cannot see are named on the unreferenced list: another file calling in, a Server schedule, an fmp:// URL, the Data API and WebDirect
+- Unreferenced scripts grouped by folder with a ratio, so a removed module reads as one row rather than forty
 - Broken references across hide conditions, tooltips, conditional formatting, portal filters and value list sources
 - Reference Explorer: pick any object and see both directions at once, what it references and what references it, from every list in the tool
 
@@ -114,7 +125,8 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 - Header Export menu: full Markdown report, findings as JSON, CSV tables
 - Mermaid export for the relationship graph and the script call graph
 - Graph Health copy buttons: work plan as markdown, JSON operations for an AI agent, master programme across every edge
-- Copy on every formula; layout and script objects copy as XML
+- Copy on every table: what is on screen, filtered and sorted, as TSV
+- Copy on every formula, script body and individual step; layout and script objects copy as XML
 - Every export reads from the same parsed model the tabs render from, so a report can never disagree with the page it came from
 
 ---
@@ -136,6 +148,8 @@ No installation. No server. Runs entirely locally.
 The Inspector complements AI assisted FileMaker development. Upload the HTML file to a Claude Project or as a skill, and Claude can reason about your solution's structure, cross reference scripts and layouts, and help you identify gaps or opportunities for improvement.
 
 Graph Health's **Copy for an agent** output is written for exactly this: paste a card's operations into an agent session and it has the buoy, the repoints, the scripts to confirm, and the verify step, without re-deriving the trace.
+
+An agent should drive the page and query `window.__lastStats` rather than read the HTML (about 250K tokens) or the export (a 7 MB export is about 2M tokens) into context. The analysis runs once in the browser, and a question costs only its answer: about 40 tokens for the headline counts, about 250 for the whole Summary. The Methodology tab compares this with reading the live file through Claris's Agentic Development Toolkit and with the Inspector Pro MCP.
 
 If the file contains API keys, passwords, or internal hostnames, run it through the XML Scrubber first.
 
@@ -172,6 +186,7 @@ If the file contains API keys, passwords, or internal hostnames, run it through 
 
 | Version | Notes |
 |---|---|
+| 2.9 | **Transitive caller context**, **Unreferenced custom functions**, **Orphaned modules**, **Bit Flag Decoder** meanings and now used to expose additional metrics in many places, **Themes**: much more detail. **Portal filter calculations**, with a per row copy control. Plus a step census, tab order, layout trigger events, and copy on every table, script body and step. Twenty metrics fixed. Includes a contribution from Darrin Southern, CadenceUX: the **summary metrics**, **back navigation**, **script steps tab**, **table pinning and filtering**, drill downs, additional variables and counts. |
 | 2.8 | **New Graph Health tab**: Anchor–Buoy analysis of the relationship graph. Every direct anchor to anchor edge found, traced across eight crossing categories, and given a numbered severing work plan, with a master programme across the graph, the module split figure, and copy as markdown or as JSON operations for an AI agent. **New Layout Calcs tab**: every calculation stored on a layout object, searchable and flagged. **Calculations** rebuilt as a real browser; **Variables** show set against read counts and dead globals; **External Sources** show paths and dependent TOs. Fix to the reference engine plus 30 minor fixes and further UI optimisation. |
 | 2.7 | New Persistent Data tab surfaces FileMaker 2026's persistent data store. Script bodies no longer truncate long formulas or drop comment text. Unreferenced Fields/Table Occurrences now catches usage inside formulas: Hide conditions, conditional formatting, dialog text, merge fields, custom functions. Broken Refs now checks hide conditions, tooltips, conditional formatting and portal filters. |
 | 2.6 | Visual redesign; script bodies now show line numbers. Minimal functional changes otherwise. |
