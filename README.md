@@ -72,7 +72,7 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 **Layouts and themes**
 - Layouts: visibility, themes, portal usage, object counts and parts
 - Which views each layout allows, whether QuickFind is on, and which events its triggers fire with the script each one calls
-- Portals and layout controls in their own sortable tables, with each portal's filter calculation and its own copy control, the rows it shows and the row it starts at
+- Portals and layout controls in their own sortable tables, with each portal's filter calculation and its own copy control, the rows it shows and the row it starts at. A filter or sort reads `off` where the formula is still stored but the checkbox is clear, so a filter FileMaker is not applying is not mistaken for one it is
 - Tab order, with the number of fields a user can actually type into, so a blank reads as "nobody needed one" rather than "nobody set one"
 - Layout Calcs: every calculation stored on a layout object, searchable, with far TO, $$ global, dynamic evaluation and unstored reference flags. Portal filters and conditional formatting have no live read path, so the export is the only place they can be audited
 - Wireframe: any layout drawn from its real object bounds, with part bands, hidden panels, popovers and portal rows
@@ -108,7 +108,7 @@ And open sharing is how the FileMaker community moves the platform forward. Publ
 - Custom menus and menu sets
 - Developer Tags gathered from names and comments
 - Activity: modification metadata across the file
-- Bit Flag Decoder: every packed options integer in the file decoded to named flags, from a corpus of 233 flags measured by setting each one and reading the number that changed. 47 are inverted — on when the bit is absent — which is not inferable from a file, and the same corpus drives the layout, portal and field option readings elsewhere in the tool. Bits with no name yet are listed rather than hidden
+- Bit Flag Decoder: every packed options integer in the file decoded to named flags, from a corpus of 238 flags measured by setting each one and reading the number that changed. 47 are inverted — on when the bit is absent — which is not inferable from a file, and the same corpus drives the layout, portal and field option readings elsewhere in the tool. Bits with no name yet are listed rather than hidden
 
 **Analysis**
 - Unreferenced fields, table occurrences, scripts, layouts, value lists, custom functions and theme styles, tiered by confidence because dynamic references (Evaluate, GetField, SQL) are visible but not resolvable
